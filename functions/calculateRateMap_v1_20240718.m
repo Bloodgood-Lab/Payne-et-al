@@ -1,7 +1,7 @@
 function calculateRateMap_v1_20240718
-% Plots the trial-by-trial rate map as a linearized plot
+% Calculate the linearized rate maps across all trials for each cells
 % Written by Anja Payne
-% Last Modified: In Progress
+% Last Modified: 07/18/2024
 
 % Inputs:
 
@@ -21,13 +21,13 @@ function calculateRateMap_v1_20240718
 %      number on the y-axis. 
 
 
-%%%% Step 1: %%%%
+%% Step 1: %%%%
 clear
 clc
 % Define pathways
-addpath(genpath('Z:\Anja\Matlab Code\CreateRateMaps')); 
-addpath(genpath('Z:\Anja\Matlab Code\LoadFiles')); 
-addpath(genpath('Z:\Anja\Matlab Code\GeoffCode\Organized Code'));
+%addpath(genpath('Z:\Anja\Matlab Code\CreateRateMaps')); 
+%addpath(genpath('Z:\Anja\Matlab Code\LoadFiles')); 
+%addpath(genpath('Z:\Anja\Matlab Code\GeoffCode\Organized Code'));
 animalFile = 'AP_AnimalData_Cohort13_Track'; 
 animalInfoFile = ['Z:\Anja\Data\In Vivo Data\AnimalInfo_ExcelFiles\', animalFile]; 
 animalInfo = excel2Mat(animalInfoFile)

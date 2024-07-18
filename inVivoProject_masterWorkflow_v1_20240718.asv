@@ -33,8 +33,34 @@ excelFolder = 'Z:\Anja\Data\In Vivo Data\AnimalInfo_ExcelFiles\';
 excelFiles = {'AP_AnimalData_Cohort13_Track', 'AP_AnimalData_Cohort14_Track'}; 
 
 % Outputs: 
-mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolder); 
-
+%mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolder); 
+saveChoice = questdlg('Do you want to save the data?', ...
+            'Choose Option', ...
+            'Save Data', 'Cancel', 'Cancel');
+            switch saveChoice
+                case 'Save Data'
+                    fileNameBase = 'mainDataStructure'; 
+                    savePathName = uigetdir();
+                    currentFiles = dir(savePathName);
+                    currentFiles = currentFiles(~ismember({currentFiles.name}, {'.', '..'}));
+                    [m, ~] = size(currentFiles); 
+                    for iFiles = 1:m; 
+                        currentFiles(iFiles).name
+                        % Check to see if the file already exists
+                        if strcmp(currentFiles(iFiles).name(1:length(fileNameBase)), fileNameBase) == 1
+                            oldVersion = length(fileNameBase)+1
+                        end
+                    end
+                    
+                    
+                    
+                    
+                    save([savePathName, '\', fileNameBase, '.mat'], 'mainDataStructure'); 
+                    
+                    %saveFileName = '';
+                case 'Cancel'
+                    disp('Operation canceled by the user'); 
+            end
 
 %%
 % Outputs:
