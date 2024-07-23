@@ -3,14 +3,8 @@
 % Written by Anja Payne
 % Last modified: 07/18/2024
 
-% Issues to resolve:
-%   - For step 3, set it up so that the input is always the last saved
-%     version of the mainDataStructure
-%   - Implement step 4: get linearized rate maps
-%   - Clean up step 3, right now it's sort of acting as a placeholder for
-%     what the output would be so that that can be fed into step 4
-%   - Implement step 1
-%   - Implement step 2
+% Issues to resolve/currently working on:
+%   - Save the output from step 3 (split into WT and KO)
 
 % Steps:
 %   1) Define pathway
@@ -51,14 +45,6 @@ mainDataStructure = data;
 
 % Outputs: 
 filePaths = splitWTandKO_v1_20240722(mainDataStructure); 
-
-%% Step 3: Separate into low-firing and high-firing cells
-% Settings:
-maxFRcutOff     = 1; 
-meanFRcutOff    = 0.1;
-% Input:
-
-% Output:
 
 %% Step 4: Get the linearized rate maps
 % Settings: 

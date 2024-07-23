@@ -31,7 +31,7 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase)
     	filePath{2} = '01'; 
         filePath{3} = date; 
     elseif m > 0;
-        allVersions = [];
+        allVersions = []; allAppended = {};
         for iFiles = 1:m; 
             % If the file is shorter than the fileNameBase, skip it
             if length(currentFiles(iFiles).name) < length(fileNameBase);
@@ -47,11 +47,16 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase)
                 end
             end
         end
-        [maxVersion, maxI] = nanmax(allVersions);
-        maxVersion = sprintf('%02d', maxVersion); 
-        maxAppended = allAppended{maxI}; 
-        filePath{2} = maxVersion;
-        filePath{3} = maxAppended;
+        if isempty(allAppended) == 1; 
+            filePath{2} = '00'; 
+            filePath{3} = ['_', date]; 
+        else
+            [maxVersion, maxI] = nanmax(allVersions);
+            maxVersion = sprintf('%02d', maxVersion); 
+            maxAppended = allAppended{maxI}; 
+            filePath{2} = maxVersion;
+            filePath{3} = maxAppended;
+        end
     end
  
     

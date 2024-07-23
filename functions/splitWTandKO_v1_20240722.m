@@ -14,6 +14,7 @@ function filePaths = splitWTandKO_v1_20240722(mainDataStructure)
     % Steps:
     %   1) Split into WT and KO based off of their opto response ('yes' or
     %      'no')
+    %   2) Give the user the chance to save the data
 
     
     %% Step 1: Split into WT and KO based off of their opto response 
@@ -30,4 +31,7 @@ function filePaths = splitWTandKO_v1_20240722(mainDataStructure)
             end
         end
     end
+    
+    %% Step 2: Give the user the chance to save the data
+    saveFile_v1_20240718(filePaths, 'filePathsByGenotype') 
     
