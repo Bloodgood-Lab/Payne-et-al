@@ -18,12 +18,12 @@ function mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolde
     
     %% Step 1: Ask the user if they want to load the data or recalculate it
 
-    saveChoice = questdlg('Do you want to load a pre-existing data structure or calculate a new one?', ...
+    loadChoice = questdlg('Do you want to load a pre-existing data structure or calculate a new one?', ...
         'Choose Option', ...
         'Load Data', 'Calculate New Structure', 'Cancel', 'Cancel');
    
     %% Step 2: Either load or recalculate based on user input
-    switch saveChoice
+    switch loadChoice
         case 'Load Data' 
             [filename, pathname] = uigetfile();
             load([pathname, filename]);

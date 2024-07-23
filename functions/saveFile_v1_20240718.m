@@ -12,42 +12,27 @@ function saveFile_v1_20240718(data, dataName)
 
     % Steps:
     %   1) Ask the user if they want to save the data
-    %   2) If they say yes, have them select where
-    %   3) If the file already exists in a different version, create a new
-    %      version with today's date
+    %   2) If they say yes, have them select where and, if the file already
+    %      exists in an earlier version, create a new version with today's
+    %      date
     
     %% Step 1: Ask the user if they want to save the data
     saveChoice = questdlg('Do you want to save the data?', ...
     'Choose Option', ...
-    'Save Data', 'Cancel', 'Cancel');
+    'Yes', 'No', 'Cancel');
 
     switch saveChoice
         %% Step 2: If they say yes, have them select where
-        case 'Save Data'
-            fileNameBase = dataName; 
-            savePathName = uigetdir();
-            currentFiles = dir(savePathName);
-            currentFiles = currentFiles(~ismember({currentFiles.name}, {'.', '..'}));
-            [m, ~] = size(currentFiles); 
-            if m == 0; 
-                saveFile = [fileNameBase, '_v01_', date, '.mat'];
-                save([savePathName, '\', saveFile], 'data'); 
-            %% Step 3: If the file already exists, create a new version
-            elseif m > 0;
-                for iFiles = 1:m; 
-                    % Check to see if the file already exists
-                    fileNameBase_toCompare = currentFiles(iFiles).name(1:length(fileNameBase));
-                    if strcmp(fileNameBase_toCompare, fileNameBase) == 1
-                        oldVersion = currentFiles(iFiles).name(length(fileNameBase)+3:length(fileNameBase)+4);
-                        newVersion = str2double(oldVersion) + 1;
-                        newVersion = sprintf('%02d', newVersion);
-                        saveFile = [fileNameBase, '_v', num2str(newVersion), '_', date, '.mat'];
-                        save([savePathName, '\', saveFile], 'data'); 
-                    end
-                end
-            end
-        case 'Cancel'
-            disp('Operation canceled by the user'); 
+        case 'Yes'
+            fileNameBase = dataName;
+            filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+            savePathName = filePath{1};
+            saveVersion = str2double(filePath{2}) + 1;
+            saveVersion = sprintf('%02d', saveVersion); 
+            saveFile = [fileNameBase, '_v', saveVersion, '_', date, '.mat'];
+            save([savePathName, '\', saveFile], 'data'); 
+        case 'No'
+            disp('Data not saved'); 
         otherwise
             error('Unexpected option selected.');   
     end
