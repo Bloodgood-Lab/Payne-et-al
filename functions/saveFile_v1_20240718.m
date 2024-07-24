@@ -1,4 +1,4 @@
-function saveFile_v1_20240718(data, dataName) 
+function saveFile_v1_20240718(data, settings, dataName) 
     % Given user-defined save folder, save the data 
     % Written by Anja Payne
     % Last Modified: 07/18/2024
@@ -29,8 +29,9 @@ function saveFile_v1_20240718(data, dataName)
             savePathName = filePath{1};
             saveVersion = str2double(filePath{2}) + 1;
             saveVersion = sprintf('%02d', saveVersion); 
-            saveFile = [fileNameBase, '_v', saveVersion, '_', date, '.mat'];
-            save([savePathName, '\', saveFile], 'data'); 
+            saveFile = [fileNameBase, '_v', saveVersion, '_', date];
+            save([savePathName, '\', saveFile, '.mat'], 'data'); 
+            save([savePathName, '\', saveFile, '_settings.mat'], 'settings'); 
         case 'No'
             disp('Data not saved'); 
         otherwise

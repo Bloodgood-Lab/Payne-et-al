@@ -80,6 +80,7 @@ function animalInfo = convertExcelToMat(excelFile)
         for iCluster = 2:m;
             if strcmp(data{iCluster, 2}, 'Track') == 1; 
                 animalInfo{iAnimal}(cellCount).directory = data(iCluster, 1);
+                animalInfo{iAnimal}(cellCount).fileName = data(iCluster, 3);
                 animalInfo{iAnimal}(cellCount).opto = data(iCluster, 6);
                 cellCount = cellCount + 1; % iterate
             end
