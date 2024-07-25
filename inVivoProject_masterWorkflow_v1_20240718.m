@@ -4,12 +4,14 @@
 % Last modified: 07/18/2024
 
 % Issues to resolve/currently working on:
-%   - exclude low velocity and save the spikes into the main structure
+%   - spike times: settings does not yet exist. At what point should I
+%     create it?
 
 % Steps:
 %   1) Define pathway [done]
 %   2) Read in excel files and create the main data structure [done]
 %   3) Split the data into WT and KO [done]
+%   4) Save the spike times in msec aligned to 0
 %   4) Exclude spikes that occur during low velocity [started, hold off]
 %   5) Get the rate maps [started, hold off]
 %   6) Get spatial metrics and field barcode [current WIP]
@@ -23,7 +25,8 @@
 %     versions and with the data appended.
 %   - Each step will give you the option of saving the output. The next 
 %     step will look for that saved file so it's a good idea to save as you
-%     go
+%     go. The code will save two files, one with the data and one with the
+%     settings. 
 
 %% Step 1: Define pathways
 addpath(genpath('Z:\Anja\Paper\Matlab Code')); 
@@ -40,20 +43,43 @@ excelFiles = {'AP_AnimalData_Cohort13_Track', 'AP_AnimalData_Cohort14_Track'};
 % Outputs: 
 mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolder); 
 
-%% Step 3: Split the data into WT and KO
+%% Step 3: Split the file paths into WT and KO
 clear;clc;
 
 % Settings: 
 fileNameBase = 'mainDataStructure'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '_settings.mat']);
+mainDataStructureSettings = settings; % Empty file, for now
 
 % Inputs: 
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 mainDataStructure = data;
 
 % Outputs: 
-filePaths = splitWTandKO_v1_20240722(mainDataStructure); 
+filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings); 
+
+%% Step 4: Save the spike times (takes ~3 min)
+clear;clc; tic; 
+
+% Settings: 
+fileNameBase = 'filePathsByGenotype';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '_settings.mat']);
+filePathSettings = settings; % Empty file, for now
+
+% Inputs: 
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+filePaths = data;
+
+% Outputs: 
+spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
+
+
 
 %% Step 4: 
 clear;clc;
@@ -151,4 +177,16 @@ rateMapStructure = data;
 
 % Outputs:
 data = getSpatialMetrics_v1_20240724(rateMapStructure, settings); 
+
+%% Step 7: Get the in-field spikes for each field
+clear; clc; 
+
+% Settings: 
+fileNameBase = 'rateMaps';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '_settings.mat']);
+rateMapSettings = settings; 
+settings.rateMap.lowThresh = 0.1; 
+settings.rateMap.highThresh = 0.5; 
 

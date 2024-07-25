@@ -1,4 +1,4 @@
-function filePaths = splitWTandKO_v1_20240722(mainDataStructure) 
+function filePaths = splitWTandKO_v1_20240722(mainDataStructure, settings) 
     % Splits the data into WT and KO
     % Written by Anja Payne
     % Last Modified: 07/22/2024
@@ -34,5 +34,5 @@ function filePaths = splitWTandKO_v1_20240722(mainDataStructure)
     end
     
     %% Step 2: Give the user the chance to save the data
-    saveFile_v1_20240718(filePaths, 'filePathsByGenotype') 
+    saveFile_v1_20240718(filePaths, settings, 'filePathsByGenotype') 
     

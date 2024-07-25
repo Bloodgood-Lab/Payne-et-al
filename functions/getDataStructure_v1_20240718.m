@@ -40,9 +40,11 @@ function mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolde
                 cohortDataStructure = convertExcelToMat(excelFilePath);
                 mainDataStructure = [mainDataStructure, cohortDataStructure]; 
             end
+            % Create an empty settings structure
+            settings = struct();
             
             %% Step 3: Ask the user if they want to save the newly generated data
-            saveFile_v1_20240718(mainDataStructure, 'mainDataStructure') 
+            saveFile_v1_20240718(mainDataStructure, settings, 'mainDataStructure') 
         
         case 'Cancel'
             disp('Operation canceled by the user'); 
