@@ -61,7 +61,7 @@ mainDataStructure = data;
 % Outputs: 
 filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings); 
 
-%% Step 4: Save the spike times (takes ~3 min)
+%% Step 4: Save the spike times (takes ~4 min)
 clear;clc; tic; 
 
 % Settings: 
@@ -78,8 +78,6 @@ filePaths = data;
 
 % Outputs: 
 spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
-
-
 
 %% Step 4: 
 clear;clc;
