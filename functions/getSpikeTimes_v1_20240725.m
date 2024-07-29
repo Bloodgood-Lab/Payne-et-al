@@ -39,7 +39,13 @@ function data = getSpikeTimes_v1_20240725(data, settings)
                         % Load the CSC data
                         CSC_file = [directoryPath, '\CSC1.ncs']; 
                         csc_data = readCSC(CSC_file); 
-                        ephys_t0 = csc_data.ts(1); 
+                        csc_timepoints_lowSampling = csc_data.ts; 
+                        csc_samples = csc_data.samp; 
+                        csc_samples_points = linspace(1, length(csc_timepoints_lowSampling), length(csc_samples)); 
+                        csc_timepoints_lowSampling_points = [1:length(csc_timepoints_lowSampling)]; 
+                        csc_timepoints = interp1(csc_timepoints_lowSampling_points, csc_timepoints_lowSampling, csc_samples_points, 'linear'); 
+                        csc_timepoints_msec = csc_timepoints/1000;
+                        ephys_t0 = csc_timepoints_msec(1);
                     end
                     % Load the spike data for the relevant cluster
                     spikeDataPath = strcat(directoryPath, '\', genotypeData{iAnimal}(iCluster).fileName{1}, '.mat');
