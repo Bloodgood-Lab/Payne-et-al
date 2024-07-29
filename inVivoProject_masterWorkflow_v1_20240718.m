@@ -1,23 +1,25 @@
 % Master workflow to reproduce all analysis and plots included in Anja
 % Payne's in vivo paper
 % Written by Anja Payne
-% Last modified: 07/18/2024
+% Last modified: 07/25/2024
 
 % Issues to resolve/currently working on:
-%   - spike times: settings does not yet exist. At what point should I
-%     create it?
+%   - i think the processed data should be organized into folders...
+%   - run step 5 and save
+%   - step 8: get the in-field spikes
 
 % Steps:
 %   1) Define pathway [done]
 %   2) Read in excel files and create the main data structure [done]
 %   3) Split the data into WT and KO [done]
-%   4) Save the spike times in msec aligned to 0
-%   4) Exclude spikes that occur during low velocity [started, hold off]
-%   5) Get the rate maps [started, hold off]
-%   6) Get spatial metrics and field barcode [current WIP]
-%   7) Get the in-field spikes
-%   8) Get the theta modulation
-%   9) Get the phase precession
+%   4) Save the spike times in msec aligned to 0 [done]
+%   5) Exclude spikes that occur during low velocity and format so that the
+%      spikes are split by direction and trial number [done]
+%   6) Get the rate maps [started, hold off]
+%   7) Get spatial metrics and field barcode [started, hold off]
+%   8) Get the in-field spikes
+%   9) Get the theta modulation
+%   10) Get the phase precession
 
 % Notes about this code:
 %   - When you choose to save processed data (as prompted by the pop-up
@@ -78,6 +80,107 @@ filePaths = data;
 
 % Outputs: 
 spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
+
+%% Step 5: Exclude spikes that occur during low velocity (takes  min)
+clear;clc;tic;
+
+% Settings: 
+fileNameBase = 'spikeTimes';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '_settings.mat']);
+settings.velocity.threshold = 2; % velocity threshold = 2 cm/sec
+settings.velocity.timeToAverage = 1; % time to average over in seconds
+stepSize = 16000 * settings.velocity.timeToAverage; % step size is determined by number of frames per second and the time to average over
+settings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
+settings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
+settings.rateMaps.binSize = 4; % 4 cm bins
+
+% Inputs: 
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+spikeTimes = data;
+
+% Outputs: 
+binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, settings); toc
+
+
+
+
+
+%% Step 6: Split the spikes into trials
+clear;clc;
+
+% Settings: 
+fileNameBase = 'highVelocitySpikeTimes';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '_settings.mat']);
+
+% Inputs: 
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+highVelocitySpikeTimes = data;
+%%
+% Outputs: 
+
+
+
+
+xValues = find(abs(allX)<10); 
+yValues1 = find(allY > -40);
+yValues2 = find(allY < -30);
+yValues = intersect(yValues1, yValues2);
+putativeTrialStart = intersect(xValues, yValues);
+
+%%% Step 2: %%%%
+trialJump = 50000; % ~3 seconds; used historically
+count = 1; 
+trialStart = NaN(1, 10000); 
+for itrialStart = 1:length(putativeTrialStart)-1; 
+    % Find the points where the animal's position 'jumps.' That is, when
+    % a new trial starts. 
+    tempJump = diff([putativeTrialStart(itrialStart), putativeTrialStart(itrialStart+1)]);
+    if tempJump > trialJump;
+        check(count) = tempJump;
+        trialStart(count) = putativeTrialStart(itrialStart); 
+        count = count +1; 
+    end
+end
+%{
+for iTrials = 1:length(trialStart); 
+    tempTrialY = allY(trialStart(iTrials):trialStart(iTrials+1)-1); 
+    % Find all the positions that occur on the sides of the track
+    sides = find(tempTrialY > -20 & tempTrialY < 20); 
+    % Find how many of those occur 
+end
+%}
+
+%%%% Step 3: %%%%
+% Save each trial in its own row of a matrix
+trialStart(isnan(trialStart)) = []; 
+count2 = 1; allTrialsY = {}; allTrialsX = {};
+for iTrials = 1:length(trialStart)-1; 
+    tempTrialY = allY(trialStart(iTrials):trialStart(iTrials+1)-1); 
+    % Make sure that the trial includes a timepoint where the animal runs
+    % across the back of the track
+    % Currently testing: also make it mandatory that the animal crosses
+    % both arms of the track only once
+    if sum(tempTrialY > 30) ~= 0;
+        allTrialsY{count2} = tempTrialY; 
+        tempTrialX = allX(trialStart(iTrials):trialStart(iTrials+1)-1);
+        allTrialsX{count2} = tempTrialX; 
+        tempTrialT = allT(trialStart(iTrials):trialStart(iTrials+1)-1); 
+        allTrialsT{count2} = tempTrialT; 
+        tempTrialSpikes = intersect(round(allSpikes), round(tempTrialT)); 
+        allTrialsSpikes{count2} = tempTrialSpikes;
+        count2 = count2 + 1;
+    end
+end
+
+
+
+
 
 %% Step 4: 
 clear;clc;
