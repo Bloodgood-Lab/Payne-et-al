@@ -19,7 +19,7 @@ function saveFile_v1_20240718(data, settings, dataName)
     %% Step 1: Ask the user if they want to save the data
     saveChoice = questdlg('Do you want to save the data?', ...
     'Choose Option', ...
-    'Yes', 'No', 'Cancel');
+    'Yes', 'No', 'Cancel', 'Cancel');
 
     switch saveChoice
         %% Step 2: If they say yes, have them select where
@@ -34,6 +34,8 @@ function saveFile_v1_20240718(data, settings, dataName)
             save([savePathName, '\', saveFile, '_settings.mat'], 'settings'); 
         case 'No'
             disp('Data not saved'); 
+        case 'Cancel'
+            disp('Operation canceled by the user'); 
         otherwise
             error('Unexpected option selected.');   
     end
