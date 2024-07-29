@@ -33,7 +33,6 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                 for iCluster = 1:n; 
                     %% Step 1: Get the velocity
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-
                     newDirectoryPath = genotypeData{iAnimal}(iCluster).directory{1};
                     if strcmp(directoryPath, newDirectoryPath) == 1;
                         % The velocity for this session has already been
@@ -264,8 +263,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         yTrials = input.y;
         tTrials = input.t;
         
-        count1 = 1; count2 = 1; pos_bins = {}; 
-        cw_pos = []; ccw_pos = []; cw_spike_bins = []; ccw_spike_bins = []; cw_spikes = []; ccw_spikes = []; 
+        count_cw = 1; count_ccw = 1; pos_bins = {}; 
+        cw_pos = {}; ccw_pos = {}; cw_spike_bins = {}; ccw_spike_bins = {}; cw_spikes = []; ccw_spikes = []; 
         for iTrial = 1:length(xTrials); 
             % Step 1: Find the bin location of each spike on the linearized track
             % Find the x and y position of every spike 
@@ -294,15 +293,15 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
             testArray = pos_bins{iTrial}(pos_bins{iTrial} > (0.25*numberBins) & pos_bins{iTrial} < (0.75*numberBins));
             tempSum = testArray(end) - testArray(1);                                                               
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
-               cw_pos = [cw_pos; pos_bins{iTrial}]; 
-               cw_spike_bins = [cw_spike_bins; spike_bins]; 
+               cw_pos{count_cw} = pos_bins{iTrial}; 
+               cw_spike_bins{count_cw} = spike_bins; 
                cw_spikes = [cw_spikes; trialSpikes];
-               count1 = count1 + 1;
+               count_cw = count_cw + 1;
             elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
-               ccw_pos = [ccw_pos; pos_bins{iTrial}]; 
-               ccw_spike_bins = [ccw_spike_bins; spike_bins]; 
+               ccw_pos{count_ccw} = pos_bins{iTrial}; 
+               ccw_spike_bins{count_ccw} = spike_bins; 
                ccw_spikes = [ccw_spikes; trialSpikes];
-               count2 = count2 + 1;
+               count_ccw = count_ccw + 1;
             end
         end
         
