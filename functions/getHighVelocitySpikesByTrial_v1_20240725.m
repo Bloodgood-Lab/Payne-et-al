@@ -20,17 +20,17 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
     %   4) For each trial, determine if it's clockwise or counter-clockwise
     %   5) Ask the user if they want to save the newly generated data
     
-    stepSize = 16000 * settings.velocity.timeToAverage; % step size is determined by number of frames per second and the time to average over
+    stepSize = settings.velocity.samplingRate * settings.velocity.timeToAverage; % step size is determined by number of frames per second and the time to average over
     directoryPath = '';
-    for iGenotype = 1:length(fieldnames(data));
+    for iGenotype = 1%:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
+        for iAnimal = 1%:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:n; 
+                for iCluster = 1:2%:n; 
                     %% Step 1: Get the velocity
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     newDirectoryPath = genotypeData{iAnimal}(iCluster).directory{1};
@@ -75,7 +75,6 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                     highVelocityData.y = y_pos_cm;
                     highVelocityData.t = t_clipped; 
                     
-
                     %% Step 3: Split the spikes into trials
                     splitByTrialsData = splitFilesByTrials(highVelocityData); 
                     
@@ -84,12 +83,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                     binnedSpikesByDirection = splitCWandCCWandBinSpikes(splitByTrialsData, bins);
 
                     % Append to data structure
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPos.cw = binnedSpikesByDirection.pos.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPos.ccw = binnedSpikesByDirection.pos.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikes.cw = binnedSpikesByDirection.spikes_binned.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikes.ccw = binnedSpikesByDirection.spikes_binned.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByTrial.cw = binnedSpikesByDirection.spikes.cw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByTrial.ccw = binnedSpikesByDirection.spikes.ccw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPosByTrial.cw = binnedSpikesByDirection.pos.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPosByTrial.ccw = binnedSpikesByDirection.pos.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikesByTrial.cw = binnedSpikesByDirection.spikes_binned.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikesByTrial.ccw = binnedSpikesByDirection.spikes_binned.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByDir.cw = binnedSpikesByDirection.spikes.cw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByDir.ccw = binnedSpikesByDirection.spikes.ccw;
                     
                 end
             end
@@ -201,7 +202,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         yValues1 = find(allY > -40);
         yValues2 = find(allY < -30);
         yValues = intersect(yValues1, yValues2);
-        putativeTrialStart = intersect(xValues, yValues); % TRACED ISSUE BACK TO HERE (MAYBE EARLIER)
+        putativeTrialStart = intersect(xValues, yValues); 
 
         % Step 2: Refine the trial start times
         trialJump = 50000; % ~3 seconds; used historically
@@ -264,7 +265,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         tTrials = input.t;
         
         count_cw = 1; count_ccw = 1; pos_bins = {}; 
-        cw_pos = {}; ccw_pos = {}; cw_spike_bins = {}; ccw_spike_bins = {}; cw_spikes = []; ccw_spikes = []; 
+        cw_pos = {}; ccw_pos = {}; cw_spike_bins = {}; ccw_spike_bins = {}; 
+        cw_spikes = []; ccw_spikes = []; cw_trials = []; ccw_trials = []; 
         for iTrial = 1:length(xTrials); 
             % Step 1: Find the bin location of each spike on the linearized track
             % Find the x and y position of every spike 
@@ -296,11 +298,13 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                cw_pos{count_cw} = pos_bins{iTrial}; 
                cw_spike_bins{count_cw} = spike_bins; 
                cw_spikes = [cw_spikes; trialSpikes];
+               cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
             elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
                ccw_pos{count_ccw} = pos_bins{iTrial}; 
                ccw_spike_bins{count_ccw} = spike_bins; 
                ccw_spikes = [ccw_spikes; trialSpikes];
+               ccw_trials(count_ccw) = iTrial; 
                count_ccw = count_ccw + 1;
             end
         end
@@ -311,6 +315,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         output.spikes_binned.ccw = ccw_spike_bins; 
         output.spikes.cw = cw_spikes; 
         output.spikes.ccw = ccw_spikes;
-        
+        output.trialNumber.cw = cw_trials; 
+        output.trialNumber.ccw = ccw_trials; 
+
     end
 end
