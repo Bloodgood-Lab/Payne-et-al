@@ -6,7 +6,7 @@ function data = calculateRateMap_v1_20240718(data, settings)
     % Inputs:
     %   1) data: the matlab structure where the spikes (binned into 4cm
     %      bins and separated into trials/direction) are stored
-    %   2) settings: the matlab settings file where the ______ thresholds 
+    %   2) settings: the matlab settings file where the rate map thresholds 
     %      are stored
     
     % Outputs:
@@ -21,32 +21,32 @@ function data = calculateRateMap_v1_20240718(data, settings)
     %   3) Ask the user if they want to save the newly generated data
     
     nBins = settings.rateMaps.trackSize / settings.rateMaps.binSize;
-    for iGenotype = 1:length(fieldnames(data));
+    for iGenotype = 1%:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
+        for iAnimal = 1%:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1%:n;
                     %% Step 1: Get the rate maps
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     for iDir = 1:2;
                         % Assign binned positions and spikes
                         if iDir == 1; 
-                            posBinned = genotypeData{iAnimal}(iCluster).binnedPosByTrial.cw;
-                            spikesBinned = genotypeData{iAnimal}(iCluster).binnedSpikesByTrial.cw;
+                            posBinned = genotypeData{iAnimal}(iCluster).posBins.cw; 
+                            spikesBinned = genotypeData{iAnimal}(iCluster).spikePosBins.cw;
                         elseif iDir == 2; 
-                            posBinned = genotypeData{iAnimal}(iCluster).binnedPosByTrial.ccw;
-                            spikesBinned = genotypeData{iAnimal}(iCluster).binnedSpikesByTrial.ccw;
+                            posBinned = genotypeData{iAnimal}(iCluster).posBins.ccw;
+                            spikesBinned = genotypeData{iAnimal}(iCluster).spikePosBins.ccw;
                         end
                         map = []; timeMap = []; 
                         for iTrials = 1:length(spikesBinned); 
                             [map(iTrials,:), timeMap(iTrials,:), spikeMap(iTrials,:)] = calculateLinearizedRateMap(posBinned{iTrials}, spikesBinned{iTrials}, nBins);
                         end
                         % Shift the map so that the reward zone is at the end of the track
-                        map = circshift(map, -2, 2);
+                        %map = circshift(map, -2, 2);
                         % Multiple the map by the sampling rate to get
                         % spikes per second
                         map = map * settings.velocity.samplingRate; 

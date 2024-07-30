@@ -2,7 +2,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
     % Gets the spike times that occur at high velocities and appends that
     % to the data structure
     % Written by Anja Payne
-    % Last Modified: 07/25/2024
+    % Last Modified: 07/30/2024
 
     % Inputs:
     %   1) data: the matlab structure where the spike times are stored
@@ -22,15 +22,15 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
     
     stepSize = settings.velocity.samplingRate * settings.velocity.timeToAverage; % step size is determined by number of frames per second and the time to average over
     directoryPath = '';
-    for iGenotype = 1%:length(fieldnames(data));
+    for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1%:length(genotypeData); 
+        for iAnimal = 1:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:2%:n; 
+                for iCluster = 1:n; 
                     %% Step 1: Get the velocity
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     newDirectoryPath = genotypeData{iAnimal}(iCluster).directory{1};
@@ -85,12 +85,10 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                     % Append to data structure
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPosByTrial.cw = binnedSpikesByDirection.pos.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedPosByTrial.ccw = binnedSpikesByDirection.pos.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikesByTrial.cw = binnedSpikesByDirection.spikes_binned.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).binnedSpikesByTrial.ccw = binnedSpikesByDirection.spikes_binned.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByDir.cw = binnedSpikesByDirection.spikes.cw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikesByDir.ccw = binnedSpikesByDirection.spikes.ccw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.cw = binnedSpikesByDirection.posBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.ccw = binnedSpikesByDirection.posBins.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
                     
                 end
             end
@@ -255,66 +253,80 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         %   3) input.y = y-position
         %   4) input.t = position timepoints
         % Outputs:
-        %   1) Find the bin location of each spike on the linearized track
-        %   2) Find the bin location of each time point
-        %   3) Allocate the data into cw and ccw
+        %   1) output.posBins: the binned position value for every
+        %      position, dimensions will match the position dimensions from 
+        %      the video 
+        %   2) output.spikePosBins: the binned position for every spike,
+        %      dimensions will match the number of spikes
+        %   3) output.trialNumber: the corresponding trial numbers
         
         sTrials = input.spikes;
         xTrials = input.x;
         yTrials = input.y;
         tTrials = input.t;
         
-        count_cw = 1; count_ccw = 1; pos_bins = {}; 
-        cw_pos = {}; ccw_pos = {}; cw_spike_bins = {}; ccw_spike_bins = {}; 
+        count_cw = 1; count_ccw = 1; 
+        cw_posBins = {}; ccw_posBins = {}; cw_spikePosBins = {}; ccw_spikePosBins = {}; 
         cw_spikes = []; ccw_spikes = []; cw_trials = []; ccw_trials = []; 
         for iTrial = 1:length(xTrials); 
-            % Step 1: Find the bin location of each spike on the linearized track
-            % Find the x and y position of every spike 
-            [~, tSpike] = intersect(round(tTrials{iTrial}), sTrials{iTrial});
-            xSpike = xTrials{iTrial}(tSpike);
-            ySpike = yTrials{iTrial}(tSpike); 
-            % Find the positions that are non NaN            
-            pts = isfinite(xSpike(:)) & isfinite(ySpike(:)) & ~(xSpike(:)==0 & ySpike(:)==0); 
-            trialSpikes = sTrials{iTrial}(pts); 
-            pts_angle = atan2(-xSpike(pts), ySpike(pts));
-            numberBins = 264/bins; 
-            [~,~,spike_bins] = histcounts(pts_angle, linspace(-pi, pi, numberBins)); 
             
-            % Step 2: Find the bin location of each time point
+            % Define all points that are not equal to zero or to NaN
+            pts = isfinite(xTrials{iTrial}(:)) & isfinite(yTrials{iTrial}(:)) & ~(xTrials{iTrial}(:)==0 & yTrials{iTrial}(:)==0);
+            
+            % Calculate the angle such that the bottom of the map (where the reward
+            % is) is -pi and the position increases as the animal moves
+            % counter-clockwise. 
+            % If you were plotting x by y to show the animal's two dimensional
+            % trajectory then plotting y by -x would give you a map that is rotated
+            % -90 degrees such that the start point is now on the left instead of
+            % at the bottom. This will map onto the unit circle such that the map 
+            % will go from -pi to pi. So for atan2, y should be -x{iTrials} and x 
+            % should be y{iTrials}. 
+            pts_angle = atan2(-xTrials{iTrial}(pts), yTrials{iTrial}(pts)); 
+
+            % Bin the angular positions into 4cm bins
+            numberBins = 264/bins; 
+            [~, ~, posBins{iTrial}] = histcounts(pts_angle, linspace(-pi, pi, numberBins)); 
+            
+            % Find the x and y position of every spike 
+            [~, spike_ind] = intersect(round(tTrials{iTrial}), sTrials{iTrial});
+            % Create an array that is the length of the time array where each spike
+            % point is denoted as 1 and the rest is 0. 
+            spike_array = zeros(1, length(tTrials{iTrial}));
+            spike_array(spike_ind) = 1; 
+            % Only keep the values that are finite (not NaN or 0)
+            spike_logical = spike_array(pts);
+            % For each spike, find the position time array index
+            spike_pts{iTrial} = find(spike_logical == 1);
+            
+
             % Find the bin associated with each point (10 msec) of time
             pts_pos = isfinite(xTrials{iTrial}) & isfinite(yTrials{iTrial}) & ~(xTrials{iTrial}==0 & yTrials{iTrial} == 0); 
             pts_pos_angle = atan2(-xTrials{iTrial}(pts_pos), yTrials{iTrial}(pts_pos));
             [~,~,pos_bins_temp] = histcounts(pts_pos_angle, linspace(-pi, pi, numberBins)); 
-            % Subsample the position information so that each bin is 10 msec
-            pos_bins{iTrial} = pos_bins_temp(1:160:end); 
             
-            % Step 3: Save the data into the two directions
             % Split position_bin into the two directions
             % Check the position on the middle part of the track to see if
             % the animal is running clockwise or counter-clockwise
-            testArray = pos_bins{iTrial}(pos_bins{iTrial} > (0.25*numberBins) & pos_bins{iTrial} < (0.75*numberBins));
+            testArray = posBins{iTrial}(posBins{iTrial} > (0.25*numberBins) & posBins{iTrial} < (0.75*numberBins));
             tempSum = testArray(end) - testArray(1);                                                               
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
-               cw_pos{count_cw} = pos_bins{iTrial}; 
-               cw_spike_bins{count_cw} = spike_bins; 
-               cw_spikes = [cw_spikes; trialSpikes];
+               cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pts{iTrial}); 
+               cw_posBins{count_cw} = posBins{iTrial}; 
                cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
             elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
-               ccw_pos{count_ccw} = pos_bins{iTrial}; 
-               ccw_spike_bins{count_ccw} = spike_bins; 
-               ccw_spikes = [ccw_spikes; trialSpikes];
+               ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pts{iTrial}); 
+               ccw_posBins{count_ccw} = posBins{iTrial}; 
                ccw_trials(count_ccw) = iTrial; 
                count_ccw = count_ccw + 1;
             end
         end
         
-        output.pos.cw = cw_pos; 
-        output.pos.ccw = ccw_pos; 
-        output.spikes_binned.cw = cw_spike_bins; 
-        output.spikes_binned.ccw = ccw_spike_bins; 
-        output.spikes.cw = cw_spikes; 
-        output.spikes.ccw = ccw_spikes;
+        output.posBins.cw = cw_posBins; 
+        output.posBins.ccw = ccw_posBins; 
+        output.spikePosBins.cw = cw_spikePosBins; 
+        output.spikePosBins.ccw = ccw_spikePosBins; 
         output.trialNumber.cw = cw_trials; 
         output.trialNumber.ccw = ccw_trials; 
 
