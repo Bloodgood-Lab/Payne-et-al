@@ -55,11 +55,13 @@ function data = calculateRateMap_v1_20240718(data, settings)
                         if iDir == 1; 
                             map = fliplr(map); % so that running proceeds left to right
                             timeMap = fliplr(timeMap); 
-                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.cw = map;
-                            data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.cw = timeMap;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.rateMap.cw = map;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.timeMap.cw = timeMap;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.trialAverageRates.cw = nanmean(map,1);
                         elseif iDir == 2; 
-                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.ccw = map;
-                            data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.ccw = timeMap;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.rateMap.ccw = map;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.timeMap.ccw = timeMap;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.trialAverageRates.ccw = nanmean(map,1);
                         end
                     end
                 end
