@@ -53,11 +53,11 @@ function data = calculateRateMap_v1_20240718(data, settings)
                         
                         % Append to data structure
                         if iDir == 1; 
+                            map = fliplr(map); % so that running proceeds left to right
+                            timeMap = fliplr(timeMap); 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.cw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.cw = timeMap;
                         elseif iDir == 2; 
-                            map = fliplr(map); % so that running proceeds left to right
-                            timeMap = fliplr(timeMap); 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.ccw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.ccw = timeMap;
                         end
