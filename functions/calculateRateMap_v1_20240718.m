@@ -21,25 +21,25 @@ function data = calculateRateMap_v1_20240718(data, settings)
     %   3) Ask the user if they want to save the newly generated data
     
     nBins = settings.rateMaps.trackSize / settings.rateMaps.binSize;
-    for iGenotype = 1%:length(fieldnames(data));
+    for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1%:length(genotypeData); 
+        for iAnimal = 1:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1%:n;
+                for iCluster = 1:n;
                     %% Step 1: Get the rate maps
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     for iDir = 1:2;
                         % Assign binned positions and spikes
                         if iDir == 1; 
-                            posBinned = data.WT{iAnimal}(iCluster).binnedPosByTrial.cw;
-                            spikesBinned = data.WT{iAnimal}(iCluster).binnedSpikesByTrial.cw;
+                            posBinned = genotypeData{iAnimal}(iCluster).binnedPosByTrial.cw;
+                            spikesBinned = genotypeData{iAnimal}(iCluster).binnedSpikesByTrial.cw;
                         elseif iDir == 2; 
-                            posBinned = data.WT{iAnimal}(iCluster).binnedPosByTrial.ccw;
-                            spikesBinned = data.WT{iAnimal}(iCluster).binnedSpikesByTrial.ccw;
+                            posBinned = genotypeData{iAnimal}(iCluster).binnedPosByTrial.ccw;
+                            spikesBinned = genotypeData{iAnimal}(iCluster).binnedSpikesByTrial.ccw;
                         end
                         map = []; timeMap = []; 
                         for iTrials = 1:length(spikesBinned); 
@@ -56,6 +56,8 @@ function data = calculateRateMap_v1_20240718(data, settings)
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.cw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.cw = timeMap;
                         elseif iDir == 2; 
+                            map = fliplr(map); % so that running proceeds left to right
+                            timeMap = fliplr(timeMap); 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.ccw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).timeMap.ccw = timeMap;
                         end
