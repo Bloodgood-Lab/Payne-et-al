@@ -1,4 +1,4 @@
-function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
+function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, pathway)
     % Gets the spike times that occur at high velocities and appends that
     % to the data structure
     % Written by Anja Payne
@@ -26,6 +26,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
         for iAnimal = 1:length(genotypeData); 
+            tempAnimalStruct = struct(); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
@@ -38,6 +39,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                         % The velocity for this session has already been
                         % calculated, do nothing
                     elseif strcmp(directoryPath, newDirectoryPath) == 0;
+                        clear x_pos_cm y_pos_cm t_clipped; 
+                        
                         directoryPath = newDirectoryPath;
 
                         % Load the position data for that session
@@ -50,16 +53,19 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                         x_clipped = positionStruct.aligned_pos(clipped_indices, 2);
                         y_clipped = positionStruct.aligned_pos(clipped_indices, 1); 
                         t_clipped = positionStruct.aligned_pos_ts(clipped_indices);
+                        clear positionStruct; % clear variable to free up space
                         
                         % Center the track at coordinates 0,0 and convert
                         % to cm
-                        [x_pos_centered, y_pos_centered] = centerBox(x_clipped, y_clipped);
+                        [x_pos_centered, y_pos_centered] = centerBox(x_clipped, y_clipped); 
+                        clear x_clipped y_clipped; % clear variables to free up space
                         widthConversionFactor = settings.rateMaps.trackWidth/(max(x_pos_centered) - min(x_pos_centered)); 
                         lengthConversionFactor = settings.rateMaps.trackLength/(max(y_pos_centered) - min(y_pos_centered)); 
                         x_pos_cm = x_pos_centered*widthConversionFactor;
                         y_pos_cm = y_pos_centered*lengthConversionFactor;
+                        clear x_pos_centered y_pos_centered; % clear variables to free up space; 
                         
-                        % Get the velocity and identiy high-velocity times
+                        % Get the velocity and identify high-velocity times
                         velocity = getVelocity(x_pos_cm, y_pos_cm, stepSize); 
                         indxHighVelocity = velocity > settings.velocity.threshold; 
                         timeHighVelocity = t_clipped(indxHighVelocity == 1);
@@ -71,8 +77,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                     inter_data = intersect(round(cellSpikeTimes), round(timeHighVelocity)); 
                     inter_ind = find(ismember(round(cellSpikeTimes), inter_data)); 
                     highVelocityData.spikes = cellSpikeTimes(inter_ind);
-                    highVelocityData.x = x_pos_cm;
-                    highVelocityData.y = y_pos_cm;
+                    highVelocityData.x = x_pos_cm; 
+                    highVelocityData.y = y_pos_cm; 
                     highVelocityData.t = t_clipped; 
                     
                     %% Step 3: Split the spikes into trials
@@ -82,18 +88,46 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings)
                     bins = settings.rateMaps.binSize; 
                     binnedSpikesByDirection = splitCWandCCWandBinSpikes(splitByTrialsData, bins);
 
-                    % Append to data structure
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.cw = binnedSpikesByDirection.posBins.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.ccw = binnedSpikesByDirection.posBins.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
-                    
+                    % Save into a temporary structure for each animal
+                    tempAnimalStruct(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
+                    tempAnimalStruct(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw;
+                    tempAnimalStruct(iCluster).posBins.cw = binnedSpikesByDirection.posBins.cw;
+                    tempAnimalStruct(iCluster).posBins.ccw = binnedSpikesByDirection.posBins.ccw; 
+                    tempAnimalStruct(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
+                    tempAnimalStruct(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
                 end
+            end
+            % Save temporary animal structure
+            save([pathway, '\temp_', genotypes{iGenotype}, 'animal', num2str(iAnimal)], 'tempAnimalStruct'); 
+        end
+    end
+    % To ease up on memory, clear all the variables then load and append to
+    % the main structure
+    clear binnedSpikesByDirection splitByTrialsData; 
+    for iGenotype = 1:length(fieldnames(data));
+        genotypeData = data.(genotypes{iGenotype}); 
+        for iAnimal = 1:length(genotypeData); 
+            if isempty(genotypeData{iAnimal}) == 1; 
+                continue
+            else
+                % Load the temp file for that animal
+                load([pathway, '\temp_', num2str(genotypes{iGenotype}), 'animal', num2str(iAnimal)]);
+                [~,n] = size(genotypeData{iAnimal});
+                for iCluster = 1:n; 
+                    % Append the relevant data to the main data structure
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = tempAnimalStruct(iCluster).trials.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = tempAnimalStruct(iCluster).trials.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.cw = tempAnimalStruct(iCluster).posBins.cw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.ccw = tempAnimalStruct(iCluster).posBins.ccw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = tempAnimalStruct(iCluster).spikePosBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = tempAnimalStruct(iCluster).spikePosBins.ccw; 
+                end
+                % Delete the old file
+                delete([pathway, '\temp_', num2str(genotypes{iGenotype}), 'animal', num2str(iAnimal), '.mat']);
             end
         end
     end
+     
     
     
     
