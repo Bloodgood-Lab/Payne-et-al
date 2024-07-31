@@ -4,9 +4,10 @@
 % Last modified: 07/29/2024
 
 % Issues to resolve/currently working on:
-%   - I don't understand what binnedSpikes is, does it match the old
-%   version? It is actually the index for the corresponding position. 
-%   - the new rate maps don't match the old rate maps
+%   - I think the settings should be in the main data structure instead of
+%     a separate file
+%   - i feel like the processed data should be in folders... maybe each
+%     folder name should have the last save date appended?
 %   - step 9: split into high and low firing rate cells
 
 % Steps:
@@ -86,7 +87,7 @@ filePaths = data;
 % Outputs: 
 spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
 
-%% Step 5: Exclude spikes that occur during low velocity (takes ~50 min)
+%% Step 5: Exclude spikes that occur during low velocity (takes ~55 min)
 clear;clc;tic;
 
 % Settings: 
@@ -107,9 +108,9 @@ load([filePath{1}, '\', loadFileName]);
 spikeTimes = data;
 
 % Outputs: 
-binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, settings); toc
+binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, settings, filePath{1}); toc
 
-%% Step 6: Get the linearized rate maps (takes seconds)
+%% Step 6: Get the linearized rate maps (takes ~2 min)
 clear;clc;tic;
 
 % Settings: 

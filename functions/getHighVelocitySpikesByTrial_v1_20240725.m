@@ -1,4 +1,4 @@
-function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, pathway)
+function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePath)
     % Gets the spike times that occur at high velocities and appends that
     % to the data structure
     % Written by Anja Payne
@@ -88,48 +88,29 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, pathway
                     bins = settings.rateMaps.binSize; 
                     binnedSpikesByDirection = splitCWandCCWandBinSpikes(splitByTrialsData, bins);
 
-                    % Save into a temporary structure for each animal
-                    tempAnimalStruct(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
-                    tempAnimalStruct(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw;
-                    tempAnimalStruct(iCluster).posBins.cw = binnedSpikesByDirection.posBins.cw;
-                    tempAnimalStruct(iCluster).posBins.ccw = binnedSpikesByDirection.posBins.ccw; 
-                    tempAnimalStruct(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
-                    tempAnimalStruct(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
+                    % Append the trials and the binned spikes
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
+
+                    % Since the binned positions are so large, save these
+                    % into a separate folder and append the filepath  
+                    saveFolder = [filePath, '\binnedPositions'];
+                    if ~exist(saveFolder, 'dir')
+                        % Create the folder if it does not exist
+                        mkdir(saveFolder);
+                    end
+                    binnedPosition.cw = binnedSpikesByDirection.posBins.cw;
+                    binnedPosition.ccw = binnedSpikesByDirection.posBins.ccw;
+                    saveFile = [saveFolder, '\', genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', num2str(iCluster), '_binnedPos'];
+                    save(saveFile, 'binnedPosition'); 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBinFile = saveFile; 
+                    
                 end
-            end
-            % Save temporary animal structure
-            save([pathway, '\temp_', genotypes{iGenotype}, 'animal', num2str(iAnimal)], 'tempAnimalStruct'); 
-        end
-    end
-    % To ease up on memory, clear all the variables then load and append to
-    % the main structure
-    clear binnedSpikesByDirection splitByTrialsData; 
-    for iGenotype = 1:length(fieldnames(data));
-        genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
-            if isempty(genotypeData{iAnimal}) == 1; 
-                continue
-            else
-                % Load the temp file for that animal
-                load([pathway, '\temp_', num2str(genotypes{iGenotype}), 'animal', num2str(iAnimal)]);
-                [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:n; 
-                    % Append the relevant data to the main data structure
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = tempAnimalStruct(iCluster).trials.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = tempAnimalStruct(iCluster).trials.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.cw = tempAnimalStruct(iCluster).posBins.cw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBins.ccw = tempAnimalStruct(iCluster).posBins.ccw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = tempAnimalStruct(iCluster).spikePosBins.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = tempAnimalStruct(iCluster).spikePosBins.ccw; 
-                end
-                % Delete the old file
-                delete([pathway, '\temp_', num2str(genotypes{iGenotype}), 'animal', num2str(iAnimal), '.mat']);
             end
         end
     end
-     
-    
-    
     
     %% Step 2: Step 2: Save
     saveFile_v1_20240718(data, settings, 'highVelocitySpikeTimes') 
