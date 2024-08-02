@@ -2,7 +2,7 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase)
     % Given user-defined folder and base file name, get the most recent
     % version
     % Written by Anja Payne
-    % Last Modified: 07/23/2024
+    % Last Modified: 07/31/2024
 
     % Inputs:
     %   1) fileNameBase: file base name
@@ -21,14 +21,15 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase)
     %      folder
     
     %% Step 1: Get the folder from the user
-    filePath{1} = uigetdir();
+    userSelectedFolder = uigetdir();
+    filePath{1} = [userSelectedFolder, '\', fileNameBase];
     
     %% Step 2: Find the most recent file with the specified base name 
     currentFiles = dir(filePath{1});
     currentFiles = currentFiles(~ismember({currentFiles.name}, {'.', '..'}));
     [m, ~] = size(currentFiles);
     if m == 0; 
-    	filePath{2} = '01'; 
+    	filePath{2} = '00'; 
         filePath{3} = date; 
     elseif m > 0;
         allVersions = []; allAppended = {};
