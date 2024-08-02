@@ -1,7 +1,7 @@
 function data = getSpatialMetrics_v1_20240724(data, settings)
     % Gets the spatial metrics from the trial-averaged rate maps
     % Written by Anja Payne
-    % Last Modified: 07/24/2024
+    % Last Modified: 07/30/2024
 
     % Inputs:
     %   1) data: the matlab structure where the trial-averaged rate
@@ -15,40 +15,65 @@ function data = getSpatialMetrics_v1_20240724(data, settings)
 
     % Steps:
     %   1) Loop through genotypes, animals, and cells and get the barcode,
-    %      average size, and number of place fields
-    %   2) Ask the user if they want to save the newly generated data
+    %      average size, number of place fields, mean firing rate, and max
+    %      firing rate. 
+    %   2) Get the max and mean firing rate for each cell
+    %   3) Get the spatial information, sparsity, and selectivity
+    %   4) Ask the user if they want to save the newly generated data
     
     
     %% Step 1: Get the barcode, average size, and number of place fields
-    thresholds(1) = settings.rateMap.lowThresh; 
-    thresholds(2) = settings.rateMap.highThresh;
+    thresholds(1) = settings.rateMaps.lowThresh; 
+    thresholds(2) = settings.rateMaps.highThresh;
     for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
-        genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
-            if isempty(genotypeData{iAnimal}) == 1; 
-                continue
-            else
-                for iCluster = 1:length(genotypeData{iAnimal}.rateMaps);
-                    % Direction 1
-                    map = genotypeData{iAnimal}.rateMaps{iCluster}.dir1;
-                    [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
-                    data.(genotypes{iGenotype}){iAnimal}.PFsize{iCluster}.dir1 = PFsize;
-                    data.(genotypes{iGenotype}){iAnimal}.PFnumber{iCluster}.dir1 = PFnumber;
-                    data.(genotypes{iGenotype}){iAnimal}.barcode{iCluster}.dir1 = barcode;
-                    
-                    % Direction 2
-                    map = genotypeData{iAnimal}.rateMaps{iCluster}.dir2;
-                    [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
-                    data.(genotypes{iGenotype}){iAnimal}.PFsize{iCluster}.dir2 = PFsize;
-                    data.(genotypes{iGenotype}){iAnimal}.PFnumber{iCluster}.dir2 = PFnumber;
-                    data.(genotypes{iGenotype}){iAnimal}.barcode{iCluster}.dir2 = barcode;
+        genotypeData = data.(genotypes{iGenotype});
+        for iFR = 1:length(fieldnames(genotypeData)); 
+            FRoptions = fieldnames(genotypeData); 
+            FRdata = genotypeData.(FRoptions{iFR}); 
+            for iAnimal = 1:length(FRdata); 
+                if isempty(FRdata{iAnimal}) == 1; 
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            for iDir = 1:2; 
+                                if iDir == 1; 
+                                    % Clockwise; if empty, skip
+                                    if isfield(FRdata{iAnimal}(iCluster).metaData.directory, 'cw') == 0; 
+                                        continue
+                                    else
+                                        map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.cw;
+                                        [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.cw = PFsize;
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.cw = PFnumber;
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.cw = barcode;
+                                    end
+                                elseif iDir == 2; 
+                                    % Counter-clockwise
+                                    if isfield(FRdata{iAnimal}(iCluster).metaData.directory, 'ccw') == 0; 
+                                        continue
+                                    else
+                                        map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.ccw;
+                                        [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.ccw = PFsize;
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.ccw = PFnumber;
+                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.ccw = barcode;
+                                    end
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
     end
     
-    %% Step 2: 
+    %% Step 2: Save
     saveFile_v1_20240718(data, settings, 'spatialMetrics') 
 
     

@@ -20,8 +20,8 @@
 %   6) Get the rate maps [done]
 %   7) Using firing rates, divide data into high-firing (putative place
 %      cells) and low-firing [done]
-
 %   8) Get spatial metrics and field barcode [done]
+
 %   9) Get the in-field spikes
 %   10) Additional rate map analysis on the high-firing and low-firing and
 %       in-field firing
@@ -139,41 +139,34 @@ rateMapSettings.firingRates.maxThresh = 1;
 % Outputs:
 outputData = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings); toc
 
-
-%% Step 7: Get spatial metrics and associated barcode (takes seconds)
+%% Step 8: Get spatial metrics and associated barcode (takes seconds)
 clear;clc;tic;
 
 % Inputs:
-fileNameBase = 'rateMaps';
+fileNameBase = 'rateMapsByFiringRate';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
-rateMapStructure = data; rateMapSettings = settings; 
+rateMapByFRStructure = data; rateMapByFRSettings = settings; 
 
 % Settings: 
-rateMapSettings.rateMaps.lowThresh = 0.1; 
-rateMapSettings.rateMaps.highThresh = 0.5; 
+rateMapByFRSettings.rateMaps.lowThresh = 0.1;  % fields will be counted as contiguous bins above 10% of max
+rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin that is above 50% of the max
 
 % Outputs:
-spatialMetrics = getSpatialMetrics_v1_20240724(rateMapStructure, rateMapSettings); toc
-
-
-
-%% Step 8: (Placeholder for stability stuff)
+spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings); toc
     
-%% Step: Get the in-field spikes for each field
+%% Step 9: Get the in-field spikes for each field
 clear;clc;tic;
 
-% Settings: 
-fileNameBase = 'highVelocitySpikeTimes';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-
 % Inputs: 
+fileNameBase = 'spatialMetrics';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
-binnedSpikes = data;
+binnedSpikes = data; binnedSpikeSettings = settings;
+
+% Settings: 
 
 % Outputs: 
 
@@ -191,28 +184,46 @@ binnedSpikes = data;
 % elseif length(ccw_pos) > length(cw_pos); 
 %     pos_logical{iAnimal}{iCluster} = zeros(length(ccw_pos),2);
 % end
-for iDir = 1:2; 
-    %allSpikes{iAnimal}{iCluster}{iDir} = {}; 
-    for iField = 1:max(barcode{iAnimal}{iCluster, iDir}); 
-        iBinField = find(barcode{iAnimal}{iCluster, iDir} == iField); 
-        if iDir == 1; 
-            % Determine which positions occur in the 'in-field' bin
-            binIndex_pos = ismember(cw_pos, iBinField); 
-            % Determine which spikes occur in the 'in-field' bin
-            binIndex_spikes = ismember(cw_spike_bins, iBinField); 
-            allSpikes{iAnimal}{iCluster}(1:length(cw_spikes),iDir) = cw_spikes;                            
-        elseif iDir == 2; 
-            % Determine which positions occur in the 'in-field' bin                    
-            binIndex_pos = ismember(ccw_pos, iBinField); 
-            % Determine which spikes occur in the 'in-field' bin
-            binIndex_spikes = ismember(ccw_spike_bins, iBinField);  
-            allSpikes{iAnimal}{iCluster}(1:length(ccw_spikes),iDir) = ccw_spikes;                                                             
+    for iGenotype = 1:length(fieldnames(data));
+        genotypes = fieldnames(data); 
+        genotypeData = data.(genotypes{iGenotype}); 
+        for iAnimal = 1:length(genotypeData); 
+            if isempty(genotypeData{iAnimal}) == 1; 
+                continue
+            else
+                [~,n] = size(genotypeData{iAnimal});
+                for iCluster = 1:n;
+                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                    for iDir = 1:2; 
+                        if iDir == 1; 
+                            %allSpikes{iAnimal}{iCluster}{iDir} = {}; 
+                            barcode = 
+                            for iField = 1:max(barcode{iAnimal}{iCluster, iDir}); 
+                                iBinField = find(barcode{iAnimal}{iCluster, iDir} == iField); 
+                                if iDir == 1; 
+                                    % Determine which positions occur in the 'in-field' bin
+                                    binIndex_pos = ismember(cw_pos, iBinField); 
+                                    % Determine which spikes occur in the 'in-field' bin
+                                    binIndex_spikes = ismember(cw_spike_bins, iBinField); 
+                                    allSpikes{iAnimal}{iCluster}(1:length(cw_spikes),iDir) = cw_spikes;                            
+                                elseif iDir == 2; 
+                                    % Determine which positions occur in the 'in-field' bin                    
+                                    binIndex_pos = ismember(ccw_pos, iBinField); 
+                                    % Determine which spikes occur in the 'in-field' bin
+                                    binIndex_spikes = ismember(ccw_spike_bins, iBinField);  
+                                    allSpikes{iAnimal}{iCluster}(1:length(ccw_spikes),iDir) = ccw_spikes;                                                             
+                                end
+                                [m,~] = size(allSpikes{iAnimal}{iCluster});
+                                pos_logical{iAnimal}{iCluster}(binIndex_pos, iDir) = iField; 
+                                spike_logical{iAnimal}{iCluster}(1:m, iDir) = 0;  
+                                spike_logical{iAnimal}{iCluster}(binIndex_spikes, iDir) = iField;  
+                            end
+                        end
+                    end
+                end
+            end
         end
-        [m,~] = size(allSpikes{iAnimal}{iCluster});
-        pos_logical{iAnimal}{iCluster}(binIndex_pos, iDir) = iField; 
-        spike_logical{iAnimal}{iCluster}(1:m, iDir) = 0;  
-        spike_logical{iAnimal}{iCluster}(binIndex_spikes, iDir) = iField;  
     end
-end  
 
+%% Step 8: (Placeholder for stability stuff)
 
