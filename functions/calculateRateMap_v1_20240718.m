@@ -60,10 +60,14 @@ function data = calculateRateMap_v1_20240718(data, settings)
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.rateMap.cw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.timeMap.cw = timeMap;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.trialAverageRates.cw = nanmean(map,1);
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).firingRates.max.cw = nanmax(nanmean(map,1)); 
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).firingRates.mean.cw = nanmean(nanmean(map,1)); 
                         elseif iDir == 2; 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.rateMap.ccw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.timeMap.ccw = timeMap;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.trialAverageRates.ccw = nanmean(map,1);
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).firingRates.max.ccw = nanmax(nanmean(map,1)); 
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).firingRates.mean.ccw = nanmean(nanmean(map,1)); 
                         end
                     end
                 end
