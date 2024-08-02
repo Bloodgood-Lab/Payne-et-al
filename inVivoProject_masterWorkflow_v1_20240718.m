@@ -18,14 +18,16 @@
 %   5) Exclude spikes that occur during low velocity and format so that the
 %      spikes are split by direction and trial number [done]
 %   6) Get the rate maps [done]
-%   7) Get spatial metrics and field barcode [done]
-%   8) Placeholder for all the stability analysis
+%   7) Using firing rates, divide data into high-firing (putative place
+%      cells) and low-firing [done]
 
-%   9) Using firing rates, divide data into high-firing (putative place
-%      cells) and low-firing
-%   10) Get the in-field spikes
-%   11) Get the theta modulation
-%   12) Get the phase precession
+%   8) Get spatial metrics and field barcode [done]
+%   9) Get the in-field spikes
+%   10) Additional rate map analysis on the high-firing and low-firing and
+%       in-field firing
+%   11) Placeholder for all the stability analysis
+%   12) Get the theta modulation
+%   13) Get the phase precession
 
 % Notes about this code:
 %   - When you choose to save processed data (as prompted by the pop-up
@@ -42,8 +44,6 @@ addpath(genpath('Z:\Anja\Paper\Matlab Code'));
 %% Step 2: Read in excel files and create the main data structure
 clear;clc;
 
-% Settings: NA
-
 % Inputs:
 excelFolder = 'Z:\Anja\Data\In Vivo Data\AnimalInfo_ExcelFiles\'; 
 excelFiles = {'AP_AnimalData_Cohort13_Track', 'AP_AnimalData_Cohort14_Track'}; 
@@ -54,17 +54,15 @@ mainDataStructure = getDataStructure_v1_20240718(excelFiles, excelFolder);
 %% Step 3: Split the file paths into WT and KO
 clear;clc;
 
-% Settings: 
+% Inputs: 
 fileNameBase = 'mainDataStructure'; 
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-mainDataStructureSettings = settings; % Empty file, for now
-
-% Inputs: 
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 mainDataStructure = data;
+
+% Settings
+mainDataStructureSettings = struct(); 
 
 % Outputs: 
 filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings); 
@@ -72,17 +70,15 @@ filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSetting
 %% Step 4: Save the spike times (takes ~4 min)
 clear;clc; tic; 
 
-% Settings: 
+% Inputs: 
 fileNameBase = 'filePathsByGenotype';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-filePathSettings = settings; % Empty file, for now
-
-% Inputs: 
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
-filePaths = data;
+filePaths = data; 
+
+% Settings: 
+filePathSettings = settings;
 
 % Outputs: 
 spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
@@ -90,138 +86,81 @@ spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
 %% Step 5: Exclude spikes that occur during low velocity (takes ~55 min)
 clear;clc;tic;
 
-% Settings: 
+% Inputs: 
 fileNameBase = 'spikeTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-settings.velocity.threshold = 2; % velocity threshold = 2 cm/sec
-settings.velocity.samplingRate = 16000; % sampling rate of video recording
-settings.velocity.timeToAverage = 1; % time to average over in seconds
-settings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
-settings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
-settings.rateMaps.binSize = 4; % 4 cm bins
-
-% Inputs: 
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
-spikeTimes = data;
-
-% Outputs: 
-binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, settings, filePath{1}); toc
-
-%% Step 6: Get the linearized rate maps (takes ~2 min)
-clear;clc;tic;
+spikeTimes = data; spikeTimeSettings = settings; 
 
 % Settings: 
-fileNameBase = 'highVelocitySpikeTimes';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-settings.rateMaps.trackSize = 264; 
+spikeTimeSettings = settings;
+spikeTimeSettings.velocity.threshold = 2; % velocity threshold = 2 cm/sec
+spikeTimeSettings.velocity.samplingRate = 16000; % sampling rate of video recording
+spikeTimeSettings.velocity.timeToAverage = 1; % time to average over in seconds
+spikeTimeSettings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
+spikeTimeSettings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
+spikeTimeSettings.rateMaps.binSize = 4; % 4 cm bins
+[suppDataPath, ~, ~] = fileparts(filePath{1}); % location to store binned position files
+
+% Outputs: 
+binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, suppDataPath); toc
+
+%% Step 6: Get the linearized rate maps (takes ~3 min)
+clear;clc;tic;
 
 % Input: 
+fileNameBase = 'highVelocitySpikeTimes';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
-binnedSpikesByTrial = data;
+binnedSpikesByTrial = data; binnedSpikesByTrialSettings = settings; 
+
+% Settings: 
+binnedSpikesByTrialSettings.rateMaps.trackSize = 264; 
 
 % Output: 
-rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, settings); toc
+rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings); toc
+
+%% Step 7: Split into high-firing and low-firing cells (takes seconds)
+clear;clc;tic;
+
+% Inputs:
+fileNameBase = 'rateMaps';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
+load([filePath{1}, '\', loadFileName, '.mat']);
+rateMaps = data; rateMapSettings = settings; 
+
+% Settings: 
+rateMapSettings.firingRates.meanThresh = 0.1; 
+rateMapSettings.firingRates.maxThresh = 1; 
+
+% Outputs:
+outputData = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings); toc
+
 
 %% Step 7: Get spatial metrics and associated barcode (takes seconds)
 clear;clc;tic;
 
-% Settings: 
+% Inputs:
 fileNameBase = 'rateMaps';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-rateMapSettings = settings; 
-settings.rateMaps.lowThresh = 0.1; 
-settings.rateMaps.highThresh = 0.5; 
-
-% Inputs:
 load([filePath{1}, '\', loadFileName, '.mat']);
-rateMapStructure = data;
-
-% Outputs:
-spatialMetrics = getSpatialMetrics_v1_20240724(rateMapStructure, settings); toc
-
-%% Step 8: (Placeholder for stability stuff)
-
-%% Step 9: Split into high-firing and low-firing cells
-clear;clc;tic;
+rateMapStructure = data; rateMapSettings = settings; 
 
 % Settings: 
-fileNameBase = 'spatialMetrics';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
-load([filePath{1}, '\', loadFileName, '_settings.mat']);
-rateMapSettings = settings; 
-settings.firingRates.meanThresh = 0.1; 
-settings.firingRates.maxThresh = 1; 
+rateMapSettings.rateMaps.lowThresh = 0.1; 
+rateMapSettings.rateMaps.highThresh = 0.5; 
 
-% Inputs:
-load([filePath{1}, '\', loadFileName, '.mat']);
-spatialMetrics = data;
-%%
 % Outputs:
-    meanThresh = settings.firingRates.meanThresh;
-    maxThresh = settings.firingRates.maxThresh; 
-    for iGenotype = 1:2%:length(fieldnames(data));
-        genotypes = fieldnames(data); 
-        genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:2%:length(genotypeData); 
-            if isempty(genotypeData{iAnimal}) == 1; 
-                continue
-            else
-                [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:2%:n;
-                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                    for iDir = 1:2; 
-                        if iDir == 1; 
-                            dir = 'cw';
-                            meanFR = genotypeData{iAnimal}(iCluster).firingRates.mean.cw;
-                            maxFR = genotypeData{iAnimal}(iCluster).firingRates.max.cw;
-                            if meanFR > meanThresh || maxFR > maxThresh; 
-                                fr = 'highFiring'; 
-                            else 
-                                fr = 'lowFiring'; 
-                            end
-                        elseif iDir == 2; 
-                            dir = 'ccw';
-                            meanFR = genotypeData{iAnimal}(iCluster).firingRates.mean.ccw;
-                            maxFR = genotypeData{iAnimal}(iCluster).firingRates.max.ccw;
-                            if meanFR > meanThresh || maxFR > maxThresh; 
-                                fr = 'highFiring'; 
-                            else 
-                                fr = 'lowFiring'; 
-                            end
-                        end
-                        
-                        % Assign variables
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).metaData.directory = genotypeData{iAnimal}(iCluster).directory;
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).metaData.fileName = genotypeData{iAnimal}(iCluster).fileName;
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).metaData.dir = dir;
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spikeData.spkTimesByDir = genotypeData{iAnimal}(iCluster).spikesByDir.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spikeData.spkTimesByDir = genotypeData{iAnimal}(iCluster).spikesByDir.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.trials = genotypeData{iAnimal}(iCluster).trials.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedPos = genotypeData{iAnimal}(iCluster).binnedPosByTrial.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedSpk = genotypeData{iAnimal}(iCluster).binnedSpikesByTrial.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.rateMap = genotypeData{iAnimal}(iCluster).rateMap.rateMap.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.timeMap = genotypeData{iAnimal}(iCluster).rateMap.timeMap.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.trialAveragMap = genotypeData{iAnimal}(iCluster).rateMap.trialAverageRates.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spatialMetrics.PFsize = genotypeData{iAnimal}(iCluster).spatialMetrics.PFsize.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spatialMetrics.PFnumber = genotypeData{iAnimal}(iCluster).spatialMetrics.PFnumber.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).barcode = genotypeData{iAnimal}(iCluster).barcode.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.mean = genotypeData{iAnimal}(iCluster).firingRates.mean.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.max = genotypeData{iAnimal}(iCluster).firingRates.max.(dir);
-                    end
-                end
-            end
-        end
-    end
+spatialMetrics = getSpatialMetrics_v1_20240724(rateMapStructure, rateMapSettings); toc
 
+
+
+%% Step 8: (Placeholder for stability stuff)
+    
 %% Step: Get the in-field spikes for each field
 clear;clc;tic;
 
