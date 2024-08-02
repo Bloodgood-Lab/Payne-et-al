@@ -58,11 +58,11 @@ function outputData = splitLowAndHighFR_v01_20240802(data, settings)
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.trials.(dir) = genotypeData{iAnimal}(iCluster).trials.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedSpk.(dir) = genotypeData{iAnimal}(iCluster).spikePosBins.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedPosFile = genotypeData{iAnimal}(iCluster).posBinFile;
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.rateMap = genotypeData{iAnimal}(iCluster).rateMap.rateMap.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.timeMap = genotypeData{iAnimal}(iCluster).rateMap.timeMap.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.trialAveragMap = genotypeData{iAnimal}(iCluster).rateMap.trialAverageRates.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.mean = genotypeData{iAnimal}(iCluster).firingRates.mean.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.max = genotypeData{iAnimal}(iCluster).firingRates.max.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.rateMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.rateMap.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.timeMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.timeMap.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.trialAverageMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.trialAverageRates.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.mean.(dir) = genotypeData{iAnimal}(iCluster).firingRates.mean.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.max.(dir) = genotypeData{iAnimal}(iCluster).firingRates.max.(dir);
                     end
                 end
             end
@@ -70,6 +70,6 @@ function outputData = splitLowAndHighFR_v01_20240802(data, settings)
     end
     
     %% Step 2: Step 2: Save
-    saveFile_v1_20240718(data, settings, 'rateMapsByFiringRate') 
+    saveFile_v1_20240718(outputData, settings, 'rateMapsByFiringRate') 
     
 end
