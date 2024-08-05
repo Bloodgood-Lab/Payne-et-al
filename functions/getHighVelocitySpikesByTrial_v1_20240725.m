@@ -38,7 +38,9 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                     if strcmp(directoryPath, newDirectoryPath) == 1;
                         % The velocity for this session has already been
                         % calculated, do nothing
+                        newSession = 0; % not a new session
                     elseif strcmp(directoryPath, newDirectoryPath) == 0;
+                        newSession = 1; % it is a new session
                         clear x_pos_cm y_pos_cm t_clipped; 
                         
                         directoryPath = newDirectoryPath;
@@ -93,20 +95,29 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw; 
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTimesByTrial.cw = binnedSpikesByDirection.spikeTimes.cw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTimesByTrial.ccw = binnedSpikesByDirection.spikeTimes.ccw; 
 
                     % Since the binned positions are so large, save these
-                    % into a separate folder and append the filepath  
-                    saveFolder = [filePath, '\binnedPositions'];
-                    if ~exist(saveFolder, 'dir')
-                        % Create the folder if it does not exist
-                        mkdir(saveFolder);
+                    % into a separate folder and append the filepath 
+                    % Only do this once per session
+                    if newSession == 0;
+                        % Positions for this session were already saved
+                        data.(genotypes{iGenotype}){iAnimal}(iCluster).posBinFile = posSaveFile; 
+                    elseif newSession == 1;
+                        saveFolder = [filePath, '\binnedPositions'];
+                        if ~exist(saveFolder, 'dir')
+                            % Create the folder if it does not exist
+                            mkdir(saveFolder);
+                        end
+                        binnedPosition.cw = binnedSpikesByDirection.posBins.cw;
+                        binnedPosition.ccw = binnedSpikesByDirection.posBins.ccw;
+                        tempDirectoryPath = fileparts(newDirectoryPath); 
+                        [~, saveFolderName, ~] = fileparts(tempDirectoryPath);
+                        posSaveFile = [saveFolder, '\', saveFolderName, '_binnedPos'];
+                        save(posSaveFile, 'binnedPosition'); 
+                        data.(genotypes{iGenotype}){iAnimal}(iCluster).posBinFile = posSaveFile; 
                     end
-                    binnedPosition.cw = binnedSpikesByDirection.posBins.cw;
-                    binnedPosition.ccw = binnedSpikesByDirection.posBins.ccw;
-                    saveFile = [saveFolder, '\', genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', num2str(iCluster), '_binnedPos'];
-                    save(saveFile, 'binnedPosition'); 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).posBinFile = saveFile; 
-                    
                 end
             end
         end
@@ -326,13 +337,15 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
             testArray = posBins{iTrial}(posBins{iTrial} > (0.25*numberBins) & posBins{iTrial} < (0.75*numberBins));
             tempSum = testArray(end) - testArray(1);                                                               
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
-               cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pts{iTrial}); 
                cw_posBins{count_cw} = posBins{iTrial}; 
+               cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pts{iTrial}); 
+               cw_spikeTimes{count_cw} = sTrials{iTrial};
                cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
             elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
-               ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pts{iTrial}); 
                ccw_posBins{count_ccw} = posBins{iTrial}; 
+               ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pts{iTrial}); 
+               ccw_spikeTimes{count_ccw} = sTrials{iTrial};
                ccw_trials(count_ccw) = iTrial; 
                count_ccw = count_ccw + 1;
             end
@@ -342,6 +355,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
         output.posBins.ccw = ccw_posBins; 
         output.spikePosBins.cw = cw_spikePosBins; 
         output.spikePosBins.ccw = ccw_spikePosBins; 
+        output.spikeTimes.cw = cw_spikeTimes;
+        output.spikeTimes.ccw = ccw_spikeTimes;
         output.trialNumber.cw = cw_trials; 
         output.trialNumber.ccw = ccw_trials; 
 
