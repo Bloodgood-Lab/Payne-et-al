@@ -344,16 +344,22 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
             
             % Find the x and y position of every spike 
             [~, spike_ind] = intersect(round(tTrials{iTrial}), sTrials{iTrial});
+            xSpike = xTrials{iTrial}(spike_ind); 
+            ySpike = yTrials{iTrial}(spike_ind);
             % Create an array that is the length of the time array where each spike
             % point is denoted as 1 and the rest is 0. 
             spike_array = zeros(1, length(tTrials{iTrial}));
             spike_array(spike_ind) = 1; 
             % Only keep the values that are finite (not NaN or 0)
-            spike_logical = spike_array(pts);
+            spike_finitePts = isfinite(xSpike(:)) & isfinite(ySpike(:)) & ~(xSpike(:)==0 & ySpike(:)==0);
+            %spike_logical = spike_array(spike_finitePts)
+            spike_posLogical = spike_array(pts);
+            %include_spikes = sTrials{iTrial}(spike_logical); 
             % For each spike, find the position time array index
-            spike_pts{iTrial} = find(spike_logical == 1);
+            spike_pos_pts{iTrial} = find(spike_posLogical == 1);
+            spike_pts{iTrial} = find(spike_finitePts == 1);
+            include_spikes = sTrials{iTrial}(spike_pts{iTrial});
             
-
             % Find the bin associated with each point (10 msec) of time
             pts_pos = isfinite(xTrials{iTrial}) & isfinite(yTrials{iTrial}) & ~(xTrials{iTrial}==0 & yTrials{iTrial} == 0); 
             pts_pos_angle = atan2(-xTrials{iTrial}(pts_pos), yTrials{iTrial}(pts_pos));
@@ -366,14 +372,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
             tempSum = testArray(end) - testArray(1);                                                               
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
                cw_posBins{count_cw} = posBins{iTrial}; 
-               cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pts{iTrial}); 
-               cw_spikeTimes{count_cw} = sTrials{iTrial};
+               cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
+               cw_spikeTimes{count_cw} = include_spikes;
                cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
             elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
                ccw_posBins{count_ccw} = posBins{iTrial}; 
-               ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pts{iTrial}); 
-               ccw_spikeTimes{count_ccw} = sTrials{iTrial};
+               ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
+               ccw_spikeTimes{count_ccw} = include_spikes;
                ccw_trials(count_ccw) = iTrial; 
                count_ccw = count_ccw + 1;
             end
