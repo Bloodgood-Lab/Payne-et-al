@@ -32,12 +32,12 @@ function data = getInFieldSpikes_v1_20240805(data, settings)
                         for iDir = 1%:2;
                             if iDir == 1; 
                                 barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.cw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkPos.cw;
-                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkTimes.cw;
+                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
+                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
                             elseif iDir == 2; 
                                 barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.ccw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkPos.ccw;
-                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkTimes.ccw;
+                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
+                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
                             end
                             
                             for iField = 1:max(barcode); 

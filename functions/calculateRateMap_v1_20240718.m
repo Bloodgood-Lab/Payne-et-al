@@ -24,12 +24,12 @@ function data = calculateRateMap_v1_20240718(data, settings)
     for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
+        for iAnimal = 1:2%:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1:2%:n;
                     %% Step 1: Get the rate maps
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     % Load the position data
@@ -38,10 +38,10 @@ function data = calculateRateMap_v1_20240718(data, settings)
                         % Assign binned positions and spikes
                         if iDir == 1; 
                             posBinned = binnedPosition.cw; 
-                            spikesBinned = genotypeData{iAnimal}(iCluster).spikePosBins.cw;
+                            spikesBinned = genotypeData{iAnimal}(iCluster).highVelocityData.spikePosBins.cw;
                         elseif iDir == 2; 
                             posBinned = binnedPosition.ccw;
-                            spikesBinned = genotypeData{iAnimal}(iCluster).spikePosBins.ccw;
+                            spikesBinned = genotypeData{iAnimal}(iCluster).highVelocityData.spikePosBins.ccw;
                         end
                         map = []; timeMap = []; 
                         for iTrials = 1:length(spikesBinned); 
@@ -52,11 +52,10 @@ function data = calculateRateMap_v1_20240718(data, settings)
                         % Multiple the map by the sampling rate to get
                         % spikes per second
                         map = map * settings.velocity.samplingRate; 
+                        map = circshift(map, 1, 2); 
                         
                         % Append to data structure
                         if iDir == 1; 
-                            map = fliplr(map); % so that running proceeds left to right
-                            timeMap = fliplr(timeMap); 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.rateMap.cw = map;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.timeMap.cw = timeMap;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).rateMap.trialAverageRates.cw = nanmean(map,1);

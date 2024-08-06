@@ -24,12 +24,12 @@ function outputData = splitLowAndHighFR_v01_20240802(data, settings)
     for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:length(genotypeData); 
+        for iAnimal = 1:2%:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1:2%:n;
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     for iDir = 1:2; 
                         if iDir == 1; 
@@ -56,9 +56,11 @@ function outputData = splitLowAndHighFR_v01_20240802(data, settings)
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).metaData.directory.(dir) = genotypeData{iAnimal}(iCluster).directory;
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).metaData.fileName.(dir) = genotypeData{iAnimal}(iCluster).fileName;
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.trials.(dir) = genotypeData{iAnimal}(iCluster).trials.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkPos.(dir) = genotypeData{iAnimal}(iCluster).spikePosBins.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedSpkTimes.(dir) = genotypeData{iAnimal}(iCluster).spikeTimesByTrial.(dir);
-                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.binnedPosFile = genotypeData{iAnimal}(iCluster).posBinFile;
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.highVelocityData.binnedSpkPos.(dir) = genotypeData{iAnimal}(iCluster).highVelocityData.spikePosBins.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.highVelocityData.binnedSpkTimes.(dir) = genotypeData{iAnimal}(iCluster).highVelocityData.spikeTimesByTrial.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.(dir) = genotypeData{iAnimal}(iCluster).allVelocities.spikePosBins.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.(dir) = genotypeData{iAnimal}(iCluster).allVelocities.spikeTimesByTrial.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).binnedSpikesByTrial.highVelocity.binnedPosFile = genotypeData{iAnimal}(iCluster).posBinFile;
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.rateMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.rateMap.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.timeMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.timeMap.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.trialAverageMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.trialAverageRates.(dir);

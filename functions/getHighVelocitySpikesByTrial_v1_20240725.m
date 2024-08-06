@@ -74,29 +74,51 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                     end
 
                     %% Step 2: Get spikes that occur during running
-                    highVelocityData = struct(); 
+                    runningData = struct(); 
                     cellSpikeTimes = genotypeData{iAnimal}(iCluster).spikeTimes;
                     inter_data = intersect(round(cellSpikeTimes), round(timeHighVelocity)); 
                     inter_ind = find(ismember(round(cellSpikeTimes), inter_data)); 
-                    highVelocityData.spikes = cellSpikeTimes(inter_ind);
-                    highVelocityData.x = x_pos_cm; 
-                    highVelocityData.y = y_pos_cm; 
-                    highVelocityData.t = t_clipped; 
+                    runningData.highVelocitySpikes = cellSpikeTimes(inter_ind);
+                    runningData.allSpikes = cellSpikeTimes;
+                    runningData.x = x_pos_cm; 
+                    runningData.y = y_pos_cm; 
+                    runningData.t = t_clipped; 
                     
                     %% Step 3: Split the spikes into trials
-                    splitByTrialsData = splitFilesByTrials(highVelocityData); 
-                    
+                    splitByTrialsData = splitFilesByTrials(runningData); 
+                    % Organize one structure to include the high velocity
+                    % data and one structure to include all data
+                    splitByTrials_highVelocity.s = splitByTrialsData.highVelSpks;
+                    splitByTrials_highVelocity.x = splitByTrialsData.x;
+                    splitByTrials_highVelocity.y = splitByTrialsData.y;
+                    splitByTrials_highVelocity.t = splitByTrialsData.t;
+                    splitByTrials_allData.s = splitByTrialsData.allSpks;
+                    splitByTrials_allData.x = splitByTrialsData.x;
+                    splitByTrials_allData.y = splitByTrialsData.y;
+                    splitByTrials_allData.t = splitByTrialsData.t;  
+                    clear splitByTrialsData;
+
                     %% Step 4: Split into clockwise and counterclockwise
                     bins = settings.rateMaps.binSize; 
-                    binnedSpikesByDirection = splitCWandCCWandBinSpikes(splitByTrialsData, bins);
-
-                    % Append the trials and the binned spikes
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection.trialNumber.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection.trialNumber.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.cw = binnedSpikesByDirection.spikePosBins.cw;
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikePosBins.ccw = binnedSpikesByDirection.spikePosBins.ccw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTimesByTrial.cw = binnedSpikesByDirection.spikeTimes.cw; 
-                    data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTimesByTrial.ccw = binnedSpikesByDirection.spikeTimes.ccw; 
+                    binnedSpikesByDirection_highVelocity = splitCWandCCWandBinSpikes(splitByTrials_highVelocity, bins);
+                    binnedSpikesByDirection_allSpikes = splitCWandCCWandBinSpikes(splitByTrials_allData, bins);
+                    clear splitByTrials_highVelocity splitByTrials_allData
+                    
+                    % Append the trials
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.cw = binnedSpikesByDirection_allSpikes.trialNumber.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection_allSpikes.trialNumber.ccw; 
+                    
+                    % Append the high velocity spike times and positions
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikePosBins.cw = binnedSpikesByDirection_highVelocity.spikePosBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikePosBins.ccw = binnedSpikesByDirection_highVelocity.spikePosBins.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikeTimesByTrial.cw = binnedSpikesByDirection_highVelocity.spikeTimes.cw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikeTimesByTrial.ccw = binnedSpikesByDirection_highVelocity.spikeTimes.ccw; 
+                    
+                    % Append spike times and positions at all velocities
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikePosBins.cw = binnedSpikesByDirection_allSpikes.spikePosBins.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikePosBins.ccw = binnedSpikesByDirection_allSpikes.spikePosBins.ccw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikeTimesByTrial.cw = binnedSpikesByDirection_allSpikes.spikeTimes.cw; 
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikeTimesByTrial.ccw = binnedSpikesByDirection_allSpikes.spikeTimes.ccw; 
 
                     % Since the binned positions are so large, save these
                     % into a separate folder and append the filepath 
@@ -110,8 +132,10 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                             % Create the folder if it does not exist
                             mkdir(saveFolder);
                         end
-                        binnedPosition.cw = binnedSpikesByDirection.posBins.cw;
-                        binnedPosition.ccw = binnedSpikesByDirection.posBins.ccw;
+                        binnedPosition.cw = binnedSpikesByDirection_allSpikes.posBins.cw;
+                        binnedPosition.ccw = binnedSpikesByDirection_allSpikes.posBins.ccw;
+                        clear binnedSpikesByDirection_highVelocity binnedSpikesByDirection_allSpikes
+                        
                         tempDirectoryPath = fileparts(newDirectoryPath); 
                         [~, saveFolderName, ~] = fileparts(tempDirectoryPath);
                         posSaveFile = [saveFolder, '\', saveFolderName, '_binnedPos'];
@@ -216,7 +240,8 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
         %      matrix with the y-axis being trial number. 
 
         output = struct(); 
-        allSpikes = input.spikes;
+        highVspks = input.highVelocitySpikes;
+        allSpikes = input.allSpikes; 
         allX = input.x;
         allY = input.y; 
         allT = input.t;
@@ -260,11 +285,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                 allTrialsT{count2} = tempTrialT; 
                 tempTrialSpikes = intersect(round(allSpikes), round(tempTrialT)); 
                 allTrialsSpikes{count2} = tempTrialSpikes;
+                tempHighVelSpikes = intersect(round(highVspks), round(tempTrialT)); 
+                highVelSpikes{count2} = tempHighVelSpikes;
                 count2 = count2 + 1;
             end
         end
 
-        output.spikes = allTrialsSpikes;
+        output.allSpks = allTrialsSpikes;
+        output.highVelSpks = highVelSpikes;
         output.x = allTrialsX; 
         output.y = allTrialsY;
         output.t = allTrialsT; 
@@ -286,11 +314,11 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
         %      dimensions will match the number of spikes
         %   3) output.trialNumber: the corresponding trial numbers
         
-        sTrials = input.spikes;
+        sTrials = input.s;
         xTrials = input.x;
         yTrials = input.y;
         tTrials = input.t;
-        
+                
         count_cw = 1; count_ccw = 1; 
         cw_posBins = {}; ccw_posBins = {}; cw_spikePosBins = {}; ccw_spikePosBins = {}; 
         cw_spikes = []; ccw_spikes = []; cw_trials = []; ccw_trials = []; 
