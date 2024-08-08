@@ -41,29 +41,20 @@ function data = getSpatialMetrics_v1_20240724(data, settings)
                             continue
                         else
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                            for iDir = 1:2; 
-                                if iDir == 1; 
-                                    % Clockwise; if empty, skip
-                                    if isfield(FRdata{iAnimal}(iCluster).metaData.directory, 'cw') == 0; 
-                                        continue
-                                    else
-                                        map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.cw;
-                                        [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.cw = PFsize;
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.cw = PFnumber;
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.cw = barcode;
-                                    end
-                                elseif iDir == 2; 
-                                    % Counter-clockwise
-                                    if isfield(FRdata{iAnimal}(iCluster).metaData.directory, 'ccw') == 0; 
-                                        continue
-                                    else
-                                        map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.ccw;
-                                        [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.ccw = PFsize;
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.ccw = PFnumber;
-                                        data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.ccw = barcode;
-                                    end
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).rateMaps.rateMap);
+                            for iDir = 1:length(directions);
+                                if strcmp(directions(iDir), 'cw') == 1; 
+                                    map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.cw;
+                                    [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.cw = PFsize;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.cw = PFnumber;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.cw = barcode;
+                                elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                    map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.ccw;
+                                    [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.ccw = PFsize;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.ccw = PFnumber;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.ccw = barcode;
                                 end
                             end
                         end
