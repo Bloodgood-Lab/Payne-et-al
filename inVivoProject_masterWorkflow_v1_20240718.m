@@ -4,11 +4,9 @@
 % Last modified: 07/29/2024
 
 % Issues to resolve/currently working on:
-%   - rerun test data from step 5
-%   - step 9: infield on test data
-%   - compare our step 9 to previous step 9
-%   - rerun all data from step 5
-%   - spot check our new data to previous data
+%   - run step 12 for one or two clusters
+%   - compare test output to old analsyis
+%   - run step 12 on all data
 
 % Steps:
 %   1) Define pathway [done]
@@ -21,11 +19,10 @@
 %   7) Using firing rates, divide data into high-firing (putative place
 %      cells) and low-firing [done]
 %   8) Get spatial metrics and field barcode [done]
-
-%   9) Get the in-field spikes
+%   9) Get the in-field spikes [done]
 %   10) Additional rate map analysis on the high-firing and low-firing and
-%       in-field firing
-%   11) Placeholder for all the stability analysis
+%       in-field firing [skipping for now]
+%   11) Placeholder for all the stability analysis [skipping for now]
 %   12) Get the theta modulation
 %   13) Get the phase precession
 
@@ -97,7 +94,7 @@ spikeTimes = data; spikeTimeSettings = settings;
 spikeTimeSettings = settings;
 spikeTimeSettings.velocity.threshold = 2; % velocity threshold = 2 cm/sec
 spikeTimeSettings.velocity.samplingRate = 16000; % sampling rate of video recording
-spikeTimeSettings.velocity.timeToAverage = 1; % time to average over in seconds
+spikeTimeSettings.velocity.timeToAverage = 1; % time to average over in seconds when calculating velocity
 spikeTimeSettings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.binSize = 4; % 4 cm bins
@@ -156,7 +153,7 @@ rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin tha
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings); toc
     
-%% Step 9: Get the in-field spikes for each field
+%% Step 9: Get the in-field spikes for each field (takes seconds)
 clear;clc;tic;
 
 % Inputs: 
@@ -169,7 +166,27 @@ binnedSpikes = data; binnedSpikeSettings = settings;
 % Settings: 
 
 % Outputs: 
-inFieldSpks = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings);
+inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings); toc
 
-%% Step 8: (Placeholder for stability stuff)
+%% Step 10: Additional rate map analysis
+
+%% Step 11: Stability analysis
+
+%% Step 12: Get the theta modulation
+clear;clc;tic;
+
+% Inputs: 
+fileNameBase = 'inFieldSpkTimes';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
+
+% Settings: 
+inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
+
+% Outputs: 
+thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings); toc
+
+
 
