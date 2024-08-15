@@ -1,12 +1,11 @@
 % Master workflow to reproduce all analysis and plots included in Anja
 % Payne's in vivo paper
 % Written by Anja Payne
-% Last modified: 07/29/2024
+% Last modified: 08/15/2024
 
 % Issues to resolve/currently working on:
-%   - run step 12 for one or two clusters
-%   - compare test output to old analsyis
-%   - run step 12 on all data
+%   - Rerun from getThetaModulation so that we can also save the in-field
+%     position
 
 % Steps:
 %   1) Define pathway [done]
@@ -56,13 +55,14 @@ fileNameBase = 'mainDataStructure';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 mainDataStructure = data;
 
 % Settings
 mainDataStructureSettings = struct(); 
 
 % Outputs: 
-filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings); 
+filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings, processedDataFolder); 
 
 %% Step 4: Save the spike times (takes ~4 min)
 clear;clc; tic; 
@@ -72,13 +72,14 @@ fileNameBase = 'filePathsByGenotype';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 filePaths = data; 
 
 % Settings: 
 filePathSettings = settings;
 
 % Outputs: 
-spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
+spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings, processedDataFolder); toc
 
 %% Step 5: Exclude spikes that occur during low velocity (takes ~55 min)
 clear;clc;tic;
@@ -88,6 +89,7 @@ fileNameBase = 'spikeTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 spikeTimes = data; spikeTimeSettings = settings; 
 
 % Settings: 
@@ -98,10 +100,9 @@ spikeTimeSettings.velocity.timeToAverage = 1; % time to average over in seconds 
 spikeTimeSettings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.binSize = 4; % 4 cm bins
-[suppDataPath, ~, ~] = fileparts(filePath{1}); % location to store binned position files
 
 % Outputs: 
-binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, suppDataPath); toc
+binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, processedDataFolder); toc
 
 %% Step 6: Get the linearized rate maps (takes ~3 min)
 clear;clc;tic;
@@ -111,13 +112,14 @@ fileNameBase = 'highVelocitySpikeTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 binnedSpikesByTrial = data; binnedSpikesByTrialSettings = settings; 
 
 % Settings: 
 binnedSpikesByTrialSettings.rateMaps.trackSize = 264; 
 
 % Output: 
-rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings); toc
+rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings, processedDataFolder); toc
 
 %% Step 7: Split into high-firing and low-firing cells (takes seconds)
 clear;clc;tic;
@@ -127,6 +129,7 @@ fileNameBase = 'rateMaps';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 rateMaps = data; rateMapSettings = settings; 
 
 % Settings: 
@@ -134,7 +137,7 @@ rateMapSettings.firingRates.meanThresh = 0.1;
 rateMapSettings.firingRates.maxThresh = 1; 
 
 % Outputs:
-dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings); toc
+dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); toc
 
 %% Step 8: Get spatial metrics and associated barcode (takes seconds)
 clear;clc;tic;
@@ -144,6 +147,7 @@ fileNameBase = 'rateMapsByFiringRate';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 rateMapByFRStructure = data; rateMapByFRSettings = settings; 
 
 % Settings: 
@@ -151,7 +155,7 @@ rateMapByFRSettings.rateMaps.lowThresh = 0.1;  % fields will be counted as conti
 rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin that is above 50% of the max
 
 % Outputs:
-spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings); toc
+spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
     
 %% Step 9: Get the in-field spikes for each field (takes seconds)
 clear;clc;tic;
@@ -161,18 +165,19 @@ fileNameBase = 'spatialMetrics';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 binnedSpikes = data; binnedSpikeSettings = settings;
 
 % Settings: 
 
 % Outputs: 
-inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings); toc
+inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings, processedDataFolder); toc
 
 %% Step 10: Additional rate map analysis
 
 %% Step 11: Stability analysis
 
-%% Step 12: Get the theta modulation
+%% Step 12: Get the theta modulation (takes ~1.5 hours)
 clear;clc;tic;
 
 % Inputs: 
@@ -180,13 +185,35 @@ fileNameBase = 'inFieldSpkTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
 
 % Settings: 
 inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
 
 % Outputs: 
-thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings); toc
+thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
 
+%% Step 13: Get the phase precession
+clear;clc;tic;
 
+% Inputs: 
+fileNameBase = 'theta';
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
+thetaData = data; thetaSettings = settings;
+
+% Settings: 
+thetaSettings.phasePrecession.spatialBinThreshold = 2; 
+thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; %(Robert Schmidt, 2009, Single-Trial Place Precession in the Hippocampus)
+thetaSettings.phasePrecession.significanceThreshold = 1; 
+thetaSettings.phasePrecession.trialThreshold = 5; 
+
+% Outputs: 
+data = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+                        
+                        
+ 
 

@@ -1,4 +1,4 @@
-function data = getSpatialMetrics_v1_20240724(data, settings)
+function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
     % Gets the spatial metrics from the trial-averaged rate maps
     % Written by Anja Payne
     % Last Modified: 07/30/2024
@@ -65,7 +65,7 @@ function data = getSpatialMetrics_v1_20240724(data, settings)
     end
     
     %% Step 2: Save
-    saveFile_v1_20240718(data, settings, 'spatialMetrics') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'spatialMetrics') 
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
-function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePath)
+function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, processedDataPath)
     % Gets the spike times that occur at high velocities and appends that
     % to the data structure
     % Written by Anja Payne
@@ -127,7 +127,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
                         % Positions for this session were already saved
                         data.(genotypes{iGenotype}){iAnimal}(iCluster).posBinFile = posSaveFile; 
                     elseif newSession == 1;
-                        saveFolder = [filePath, '\binnedPositions'];
+                        saveFolder = [processedDataPath, '\binnedPositions'];
                         if ~exist(saveFolder, 'dir')
                             % Create the folder if it does not exist
                             mkdir(saveFolder);
@@ -148,7 +148,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
     end
     
     %% Step 2: Step 2: Save
-    saveFile_v1_20240718(data, settings, 'highVelocitySpikeTimes') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'highVelocitySpikeTimes') 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -369,14 +369,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, filePat
             % Check the position on the middle part of the track to see if
             % the animal is running clockwise or counter-clockwise
             testArray = posBins{iTrial}(posBins{iTrial} > (0.25*numberBins) & posBins{iTrial} < (0.75*numberBins));
-            tempSum = testArray(end) - testArray(1);                                                               
+            tempSum = testArray(end) - testArray(1);       
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
                cw_posBins{count_cw} = posBins{iTrial}; 
                cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
                cw_spikeTimes{count_cw} = include_spikes;
                cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
-            elseif tempSum > 0; % if the values are increasing the animal is running counter-clockwise
+            elseif tempSum >= 0; % if the values are increasing the animal is running counter-clockwise
                ccw_posBins{count_ccw} = posBins{iTrial}; 
                ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
                ccw_spikeTimes{count_ccw} = include_spikes;

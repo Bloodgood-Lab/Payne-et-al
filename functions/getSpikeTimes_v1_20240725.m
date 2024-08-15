@@ -1,4 +1,4 @@
-function data = getSpikeTimes_v1_20240725(data, settings)
+function data = getSpikeTimes_v1_20240725(data, settings, processedDataPath)
     % Gets the spike times and appends them to the data structure
     % Written by Anja Payne
     % Last Modified: 07/25/2024
@@ -62,4 +62,4 @@ function data = getSpikeTimes_v1_20240725(data, settings)
     end
     
     %% Step 2: Step 2: Save
-    saveFile_v1_20240718(data, settings, 'spikeTimes') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'spikeTimes') 

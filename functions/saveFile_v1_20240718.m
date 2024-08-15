@@ -1,4 +1,4 @@
-function saveFile_v1_20240718(data, settings, dataName) 
+function saveFile_v1_20240718(processedDataPath, data, settings, dataName) 
     % Given user-defined save folder, save the data 
     % Written by Anja Payne
     % Last Modified: 07/31/2024
@@ -24,18 +24,26 @@ function saveFile_v1_20240718(data, settings, dataName)
     switch saveChoice
         %% Step 2: If they say yes, have them select where
         case 'Yes'
+            % Ask the user to write a short message about the data
+            prompt = {'Please enter a commit message:'};
+            dlgTitle = 'Data Commit Message';
+            numLines = [1, 50];
+            defaultAnswer = {'No commit message entered for this data'};
+            message = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+            % Have the user select the save path and get the most recent
+            % file
             fileNameBase = dataName;
-            filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+            filePath = getMostRecentFilePath_v1_20240723(fileNameBase, processedDataPath);
             savePathName = filePath{1};
             saveVersion = str2double(filePath{2}) + 1;
             saveVersion = sprintf('%02d', saveVersion); 
             saveFile = [fileNameBase, '_v', saveVersion, '_', date];
-            %saveFolder = [savePathName, '\', dataName]
             if ~exist(savePathName, 'dir')
             	% Create the folder if it does not exist
             	mkdir(savePathName);
             end
-            save([savePathName, '\', saveFile, '.mat'], 'data', 'settings'); 
+            
+            save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'message'); 
         case 'No'
             disp('Data not saved'); 
         case 'Cancel'

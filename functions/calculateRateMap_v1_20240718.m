@@ -1,4 +1,4 @@
-function data = calculateRateMap_v1_20240718(data, settings)
+function data = calculateRateMap_v1_20240718(data, settings, processedDataPath)
     % Calculate the linearized rate maps across all trials for each cells
     % Written by Anja Payne
     % Last Modified: 07/29/2024
@@ -24,12 +24,12 @@ function data = calculateRateMap_v1_20240718(data, settings)
     for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
-        for iAnimal = 1:2%:length(genotypeData); 
+        for iAnimal = 1:length(genotypeData); 
             if isempty(genotypeData{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(genotypeData{iAnimal});
-                for iCluster = 1:2%:n;
+                for iCluster = 1:n;
                     %% Step 1: Get the rate maps
                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                     % Load the position data
@@ -75,7 +75,7 @@ function data = calculateRateMap_v1_20240718(data, settings)
     end
     
     %% Step 2: Step 2: Save
-    saveFile_v1_20240718(data, settings, 'rateMaps') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'rateMaps') 
     
 end
 
