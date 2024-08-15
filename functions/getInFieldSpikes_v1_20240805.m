@@ -1,4 +1,4 @@
-function data = getInFieldSpikes_v1_20240805(data, settings)
+function data = getInFieldSpikes_v1_20240805(data, settings, processedDataPath)
     % Gets the in-field spikes
     % Written by Anja Payne
     % Last Modified: 08/05/2024
@@ -47,17 +47,20 @@ function data = getInFieldSpikes_v1_20240805(data, settings)
                             end
 
                             for iField = 1:max(barcode);
-                                inFieldSpkTimes = {}; 
+                                inFieldSpkTimes = {}; inFieldSpkPos = {}; 
                                 inFieldIndex = find(barcode == iField); 
                                 for iTrial = 1:length(spkPos); 
                                     inFieldLogical = ismember(spkPos{iTrial}, inFieldIndex); 
-                                    inFieldSpkTimes{iTrial} = spkTimes{iTrial}(inFieldLogical); 
+                                    inFieldSpkTimes{iTrial} = spkTimes{iTrial}(inFieldLogical);
+                                    inFieldSpkPos{iTrial} = spkPos{iTrial}(inFieldLogical); 
                                 end
 
                                 if strcmp(directions(iDir), 'cw') == 1;
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkTimes.cw{iField} = inFieldSpkTimes;
+                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkPos.cw{iField} = inFieldSpkPos;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkTimes.ccw{iField} = inFieldSpkTimes;
+                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkPos.ccw{iField} = inFieldSpkPos;
                                 end
                             end
                         end
@@ -68,5 +71,5 @@ function data = getInFieldSpikes_v1_20240805(data, settings)
     end
     
     %% Step 2: Save
-    saveFile_v1_20240718(data, settings, 'inFieldSpkTimes') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'inFieldSpkTimes') 
     

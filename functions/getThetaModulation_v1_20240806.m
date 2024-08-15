@@ -1,4 +1,4 @@
-function data = getThetaModulation_v1_20240806(data, settings)
+function data = getThetaModulation_v1_20240806(data, settings, processedDataPath)
     % Gets the theta angle of spikes
     % Written by Anja Payne
     % Last Modified: 08/06/2024
@@ -45,7 +45,7 @@ function data = getThetaModulation_v1_20240806(data, settings)
                             % If the directory and tetrode are the
                             % same, the CSC for this data has already
                             % been loaded, skip it
-                        elseif strcmp(directoryPath, newDirectoryPath) == 0 && tetrode ~= newTetrode;
+                        elseif strcmp(directoryPath, newDirectoryPath) == 0 || tetrode ~= newTetrode;
                             directoryPath = newDirectoryPath; 
                             tetrode = newTetrode; 
                             csc_file = [directoryPath, '\CSC', tetrode, '.ncs'];
@@ -55,6 +55,12 @@ function data = getThetaModulation_v1_20240806(data, settings)
                             csc_timepoints_raw = linspace(min(csc_timepoints_lowSampling), max(csc_timepoints_lowSampling), length(csc_samples)); 
                             csc_timepoints = csc_timepoints_raw - min(csc_timepoints_raw); 
                             csc_sampFreq = csc_data.sampFreq(1)/16; 
+                            % Define these as inputs for the theta
+                            % modulation function and clear variables
+                            dataForPhaseLocking.LFPsamples = csc_samples;
+                            dataForPhaseLocking.LFPtimes = round(csc_timepoints);
+                            dataForPhaseLocking.samplingFreq = csc_sampFreq; 
+                            clear csc_data csc_timepoints_lowSampling csc_timepoints_raw csc_samples csc_timepoints
                         end
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
@@ -65,23 +71,21 @@ function data = getThetaModulation_v1_20240806(data, settings)
                                 spikesByDirection = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.ccw; 
                             end
 
-                            for iField = 1:length(spikesByDirection); 
+                            allTrialPhases = {}; 
+                            for iField = 1:length(spikesByDirection);  
                                 for iTrial = 1:length(spikesByDirection{iField});
-                                    spikesByTrial = spikesByDirection{iField}{iTrial}; 
+                                    spikesByTrial = spikesByDirection{iField}{iTrial};
                                     if isempty(spikesByTrial) == 0; 
-                                        % Define input data to theta
-                                        % phase locking
+                                        % Define the rest of the inputs for
+                                        % the theta modulation script
                                         dataForPhaseLocking.spikeTimes = round(spikesByTrial);
-                                        dataForPhaseLocking.LFPsamples = csc_samples;
-                                        dataForPhaseLocking.LFPtimes = round(csc_timepoints);
-                                        dataForPhaseLocking.samplingFreq = csc_sampFreq; 
                                         thetaBand = settings.theta.frequencyBand; 
                                         % Get the theta phase locking
                                         thetaData = getPhaseLocking(dataForPhaseLocking, thetaBand);
-                                        allTrialPhases{iTrial} = thetaData.allPhs;
+                                        allTrialPhases{iField}{iTrial} = thetaData.allPhs;
 
                                     elseif isempty(spikesByTrial) == 1; 
-                                        allTrialPhases{iTrial} = []; 
+                                        allTrialPhases{iField}{iTrial} = []; 
                                     end
                                 end
 
@@ -99,7 +103,7 @@ function data = getThetaModulation_v1_20240806(data, settings)
     end
     
     %% Step 2: Save
-    saveFile_v1_20240718(data, settings, 'theta') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,9 +130,9 @@ function data = getThetaModulation_v1_20240806(data, settings)
        
         % Define inputs
         tSp = inputData.spikeTimes;
-        lfp = inputData.LFPsamples;
-        lfp_ts = inputData.LFPtimes;
-        Fs = inputData.samplingFreq; 
+        lfp = inputData.LFPsamples; 
+        lfp_ts = inputData.LFPtimes; 
+        Fs = inputData.samplingFreq;
         
         Wn_theta = [band(1)/(Fs/2) band(2)/(Fs/2)]; % normalized by the nyquist frequency
         [btheta, atheta] = butter(3,Wn_theta);
