@@ -179,6 +179,7 @@ inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings
 
 %% Step 12: Get the theta modulation (takes ~1.5 hours)
 clear;clc;tic;
+display(['Estimated time to finish is ', datestr(datetime('now')+hours(1.5), 'HH:MM:SS')]); 
 
 % Inputs: 
 fileNameBase = 'inFieldSpkTimes';
@@ -194,7 +195,7 @@ inFieldSpkTimesSettings.theta.frequencyBand = [4,12];
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
 
-%% Step 13: Get the phase precession
+%% Step 13: Get the phase precession (takes ~3 min)
 clear;clc;tic;
 
 % Inputs: 
@@ -206,14 +207,15 @@ load([filePath{1}, '\', loadFileName]);
 thetaData = data; thetaSettings = settings;
 
 % Settings: 
-thetaSettings.phasePrecession.spatialBinThreshold = 2; 
-thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; %(Robert Schmidt, 2009, Single-Trial Place Precession in the Hippocampus)
-thetaSettings.phasePrecession.significanceThreshold = 1; 
-thetaSettings.phasePrecession.trialThreshold = 5; 
+thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
+thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; % (Robert Schmidt, 2009, Single-Trial Place Precession in the Hippocampus)
+thetaSettings.phasePrecession.significanceThreshold = 0.05; % maximum acceptabel significance level of line fit
+thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
+thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
 
 % Outputs: 
-data = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
-                        
-                        
+phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+                       
+    
  
 

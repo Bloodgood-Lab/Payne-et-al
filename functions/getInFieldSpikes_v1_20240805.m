@@ -38,28 +38,32 @@ function data = getInFieldSpikes_v1_20240805(data, settings, processedDataPath)
                         for iDir = 1:length(directions);
                             if strcmp(directions(iDir), 'cw') == 1; 
                                 barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.cw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
+                                binnedSpkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
+                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
                                 spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
                             elseif strcmp(directions(iDir), 'ccw') == 1; 
                                 barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.ccw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
+                                binnedSpkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
+                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
                                 spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
                             end
-
                             for iField = 1:max(barcode);
-                                inFieldSpkTimes = {}; inFieldSpkPos = {}; 
+                                inFieldLogical = []; inFieldSpkPos = {}; inFieldSpkTimes = {}; inFieldSpkPosBinned = {}; 
                                 inFieldIndex = find(barcode == iField); 
-                                for iTrial = 1:length(spkPos); 
-                                    inFieldLogical = ismember(spkPos{iTrial}, inFieldIndex); 
+                                for iTrial = 1:length(binnedSpkPos); 
+                                    inFieldLogical = ismember(binnedSpkPos{iTrial}, inFieldIndex); 
                                     inFieldSpkTimes{iTrial} = spkTimes{iTrial}(inFieldLogical);
+                                    inFieldSpkPosBinned{iTrial} = binnedSpkPos{iTrial}(inFieldLogical); 
                                     inFieldSpkPos{iTrial} = spkPos{iTrial}(inFieldLogical); 
                                 end
 
                                 if strcmp(directions(iDir), 'cw') == 1;
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkTimes.cw{iField} = inFieldSpkTimes;
+                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.cw{iField} = inFieldSpkPosBinned;
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkPos.cw{iField} = inFieldSpkPos;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkTimes.ccw{iField} = inFieldSpkTimes;
+                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.ccw{iField} = inFieldSpkPosBinned;
                                     data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).inField.inFieldSpkPos.ccw{iField} = inFieldSpkPos;
                                 end
                             end

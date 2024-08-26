@@ -1,13 +1,11 @@
 % Master workflow to reproduce all analysis and plots included in Anja
 % Payne's in vivo paper
 % Written by Anja Payne
-% Last modified: 07/29/2024
+% Last modified: 08/15/2024
 
 % Issues to resolve/currently working on:
 %   - Rerun from getThetaModulation so that we can also save the in-field
 %     position
-%   - Somehow make it so that the user doesn't have to reselect the folder
-%     that data is saved to
 
 % Steps:
 %   1) Define pathway [done]
@@ -57,13 +55,14 @@ fileNameBase = 'mainDataStructure';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 mainDataStructure = data;
 
 % Settings
 mainDataStructureSettings = struct(); 
 
 % Outputs: 
-filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings); 
+filePaths = splitWTandKO_v1_20240722(mainDataStructure, mainDataStructureSettings, processedDataFolder); 
 
 %% Step 4: Save the spike times (takes ~4 min)
 clear;clc; tic; 
@@ -73,13 +72,14 @@ fileNameBase = 'filePathsByGenotype';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 filePaths = data; 
 
 % Settings: 
 filePathSettings = settings;
 
 % Outputs: 
-spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings); toc
+spikeTimes = getSpikeTimes_v1_20240725(filePaths, filePathSettings, processedDataFolder); toc
 
 %% Step 5: Exclude spikes that occur during low velocity (takes ~55 min)
 clear;clc;tic;
@@ -89,6 +89,7 @@ fileNameBase = 'spikeTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 spikeTimes = data; spikeTimeSettings = settings; 
 
 % Settings: 
@@ -99,10 +100,9 @@ spikeTimeSettings.velocity.timeToAverage = 1; % time to average over in seconds 
 spikeTimeSettings.rateMaps.trackWidth = 52; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.trackLength = 80; % cm; used to convert from pixels to cm
 spikeTimeSettings.rateMaps.binSize = 4; % 4 cm bins
-[suppDataPath, ~, ~] = fileparts(filePath{1}); % location to store binned position files
 
 % Outputs: 
-binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, suppDataPath); toc
+binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, processedDataFolder); toc
 
 %% Step 6: Get the linearized rate maps (takes ~3 min)
 clear;clc;tic;
@@ -112,13 +112,14 @@ fileNameBase = 'highVelocitySpikeTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 binnedSpikesByTrial = data; binnedSpikesByTrialSettings = settings; 
 
 % Settings: 
 binnedSpikesByTrialSettings.rateMaps.trackSize = 264; 
 
 % Output: 
-rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings); toc
+rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings, processedDataFolder); toc
 
 %% Step 7: Split into high-firing and low-firing cells (takes seconds)
 clear;clc;tic;
@@ -128,6 +129,7 @@ fileNameBase = 'rateMaps';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 rateMaps = data; rateMapSettings = settings; 
 
 % Settings: 
@@ -135,7 +137,7 @@ rateMapSettings.firingRates.meanThresh = 0.1;
 rateMapSettings.firingRates.maxThresh = 1; 
 
 % Outputs:
-dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings); toc
+dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); toc
 
 %% Step 8: Get spatial metrics and associated barcode (takes seconds)
 clear;clc;tic;
@@ -145,6 +147,7 @@ fileNameBase = 'rateMapsByFiringRate';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 rateMapByFRStructure = data; rateMapByFRSettings = settings; 
 
 % Settings: 
@@ -152,7 +155,7 @@ rateMapByFRSettings.rateMaps.lowThresh = 0.1;  % fields will be counted as conti
 rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin that is above 50% of the max
 
 % Outputs:
-spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings); toc
+spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
     
 %% Step 9: Get the in-field spikes for each field (takes seconds)
 clear;clc;tic;
@@ -162,34 +165,38 @@ fileNameBase = 'spatialMetrics';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 binnedSpikes = data; binnedSpikeSettings = settings;
 
 % Settings: 
 
 % Outputs: 
-inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings); toc
+inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings, processedDataFolder); toc
 
 %% Step 10: Additional rate map analysis
 
 %% Step 11: Stability analysis
 
 %% Step 12: Get the theta modulation (takes ~1.5 hours)
-clear;clc;tic;
+clear;clc;tic;futureTimeStr = datestr(futureTime, 'HH:MM:SS');
 
+display(['Estimated time this code will finish is ', (datetime('now')+hours(1.5))]); 
+%%
 % Inputs: 
 fileNameBase = 'inFieldSpkTimes';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
 
 % Settings: 
 inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
 
 % Outputs: 
-thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings); toc
+thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
 
-%% Step 13: Get the phase precession
+%% Step 13: Get the phase precession (takes ~3 min)
 clear;clc;tic;
 
 % Inputs: 
@@ -197,201 +204,19 @@ fileNameBase = 'theta';
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
 thetaData = data; thetaSettings = settings;
 
 % Settings: 
 thetaSettings.phasePrecession.spatialBinThreshold = 2; 
+thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; % (Robert Schmidt, 2009, Single-Trial Place Precession in the Hippocampus)
 thetaSettings.phasePrecession.significanceThreshold = 1; 
-thetaSettings.phasePrecession.trialThreshold = 5; 
+thetaSettings.phasePrecession.trialThreshold = 5;
+thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
 
-%% Outputs: 
-%thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings); toc
-    for iGenotype = 1:length(fieldnames(data));
-        genotypes = fieldnames(data); 
-        genotypeData = data.(genotypes{iGenotype}); 
-        
-        % Run analysis for high-firing cells only
-        FRdata = genotypeData.highFiring;
-        for iAnimal = 1:3%:length(FRdata); 
-            % Skip if empty
-            if isempty(FRdata{iAnimal}) == 1; 
-                continue
-            else
-                [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1%:n;
-                    % Skip if empty
-                    if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
-                        display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
-                        continue
-                    else
-                        display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                        
-                        % Assign variables based on running direction
-                        directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                        for iDir = 1:length(directions);
-                            if strcmp(directions(iDir), 'cw') == 1; 
-                                spkPhs = FRdata{iAnimal}(iCluster).theta.phases.cw; 
-                                spkPos = FRdata{iAnimal}(iCluster).inField.inFieldSpkPos.cw; 
-                            elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                spkPhs = FRdata{iAnimal}(iCluster).theta.phases.ccw; 
-                                spkPos = FRdata{iAnimal}(iCluster).inField.inFieldSpkPos.ccw; 
-                            end
-                        end
-                        
-                        % Loop through all the fields
-                        slopeMedian = [];
-                        for iField = 1:length(spkPhs);
-                            % Loop through all the trials
-                            for iTrial = 1:length(spkPhs{iField});
-                                % If there are enough spatial bins
-                                if nanmax(spkPos{iField}{iTrial})-nanmin(spkPos{iField}{iTrial}) < thetaSettings.phasePrecession.spatialBinThreshold; 
-                                    continue; 
-                                else
-
-                                    % If there were spikes in-field that trial
-                                    if isempty(spkPhs{iField}{iTrial}) == 0; 
-
-                                        % Get the phase precession for that trial
-                                        spkPhsInput = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
-                                        spkPosInput = [spkPos{iField}{iTrial}; spkPos{iField}{iTrial}];
-                                        [cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput)); 
-                                        y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
-
-                                        % If the slope is below the significance
-                                        % threshold, save the data
-                                        if cir.pValue < thetaSettings.phasePrecession.significanceThreshold; 
-                                            trialSlope = (y1(2) - y1(1))/(max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial}));
-                                            slope{iField}(iTrial) = trialSlope;
-                                        else
-                                            slope{iField}(iTrial) = NaN; 
-                                        end
-                                    else
-                                    end
-                                end
-                            end
-                            
-                            % If there are enough trials with slopes
-                            % calculated, get the median of all slopes
-                            if sum(~isnan(slope{iField})) >= thetaSettings.phasePrecession.trialThreshold; 
-                                slopeMedian(iField) = nanmedian(slope{iField});
-                            else 
-                                slopeMedian(iField) = NaN; 
-                            end
-
-                            if strcmp(directions(iDir), 'cw') == 1;
-                                data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.cw = slope;
-                                data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.cw = slopeMedian;
-                            elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.ccw = slope;
-                                data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.ccw = slopeMedian;
-                            end
-
-                        end
-                    end
-                end
-            end
-        end
-    end
-                        
-                        
-                            %%
-                        %spkPhs = inFieldPhases{iAnimal}{iCluster}{iDir}{iField}{iTrial};
-                        %spkPos = inField_spike_positions{iAnimal}{iCluster}{iDir}{iField}{iTrial};
-                        %radiansPerCm{iAnimal}{iCluster}{iDir}{iField}(iTrial) = NaN; 
-                        %range{iAnimal}{iCluster}{iDir}{iField}(iTrial) = NaN;
-                        %onsetPhase{iAnimal}{iCluster}{iDir}{iField}(iTrial) = NaN;
-                        %if sum(sum(isempty(spkPhs))) == 1 || sum(sum(isnan(spkPos))) == 1; display('spikes outside field'); continue; end
-                        %if nanmax(spkPos) - nanmin(spkPos) < 2; display(num2str(iTrial)); end;
-                        %if nanmax(spkPos)-nanmin(spkPos) < 2; continue; end; % If there are less than 3 spatial bins
-                       if sum(sum(isempty(spkPhs))) == 0 && sum(sum(isnan(spkPos))) == 0;                   
-                           spkPhsInput = [spkPhs+pi; spkPhs+3*pi]; 
-                           spkPosInput = [spkPos; spkPos];
-                           [cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput)); 
-                           %x = [min(spkPos), max(spkPos)];
-                           x = [0, max(spkPos)-min(spkPos)];
-                           y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
-                           y2 = [cir.Phi0+(2*pi), cir.Phi0+cir.Alpha+(2*pi)];
-                           %h0 = figure(2); hold on; 
-                           %% Step 3: Get the slope of the significant phase precession lines
-                           if cir.pValue < 0.05;
-                                %display('slope calculated');
-                                slope = (y1(2) - y1(1))/(max(spkPos)-min(spkPos));
-                                %slope = lin.Alpha;
-                                radiansPerCm{iAnimal}{iCluster}{iDir}{iField}(iTrial) = slope;
-                                range{iAnimal}{iCluster}{iDir}{iField}(iTrial) = y1(2)-y1(1);
-                                onsetPhase{iAnimal}{iCluster}{iDir}{iField}(iTrial) = y1(1);
-                                % Optional: Plot
-                                %scatter(spkPosInput, (spkPhsInput/pi), 200, '.k');
-                                %h1 = figure(1); clf; hold on; 
-                                %scatter(spkPosInput-min(spkPosInput), (spkPhsInput/pi), 200, '.k');
-                                % Get the midpoint of the first bin so you
-                                % know where to start the slope
-                                %firstBin = spkPhs(find(spkPos==min(spkPos))); 
-                                %yIntercept = sum(firstBin)/length(firstBin);
-                                %yIntercept = nanmean(firstBin);
-                                % Determine your x-values
-                                xPlot = [0:max(spkPos)-min(spkPos)+1];
-                                % Determine the corresponding y-values
-                                %yPlot = slope*xPlot + yIntercept;
-                                %yPlotLinear = (xPlot*(lin.Alpha)+lin.Phi0-2*pi);
-                                yPlot1 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)-1;
-                                yPlot2 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)+1;
-                                %yPlot1 = (xPlot*(cir.Alpha/pi)+cir.Phi0/pi)-1;
-                                %yPlot2 = (xPlot*(cir.Alpha/pi)+cir.Phi0/pi)+1;
-                                %plot(xPlot, yPlot1, 'r'); %use this
-                                %plot(xPlot, yPlot2, 'r'); %use this
-                                %plot(xPlot, yPlot, 'r');
-                                %plot(xPlot, yPlotLinear, 'b');
-                                %xlabel('Position (bins)', 'FontSize', 16);
-                                %ylabel('Phase (radians)','FontSize', 16);
-                                %set(gca, 'FontSize', 16); 
-                                subFolder = ['Animal', num2str(iAnimal), '_Cell', num2str(iCluster), '_',animalInfo(iAnimal).cell_name{iCluster}, '_Dir', num2str(iDir), '_Field', num2str(iField), '\'];
-                                saveFolder = ['Z:\Anja\Data\Cells\PhasePrecession\negative5to5\perPass\examples\Round2_July2024\originalField\', subFolder]; 
-                                if ~exist(saveFolder, 'dir');
-                                    mkdir(saveFolder);
-                                end
-                                %saveas(h1, [saveFolder, animalInfo(iAnimal).cell_name{iCluster}, '_Dir', num2str(iDir), '_Field', num2str(iField), '_Trial', num2str(iTrial), '_PhasePrecessionPlots_2.tif'],'tif');
-                           end
-                       end
-                   end
-                   %saveas(h0, ['Z:\Anja\Data\Cells\PhasePrecession\negative5to5\perPass\examples\Round2_July2024\originalField\Animal', num2str(iAnimal), '_Cell', num2str(iCluster), '_spikesVsPos.tif'],'tif');
-                   %figure(2); clf; 
-                   
-                   if sum(~isnan(radiansPerCm{iAnimal}{iCluster}{iDir}{iField})) >= 5; % If there are at least 5 spikes
-                        slopeMean{iAnimal}{iCluster}{iDir}{iField} = nanmean(radiansPerCm{iAnimal}{iCluster}{iDir}{iField});
-                        slopeMedian{iAnimal}{iCluster}{iDir}{iField} = nanmedian(radiansPerCm{iAnimal}{iCluster}{iDir}{iField});
-                   else 
-                        slopeMean{iAnimal}{iCluster}{iDir}{iField} = NaN;
-                        slopeMedian{iAnimal}{iCluster}{iDir}{iField} = NaN;
-                   end
-                   
-                   % Optional: Plot histogram of the distribution of slopes
-                   %{
-                   h1 = figure(4); clf;
-                   histogram(radiansPerCm{iAnimal}{iCluster}{iDir}{iField}, 20, 'Normalization', 'probability');
-                   ylabel('Number of Trials');
-                   xlabel('Phase Precession Slopes');  
-                   set(gca,'FontSize', 16); 
-                   xlim([-pi, pi]); 
-                   saveas(h1, ['Z:\Anja\Data\Cells\PhasePrecession\negative5to5\perPass\phasePrecessionSlopesForAllPasses\Round2_July2024\Animal', num2str(iAnimal), '_Cell', num2str(iCluster), '_', animalInfo(iAnimal).cell_name{iCluster}, '_Dir_', num2str(iDir), '_SlopesOfAllPasses.tif'],'tif');
-                   %}
-                   display(['For animal ', num2str(iAnimal), ' Cluster ', num2str(iCluster), ' Direction ', num2str(iDir), ' median slope is ', num2str(nanmedian(radiansPerCm{iAnimal}{iCluster}{iDir}{iField}))]);
-                end
-           else
-               % If there's no data in the inFieldPhases, then create empty
-               % arrays to be plotted
-               radiansPerCm{iAnimal}{iCluster}{iDir}{1} = []; 
-               range{iAnimal}{iCluster}{iDir}{1} = []; 
-               onsetPhase{iAnimal}{iCluster}{iDir}{1} = []; 
-               slopeMean{iAnimal}{iCluster}{iDir}{1} = [];
-               slopeMedian{iAnimal}{iCluster}{iDir}{1} = [];
-                    end
-                end
-            end
-        end
-    end
+% Outputs: 
+phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+                       
     
-
-
-
+ 
 

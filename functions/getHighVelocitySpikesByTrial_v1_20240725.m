@@ -109,12 +109,16 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, process
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).trials.ccw = binnedSpikesByDirection_allSpikes.trialNumber.ccw; 
                     
                     % Append the high velocity spike times and positions
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.unbinnedSpkPos.cw = binnedSpikesByDirection_highVelocity.spikeUnbinnedPos.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.unbinnedSpkPos.ccw = binnedSpikesByDirection_highVelocity.spikeUnbinnedPos.ccw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikePosBins.cw = binnedSpikesByDirection_highVelocity.spikePosBins.cw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikePosBins.ccw = binnedSpikesByDirection_highVelocity.spikePosBins.ccw; 
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikeTimesByTrial.cw = binnedSpikesByDirection_highVelocity.spikeTimes.cw; 
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).highVelocityData.spikeTimesByTrial.ccw = binnedSpikesByDirection_highVelocity.spikeTimes.ccw; 
                     
                     % Append spike times and positions at all velocities
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.unbinnedSpkPos.cw = binnedSpikesByDirection_allSpikes.spikeUnbinnedPos.cw;
+                    data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.unbinnedSpkPos.ccw = binnedSpikesByDirection_allSpikes.spikeUnbinnedPos.ccw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikePosBins.cw = binnedSpikesByDirection_allSpikes.spikePosBins.cw;
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikePosBins.ccw = binnedSpikesByDirection_allSpikes.spikePosBins.ccw; 
                     data.(genotypes{iGenotype}){iAnimal}(iCluster).allVelocities.spikeTimesByTrial.cw = binnedSpikesByDirection_allSpikes.spikeTimes.cw; 
@@ -307,12 +311,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, process
         %   3) input.y = y-position
         %   4) input.t = position timepoints
         % Outputs:
-        %   1) output.posBins: the binned position value for every
+        %   1) output.spikeUnbinnedPos: the unbinned position for every
+        %      spike
+        %   2) output.posBins: the binned position value for every
         %      position, dimensions will match the position dimensions from 
         %      the video 
-        %   2) output.spikePosBins: the binned position for every spike,
+        %   3) output.spikePosBins: the binned position for every spike,
         %      dimensions will match the number of spikes
-        %   3) output.trialNumber: the corresponding trial numbers
+        %   4) output.trialNumber: the corresponding trial numbers
         
         sTrials = input.s;
         xTrials = input.x;
@@ -352,9 +358,7 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, process
             spike_array(spike_ind) = 1; 
             % Only keep the values that are finite (not NaN or 0)
             spike_finitePts = isfinite(xSpike(:)) & isfinite(ySpike(:)) & ~(xSpike(:)==0 & ySpike(:)==0);
-            %spike_logical = spike_array(spike_finitePts)
             spike_posLogical = spike_array(pts);
-            %include_spikes = sTrials{iTrial}(spike_logical); 
             % For each spike, find the position time array index
             spike_pos_pts{iTrial} = find(spike_posLogical == 1);
             spike_pts{iTrial} = find(spike_finitePts == 1);
@@ -371,12 +375,14 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, process
             testArray = posBins{iTrial}(posBins{iTrial} > (0.25*numberBins) & posBins{iTrial} < (0.75*numberBins));
             tempSum = testArray(end) - testArray(1);       
             if tempSum < 0; % if the values are decreasing the animal is running clockwise
+               cw_unbinnedSpikePos{count_cw} = rad2deg(pts_angle(spike_pos_pts{iTrial})); 
                cw_posBins{count_cw} = posBins{iTrial}; 
                cw_spikePosBins{count_cw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
                cw_spikeTimes{count_cw} = include_spikes;
                cw_trials(count_cw) = iTrial; 
                count_cw = count_cw + 1;
             elseif tempSum >= 0; % if the values are increasing the animal is running counter-clockwise
+               ccw_unbinnedSpikePos{count_ccw} = rad2deg(pts_angle(spike_pos_pts{iTrial}));
                ccw_posBins{count_ccw} = posBins{iTrial}; 
                ccw_spikePosBins{count_ccw} = posBins{iTrial}(spike_pos_pts{iTrial}); 
                ccw_spikeTimes{count_ccw} = include_spikes;
@@ -385,7 +391,9 @@ function data = getHighVelocitySpikesByTrial_v1_20240725(data, settings, process
             end
         end
         
-        output.posBins.cw = cw_posBins; 
+        output.spikeUnbinnedPos.cw = cw_unbinnedSpikePos; 
+        output.spikeUnbinnedPos.ccw = ccw_unbinnedSpikePos; 
+        output.posBins.cw = cw_posBins;
         output.posBins.ccw = ccw_posBins; 
         output.spikePosBins.cw = cw_spikePosBins; 
         output.spikePosBins.ccw = ccw_spikePosBins; 
