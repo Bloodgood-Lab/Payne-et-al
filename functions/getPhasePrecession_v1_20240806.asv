@@ -19,7 +19,9 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
     %   2) Ask the user if they want to save the newly generated data
     %   3) Run the statistics on the data and output the p-value
     
-    data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
+    data.cellData = data;
+    data = rmfield(data, 'WT');
+    data = rmfield(data, 'KO');
     %% Step 1: Get the phase precession
     for iGenotype = 1%:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
@@ -76,11 +78,7 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
 
                                             % Get the phase precession for that trial
                                             spkPhsInput = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
-                                            if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
-                                                spkPosInput = [spkPos{iField}{iTrial}; spkPos{iField}{iTrial}];
-                                            elseif strcmp(settings.phasePrecession.positionType, 'binned') == 1
-                                                spkPosInput = [binnedSpkPos{iField}{iTrial}; binnedSpkPos{iField}{iTrial}];
-                                            end
+                                            spkPosInput = [spkPos{iField}{iTrial}; spkPos{iField}{iTrial}];
                                             [cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput), settings.phasePrecession.slopeRange); 
                                             y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
 
@@ -92,16 +90,42 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
                                             else
                                                 slope{iField}(iTrial) = NaN; 
                                             end
-                                            if isempty(cir) == 0;
-                                                fitInfo(iTrial).cir = cir; fitInfo(iTrial).lin = lin;
-                                            else 
-                                                fitInfo(iTrial).cir = NaN; fitInfo(iTrial).lin = NaN;
-                                            end
-                                            
                                         else
                                             slope{iField}(iTrial) = NaN;
                                         end
                                     end
+                                    
+                                    % If user specified, plot
+                                    if strcmp(settings.phasePrecession.plot, 'yes') == 1; 
+                                        allTrialsFig = figure(1); set(allTrialsFig, 'Position', [100, 100, 1800, 800]); 
+                                        if iTrial == 1; clf(allTrialsFig); else hold on; end;
+                                        subplot(ceil(length(spkPhs{iField})/10),10,subplotCount); hold on;
+                                        spkPosPlot = (spkPosInput + 180) * 0.1778; % converts from angular position to centimeters
+                                        scatter(spkPosPlot-min(spkPosPlot), (spkPhsInput/pi), 200, '.k');
+                                        xPlot = [0:max(spkPosPlot)-min(spkPosPlot)+1];
+                                        yPlot1 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)-1;
+                                        yPlot2 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)+1;
+                                        plot(xPlot, yPlot1, 'r');
+                                        plot(xPlot, yPlot2, 'r');
+                                        subplotCount = subplotCount + 1; 
+                                        set(gca, 'FontSize', 12);
+                                        title(num2str(iTrial)); 
+                                        xlim([min(spkPosPlot), m]);
+                                        %ax = gca;  % Get current axes handle
+                                        %set(ax, 'XTick', xPlot([1,end]));  % Adjust to match the number of points
+                                        %xTickLabels = arrayfun(@num2str, spkPosPlot([1,end]), 'UniformOutput', false)
+                                        %set(ax, 'XTickLabel', xTickLabels([1,end]));  % Adjust to match the number of points
+                                    end
+                                end
+                                % If plotting, set the overall figure
+                                % settings
+                                if strcmp(settings.phasePrecession.plot, 'yes') == 1; 
+                                    han = axes('Position', [0.13 0.13 0.8 0.8], 'Visible', 'off');
+                                    han.YLabel.Visible = 'on';
+                                    ylabel(han, 'Theta Phase (radians)', 'FontSize', 20);
+                                    han = axes('Position', [0.065 0.10 0.9 0.9], 'Visible', 'off');
+                                    han.XLabel.Visible = 'on';
+                                    xlabel(han, 'Linear Position (cm)', 'FontSize', 20);
                                 end
                                 
                                 % If there are enough trials with slopes
@@ -111,14 +135,13 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
                                 else 
                                     slopeMedian(iField) = NaN; 
                                 end
+
                                 if strcmp(directions(iDir), 'cw') == 1;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.cw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.cw = slopeMedian;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.cw = fitInfo;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.ccw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.ccw = slopeMedian;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.ccw = fitInfo;
                                 end
                             end
                             
@@ -133,7 +156,7 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
     end
     
     %% Step 2: Save
-    saveFile_v1_20240718(processedDataPath, data, settings, 'phasePrecession')
+    saveFile_v1_20240718(processedDataPath, data, settings, 'phasePrecession') 
     
     
     

@@ -1,7 +1,8 @@
 function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
 % Code originally from Li Yuan in S. Leutgeb Lab
 
-    if length(SpkPhase)>= 5
+    %if length(SpkPhase)>= 5
+    if length(SpkPhase)>= 0 % moved this setting to external loops
         [Circ.Alpha,Circ.Phi0] = CircLinFit(SpkPhase,SpkPosition,SlopeRange); % Anja modified
         [Circ.Coeff,Circ.pValue] = CircularCoeff(SpkPhase,SpkPosition,Circ.Alpha,Circ.Phi0);
         r=corrcoef(SpkPosition,SpkPhase);
