@@ -1,4 +1,4 @@
-function filePath = getMostRecentFilePath_v1_20240723(fileNameBase, processedDataLocation) 
+function filePath = getMostRecentFilePath_v1_20240723(fileNameBase, message, processedDataLocation) 
     % Given user-defined folder and base file name, get the most recent
     % version
     % Written by Anja Payne
@@ -21,8 +21,8 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase, processedDat
     %      folder
     
     %% Step 1: Get the folder from the user
-    if nargin == 1 % If the pathway isn't defined, as the user to select it
-        userSelectedFolder = uigetdir();
+    if nargin < 3 % If the pathway isn't defined, as the user to select it
+        userSelectedFolder = uigetdir('C:\', message);
     else
         userSelectedFolder = processedDataLocation;
     end
