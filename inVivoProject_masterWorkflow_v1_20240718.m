@@ -219,11 +219,11 @@ thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be generated
 
 % Outputs: 
-phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+[phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 
 %%
 clc;
-plotPhasePrecession_v1_20240827(phasePrecessionData, thetaSettings, processedDataFolder)
+plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings)
 
 
 

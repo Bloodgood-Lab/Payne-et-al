@@ -1,4 +1,4 @@
-function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath)
+function [data, settings] = getPhasePrecession_v1_20240806(data, settings, processedDataPath)
     % Relies on method described in "Robert Schmidt, 2009, Single-Trial 
     % Place Precession in the Hippocampus" to get the phase precession
     % Written by Anja Payne
@@ -137,7 +137,7 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
     end
     
     %% Step 2: Save
-    saveFile_v1_20240718(processedDataPath, data, settings, 'phasePrecession')
+    settings = saveFile_v1_20240718(processedDataPath, data, settings, 'phasePrecession')
     
     
     

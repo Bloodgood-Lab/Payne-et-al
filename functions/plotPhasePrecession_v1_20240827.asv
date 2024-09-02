@@ -1,4 +1,4 @@
-function plotPhasePrecession_v1_20240827(data, settings)
+function plotPhasePrecession_v1_20240827(data, settings, processedDataPath)
     % Generates plots related to phase precession analysis
     % Written by Anja Payne
     % Last Modified: 08/28/2024
@@ -15,7 +15,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
     fileNameBase = 'phasePrecession';
     if strcmp(settings.phasePrecession.plot, 'yes') == 1;
         % Ask the user to select the folder to save figures into
-        figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save figures into');
+        filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save figures into');
 
         for iGenotype = 1%:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
@@ -91,7 +91,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                     han.XLabel.Visible = 'on';
                                     xlabel(han, 'Normalized Linear Position', 'FontSize', 20);
                                     annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
-                                        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+                                        'Data File:', 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
                                         'EdgeColor', 'none');
                                     annotation('textbox', [0.9, 0, 0.2, 0.03], 'String', ...
                                         ['Median Slope: ', num2str(slopeMedian)], 'FitBoxToText', 'on', ...
@@ -99,14 +99,11 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                     set(gcf, 'PaperUnits', 'Inches', 'PaperPositionMode', 'auto');
                     
                                     % Save the figure
-                                    figureSettings.name.geno = genotypes{iGenotype};
-                                    figureSettings.name.animal = iAnimal;
-                                    figureSettings.name.cluster = iCluster;
-                                    figureSettings.name.direction = directions{iDir};
-                                    figureSettings.appendedFolder.binary = 'yes'; 
-                                    figureSettings.appendedFolder.name = 'spikesAndSlopesForAllTrials';
+                                    figureSettings.filePath = filePath;
+                                    figureSettings.
+                                    figureSettings.folder = 'yes'; 
+                                    figureSettings.appendedFolder = 'spikesAndSlopesForAllTrials';
                                     figureSettings.fileTypes = {'fig', 'tiff'};
-                                    saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
                                     
                                 end
                             end

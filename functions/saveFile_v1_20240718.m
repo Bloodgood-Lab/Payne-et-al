@@ -1,4 +1,4 @@
-function saveFile_v1_20240718(processedDataPath, data, settings, dataName) 
+function settings = saveFile_v1_20240718(processedDataPath, data, settings, dataName) 
     % Given user-defined save folder, save the data 
     % Written by Anja Payne
     % Last Modified: 07/31/2024
@@ -34,7 +34,8 @@ function saveFile_v1_20240718(processedDataPath, data, settings, dataName)
             % Using the same pathway for loading data, get the most recent
             % file and save the new data
             fileNameBase = dataName;
-            filePath = getMostRecentFilePath_v1_20240723(fileNameBase, processedDataPath);
+            message = 'Select directory where you want to save the data';
+            filePath = getMostRecentFilePath_v1_20240723(fileNameBase, message, processedDataPath);
             savePathName = filePath{1};
             saveVersion = str2double(filePath{2}) + 1;
             saveVersion = sprintf('%02d', saveVersion); 
@@ -43,6 +44,7 @@ function saveFile_v1_20240718(processedDataPath, data, settings, dataName)
             	% Create the folder if it does not exist
             	mkdir(savePathName);
             end
+            settings.dataSavePath = [savePathName, '\', saveFile, '.mat'];
             save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'message'); 
             
         case 'No'
