@@ -1,8 +1,8 @@
 function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath)
-    % Place Precession in the Hippocampus))
-    % Gets the theta angle of spikes
+    % Relies on method described in "Robert Schmidt, 2009, Single-Trial 
+    % Place Precession in the Hippocampus" to get the phase precession
     % Written by Anja Payne
-    % Last Modified: 08/15/2024
+    % Last Modified: 08/28/2024
 
     % Inputs:
     %   1) data: the matlab structure where the in-field theta phases
@@ -75,13 +75,13 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
                                         if isempty(spkPhs{iField}{iTrial}) == 0; 
 
                                             % Get the phase precession for that trial
-                                            spkPhsInput = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
+                                            spkPhsInput{iField}{iTrial} = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
-                                                spkPosInput = [spkPos{iField}{iTrial}; spkPos{iField}{iTrial}];
+                                                spkPosInput{iField}{iTrial} = [spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial}); spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial})];
                                             elseif strcmp(settings.phasePrecession.positionType, 'binned') == 1
-                                                spkPosInput = [binnedSpkPos{iField}{iTrial}; binnedSpkPos{iField}{iTrial}];
+                                                spkPosInput{iField}{iTrial} = [binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial}); binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial})];
                                             end
-                                            [cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput), settings.phasePrecession.slopeRange); 
+                                            [cir, lin] = thetaPrecess(spkPhsInput{iField}{iTrial}, spkPosInput{iField}{iTrial}, settings.phasePrecession.slopeRange); 
                                             y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
 
                                             % If the slope is below the significance
@@ -93,9 +93,9 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
                                                 slope{iField}(iTrial) = NaN; 
                                             end
                                             if isempty(cir) == 0;
-                                                fitInfo(iTrial).cir = cir; fitInfo(iTrial).lin = lin;
+                                                fitInfo{iField}(iTrial).cir = cir; fitInfo{iField}(iTrial).lin = lin;
                                             else 
-                                                fitInfo(iTrial).cir = NaN; fitInfo(iTrial).lin = NaN;
+                                                fitInfo{iField}(iTrial).cir = NaN; fitInfo{iField}(iTrial).lin = NaN;
                                             end
                                             
                                         else
@@ -112,10 +112,14 @@ function data = getPhasePrecession_v1_20240806(data, settings, processedDataPath
                                     slopeMedian(iField) = NaN; 
                                 end
                                 if strcmp(directions(iDir), 'cw') == 1;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.phsInput.cw = spkPhsInput;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.posInput.cw = spkPosInput;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.cw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.cw = slopeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.cw = fitInfo;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.phsInput.ccw = spkPhsInput;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.posInput.ccw = spkPosInput;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.ccw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.ccw = slopeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.ccw = fitInfo;

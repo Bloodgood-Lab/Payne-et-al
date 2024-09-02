@@ -43,28 +43,7 @@ function saveFile_v1_20240718(processedDataPath, data, settings, dataName)
             	% Create the folder if it does not exist
             	mkdir(savePathName);
             end
-            %save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'message'); 
-            
-            % If there are figures, have the user select the save path and
-            % save them there
-            figs = findobj('Type', 'figure'); 
-            if isempty(figs) == 0; % if there are figures
-                for iFig = 1:length(figs)
-                    display('Saving Figures')
-                    filePath = getMostRecentFilePath_v1_20240723(fileNameBase); 
-                    savePathName = filePath{1};
-                    saveVersion = str2double(filePath{2}) + 1;
-                    saveVersion = sprintf('%02d', saveVersion); 
-                    saveFile = [fileNameBase, '_v', saveVersion, '_', date];
-                    if ~exist(savePathName, 'dir')
-                        % Create the folder if it does not exist
-                        mkdir(savePathName);
-                    end
-                    saveas(figs(iFig), [savePathName, '\', saveFile]); 
-                end
-            end
-            
-            
+            save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'message'); 
             
         case 'No'
             disp('Data not saved'); 

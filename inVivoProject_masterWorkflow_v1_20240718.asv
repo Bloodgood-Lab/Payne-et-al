@@ -213,7 +213,7 @@ thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; % range of sl
 thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptabel significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'binned';
+thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be generated
 
 % Outputs: 
@@ -256,7 +256,6 @@ if strcmp(settings.phasePrecession.plot, 'yes') == 1;
                                 fitInfo = FRdata{iAnimal}(iCluster).phasePrecession.fitInfo.ccw; 
                                 %binnedSpkPos = FRdata{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.ccw; 
                             end
-
                             % Loop through fields
                             if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
                                 numFieldsToAnalyze = length(spkPhs); 
@@ -281,42 +280,52 @@ if strcmp(settings.phasePrecession.plot, 'yes') == 1;
                                     
 
                                     if isempty(spkPhs{iField}{iTrial}) == 0; 
-
                                         % Get the phase precession for that trial
+                                        spkPhsInput = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
                                         spkPhsInput = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
                                         spkPosInput = [spkPos{iField}{iTrial}; spkPos{iField}{iTrial}];
                                         %[cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput), settings.phasePrecession.slopeRange); 
                                         %y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
 
-                                        spkPosPlot = (spkPosInput + 180) * 0.1778; % converts from angular position to centimeters
-                                        scatter(spkPosPlot-min(spkPosPlot), (spkPhsInput/pi), 200, '.k');
-                                        
+%                                         spkPosPlot = (spkPosInput + 180) * 0.1778; % converts from angular position to centimeters
+%                                         scatter(spkPosPlot-min(spkPosPlot), (spkPhsInput/pi), 200, '.k');
+                                        %scatter(spkPosInput-min(spkPosInput), (spkPhsInput)/pi, 200, '.k');
+                                        scatter(spkPosInput-min(spkPosInput), (spkPhsInput), 200, '.k');
                                         % If the slope is below the significance
                                         % threshold, save the data
-                                        if fitInfo(iTrial).cir.pValue < settings.phasePrecession.significanceThreshold; 
-    %                                                 trialSlope = (y1(2) - y1(1))/(max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial}));
-    %                                                 slope{iField}(iTrial) = trialSlope;
-                                            %xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})+1];
-                                            %xPlot = [0:ceil(max(spkPosPlot))-floor(min(spkPosPlot))];
-                                            %xPlot = [0:(max(spkPosPlot))-(min(spkPosPlot))];
-                                            xPlot = [0, max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
-                                            yPlot1 = (xPlot*(fitInfo(iTrial).lin.Alpha/pi)+fitInfo(iTrial).lin.Phi0/pi)-1
-                                            yPlot2 = (xPlot*(fitInfo(iTrial).lin.Alpha/pi)+fitInfo(iTrial).lin.Phi0/pi)+1;
-                                            %plot(xPlot, yPlot1, 'r');
-                                            %plot(xPlot, yPlot2, 'r');
-                                            %yPlot = [fitInfo(iTrial).cir.Phi0, fitInfo(iTrial).cir.Phi0+fitInfo(iTrial).cir.Alpha]
-                                            plot(xPlot, yPlot1, 'r');
-                                            plot(xPlot, yPlot2, 'r');
-                                            set(gca, 'FontSize', 12);
-                                            title(num2str(iTrial)); 
-                                            if length(xPlot>1); xlim([min(xPlot), max(xPlot)]); end
-                                            %ax = gca;  % Get current axes handle
-                                            %set(ax, 'XTick', xPlot([1,end]));  % Adjust to match the number of points
-                                            %xTickLabels = arrayfun(@num2str, spkPosPlot([1,end]), 'UniformOutput', false)
-                                            %set(ax, 'XTickLabel', xTickLabels([1,end]));  % Adjust to match the number of points
-                                        else
-                                            continue;
-    %                                                 slope{iField}(iTrial) = NaN; 
+                                        [cir, lin] = thetaPrecess(spkPhsInput, spkPosInput-min(spkPosInput), settings.phasePrecession.slopeRange); 
+
+                                        if isempty(fitInfo(iTrial).cir) == 1;
+                                            display('this should be skipped')
+                                        elseif isempty(fitInfo(iTrial).cir) == 0;
+                                            %if fitInfo(iTrial).cir.pValue < settings.phasePrecession.significanceThreshold;
+                                                display('in the loop')
+        %                                                 trialSlope = (y1(2) - y1(1))/(max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial}));
+        %                                                 slope{iField}(iTrial) = trialSlope;
+                                                xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})+1];
+                                                %xPlot = [0:ceil(max(spkPosPlot))-floor(min(spkPosPlot))];
+                                                %xPlot = [0:(max(spkPosPlot))-(min(spkPosPlot))];
+                                                %xPlot = [0, max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
+                                                %yPlot1 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)-1;
+                                                yPlot1 = (xPlot*(lin.Alpha)+lin.Phi0)-1;
+                                                %yPlot1 = [fitInfo(iTrial).cir.Phi0, fitInfo(iTrial).cir.Phi0+fitInfo(iTrial).cir.Alpha];
+                                                %yPlot2 = (xPlot*(lin.Alpha/pi)+lin.Phi0/pi)+1;
+                                                %plot(xPlot, yPlot1, 'r');
+                                                %plot(xPlot, yPlot2, 'r');
+                                                %yPlot = [fitInfo(iTrial).cir.Phi0, fitInfo(iTrial).cir.Phi0+fitInfo(iTrial).cir.Alpha]
+                                                plot(xPlot, yPlot1, 'r');
+                                                %plot(xPlot, yPlot2, 'r');
+                                                set(gca, 'FontSize', 12);
+                                                title(num2str(iTrial)); 
+                                                if length(xPlot>1); xlim([min(xPlot), max(xPlot)]); end
+                                                %ax = gca;  % Get current axes handle
+                                                %set(ax, 'XTick', xPlot([1,end]));  % Adjust to match the number of points
+                                                %xTickLabels = arrayfun(@num2str, spkPosPlot([1,end]), 'UniformOutput', false)
+                                                %set(ax, 'XTickLabel', xTickLabels([1,end]));  % Adjust to match the number of points
+                                            %else
+                                                %continue;
+        %                                                 slope{iField}(iTrial) = NaN; 
+                                            %end
                                         end
                                     end
                                 end
@@ -340,6 +349,27 @@ if strcmp(settings.phasePrecession.plot, 'yes') == 1;
         end
     end
 end
+%%
+clc; field = 1; trial = 1; 
+spkPhs = FRdata{1}(2).theta.phases.cw; 
+spkPos = FRdata{1}(2).inField.inFieldSpkPos.cw; 
+figure(2); clf; hold on;
+spkPhsInput = [spkPhs{field}{trial}+pi; spkPhs{1}{trial}+3*pi];
+%spkPosInput = [spkPos{1}{1}; spkPos{1}{1}];
+spkPosInput = [spkPos{field}{trial}-min(spkPos{field}{trial}); spkPos{field}{trial}-min(spkPos{field}{trial})];
+%posRange = max(spkPos{1}{1})-min(spkPos{1}{1}); 
+%spkPosInput = [(spkPos{1}{1}-min(spkPos{1}{1}))/posRange; (spkPos{1}{1}-min(spkPos{1}{1}))/posRange];
+scatter(spkPosInput, spkPhsInput); 
+
+%alpha = fitInfo(1).cir.Alpha;
+%phi = fitInfo(1).cir.Phi0;
+%x = [spkPosInput(1),spkPosInput(end)];
+%y = 2*pi*alpha*x + phi;
+%plot(x,y)
+xPlot = [0:max(spkPosInput)-min(spkPosInput)+1];
+yPlot1 = (xPlot*(fitInfo(trial).lin.Alpha/pi)+fitInfo(trial).lin.Phi0/pi)-1;
+yPlot2 = (xPlot*(fitInfo(trial).lin.Alpha/pi)+fitInfo(trial).lin.Phi0/pi)+1;
+plot(xPlot, yPlot1)
 %%
 
 % If plotting, set the overall figure
