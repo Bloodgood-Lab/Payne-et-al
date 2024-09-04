@@ -38,9 +38,10 @@ function filePath = getMostRecentFilePath_v1_20240723(fileNameBase, message, pro
     elseif m > 0;
         allVersions = []; allAppended = {};
         for iFiles = 1:m; 
-            % If the file is shorter than the fileNameBase, skip it
-            if length(currentFiles(iFiles).name) < length(fileNameBase);
-                continue;
+            % If the file is shorter than the fileNameBase plus 5, skip it
+            % because that means it can't have the same naming structure
+            if length(currentFiles(iFiles).name) < length(fileNameBase)+5;
+               continue;
             else
                 % Check to see if the file already exists
                 fileNameBase_toCompare = currentFiles(iFiles).name(1:length(fileNameBase));

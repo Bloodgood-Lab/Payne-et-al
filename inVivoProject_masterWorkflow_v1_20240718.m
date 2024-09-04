@@ -195,7 +195,7 @@ inFieldSpkTimesSettings.theta.frequencyBand = [4,12];
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
 
-%% Step 13: Get the phase precession (takes ~3 min)
+%% Step 13: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
 
 % Inputs: 
@@ -221,8 +221,6 @@ thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be g
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 
-%%
-clc;
 plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings)
 
 

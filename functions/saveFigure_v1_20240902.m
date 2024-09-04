@@ -12,25 +12,25 @@ function saveFigure_v1_20240902(fig, settings)
     
     if strcmp(settings.appendedFolder.binary, 'yes') == 1;
         % Create the main folder if needed
-        mainFolder = [settings.filePath{1}, '\', settings.appendedFolder.name];
-        if ~exist(mainFolder, 'dir')
-            % Create the folder if it does not exist
-            mkdir(mainFolder);
-        end
+%         mainFolder = [settings.filePath{1}, '\', settings.appendedFolder.name];
+%         if ~exist(mainFolder, 'dir')
+%             % Create the folder if it does not exist
+%             mkdir(mainFolder);
+%         end
 
         % Create the subfolder with the
         % version and today's data
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
         saveVersion = sprintf('%02d', saveVersion);
-        subFolder = [mainFolder, '\v', saveVersion, '_', date];
+        subFolder = [settings.filePath{1}, '\', settings.appendedFolder.name, '_v', saveVersion, '_', date];
         if ~exist(subFolder, 'dir')
             % Create the folder if it does not exist
             mkdir(subFolder);
         end
 
         % Get the file name and save
-        saveFile = [settings.name.geno, '_Animal', num2str(settings.name.animal),...
-            '_Cluster', num2str(settings.name.cluster), '_', settings.name.direction];
+        saveFile = settings.name; %[settings.name.geno, '_Animal', num2str(settings.name.animal),...
+            %'_Cluster', num2str(settings.name.cluster), '_', settings.name.direction];
 
         for iFileType = 1:length(settings.fileTypes)
             saveas(fig, [subFolder, '\', saveFile], settings.fileTypes{iFileType});

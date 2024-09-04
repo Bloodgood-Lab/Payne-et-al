@@ -21,20 +21,20 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the phase precession
-    for iGenotype = 1%:length(fieldnames(data.cellData));
+    for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationSlopes = []; 
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1%1:length(FRdata); 
+        for iAnimal = 1:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 2%1:n;
+                for iCluster = 1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -61,10 +61,14 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
                                 numFieldsToAnalyze = 1; 
                             end
-                            slopeMedian = []; subplotCount = 1; 
+                            slopeMedian = []; subplotCount = 1;
+                            slope = {}; 
+                            spkPhsInput = {}; spkPosInput = {};
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
-                                slope{iField} = NaN(1,length(spkPhs{iField}));
+                                %slope{iField} = NaN(1,length(spkPhs{iField}));
+                                %spkPhsInput{iField} = cell(1,length(spkPhs{iField}));
+                                %spkPosInput{iField} = cell(1,length(spkPhs{iField}));
                                 for iTrial = 1:length(spkPhs{iField});
                                     % If there are enough spatial bins
                                     if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold; 
@@ -99,6 +103,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             end
                                             
                                         else
+                                            spkPhsInput{iField}{iTrial} = []; 
+                                            spkPosInput{iField}{iTrial} = []; 
                                             slope{iField}(iTrial) = NaN;
                                         end
                                     end

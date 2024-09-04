@@ -12,28 +12,30 @@ function plotPhasePrecession_v1_20240827(data, settings)
     % Outputs:
     %   1) plots saved in the folder specified by the user
     
-    fileNameBase = 'phasePrecession';
+    fileNameBase = 'phasePrecession_spikesAndSlopes';
     if strcmp(settings.phasePrecession.plot, 'yes') == 1;
         % Ask the user to select the folder to save figures into
         figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save figures into');
 
-        for iGenotype = 1%:length(fieldnames(data.cellData));
+        for iGenotype = 1:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
             genotypeData = data.cellData.(genotypes{iGenotype});
 
             % Run analysis for high-firing cells only
             FRdata = genotypeData.highFiring;
-            for iAnimal = 1%1:length(FRdata);
+            for iAnimal = 1:length(FRdata);
                 % Skip if empty
                 if isempty(FRdata{iAnimal}) == 1;
                     continue
                 else
                     [~,n] = size(FRdata{iAnimal});
-                    for iCluster = 2%1:n;
+                    for iCluster = 1:n;
                         % Skip if empty
                         if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
                             continue
                         else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             % Assign variables based on running direction
                             directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                             for iDir = 1:length(directions);
@@ -46,7 +48,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 elseif strcmp(directions(iDir), 'ccw') == 1;
                                     spkPhs = FRdata{iAnimal}(iCluster).phasePrecession.phsInput.ccw;
                                     spkPos = FRdata{iAnimal}(iCluster).phasePrecession.posInput.ccw;
-                                    lineFit = FRdata{iAnimal}(iCluster).phasePrecession.yFit.ccw;
+                                    lineFit = FRdata{iAnimal}(iCluster).phasePrecession.fitInfo.ccw;
                                     binnedSpkPos = FRdata{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.ccw;
                                     slopeMedian = FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.ccw;
                                 end
@@ -56,13 +58,12 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
                                     numFieldsToAnalyze = 1;
                                 end
-                                subplotCount = 0;
                                 for iField = 1:numFieldsToAnalyze;
                                     % Loop through all the trials
+                                    subplotCount = 1; close all; 
                                     for iTrial = 1:length(spkPhs{iField});
                                         figures.allTrialsFig = figure(1); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
                                         if iTrial == 1; clf(figures.allTrialsFig); else hold on; end;
-                                        subplotCount = subplotCount + 1;
                                         subplot(ceil(length(spkPhs{iField})/10),10,subplotCount); hold on;
                                         scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
                                         set(gca, 'FontSize', 12);
@@ -73,16 +74,15 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         else
                                             % If there were spikes in-field that trial
                                             if nanmax(spkPhs{iField}{iTrial}) > settings.phasePrecession.spikeThreshold; 
-                                            %if isempty(spkPhs{iField}{iTrial}) == 0;
                                                 xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})+1];
                                                 yPlot1 = (xPlot*(lineFit{iField}(iTrial).lin.Alpha)+lineFit{iField}(iTrial).lin.Phi0)-pi;
                                                 yPlot2 = (xPlot*(lineFit{iField}(iTrial).lin.Alpha)+lineFit{iField}(iTrial).lin.Phi0)+pi;
                                                 plot(xPlot, yPlot1, 'r');
                                                 plot(xPlot, yPlot2, 'r');     
                                                 if length(xPlot>1); xlim([min(xPlot), max(xPlot)]); end
-                                                %plot(spkPos{iField}{iTrial}, lineFit{iField}{iTrial});
                                             end
                                         end
+                                        subplotCount = subplotCount + 1;
                                     end      
                                     han = axes('Position', [0.125 0.125 0.8 0.8], 'Visible', 'off');
                                     han.YLabel.Visible = 'on';
@@ -99,15 +99,14 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                     set(gcf, 'PaperUnits', 'Inches', 'PaperPositionMode', 'auto');
                     
                                     % Save the figure
-                                    figureSettings.name.geno = genotypes{iGenotype};
-                                    figureSettings.name.animal = iAnimal;
-                                    figureSettings.name.cluster = iCluster;
-                                    figureSettings.name.direction = directions{iDir};
+                                    figureSettings.name = [genotypes{iGenotype}, ...
+                                        '_Animal', num2str(iAnimal), '_Cluster', ...
+                                        num2str(iCluster), '_', directions{iDir}, ...
+                                        '_Field', num2str(iField)]; 
                                     figureSettings.appendedFolder.binary = 'yes'; 
-                                    figureSettings.appendedFolder.name = 'spikesAndSlopesForAllTrials';
+                                    figureSettings.appendedFolder.name = fileNameBase;
                                     figureSettings.fileTypes = {'fig', 'tiff'};
                                     saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
-                                    
                                 end
                             end
                         end

@@ -29,7 +29,7 @@ function settings = saveFile_v1_20240718(processedDataPath, data, settings, data
             dlgTitle = 'Data Commit Message';
             numLines = [1, 50];
             defaultAnswer = {'No commit message entered for this data'};
-            message = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+            commitMessage = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
             
             % Using the same pathway for loading data, get the most recent
             % file and save the new data
@@ -45,7 +45,7 @@ function settings = saveFile_v1_20240718(processedDataPath, data, settings, data
             	mkdir(savePathName);
             end
             settings.dataSavePath = [savePathName, '\', saveFile, '.mat'];
-            save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'message'); 
+            save([savePathName, '\', saveFile, '.mat'], 'data', 'settings', 'commitMessage'); 
             
         case 'No'
             disp('Data not saved'); 
