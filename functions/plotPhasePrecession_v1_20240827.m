@@ -68,6 +68,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
                                         set(gca, 'FontSize', 12);
                                         title(num2str(iTrial));
+                                        ylim([0, 4*pi]); 
                                         % If there are enough spatial bins
                                         if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
                                             continue;
@@ -80,6 +81,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                                 plot(xPlot, yPlot1, 'r');
                                                 plot(xPlot, yPlot2, 'r');     
                                                 if length(xPlot>1); xlim([min(xPlot), max(xPlot)]); end
+                                                ylim([0, 4*pi]); 
                                             end
                                         end
                                         subplotCount = subplotCount + 1;
@@ -94,7 +96,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
                                         'EdgeColor', 'none');
                                     annotation('textbox', [0.9, 0, 0.2, 0.03], 'String', ...
-                                        ['Median Slope: ', num2str(slopeMedian)], 'FitBoxToText', 'on', ...
+                                        ['Median Slope: ', num2str(slopeMedian(iField))], 'FitBoxToText', 'on', ...
                                         'BackgroundColor', 'none', 'EdgeColor', 'none');
                                     set(gcf, 'PaperUnits', 'Inches', 'PaperPositionMode', 'auto');
                     

@@ -209,19 +209,20 @@ thetaData = data; thetaSettings = settings;
 
 
 % Settings: 
-thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
+thetaSettings.phasePrecession.spatialBinThreshold = 2; % minimum number of spatial bins needed
 thetaSettings.phasePrecession.spikeThreshold = 2; % minimum number of spikes needed
 thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; % range of slopes to try to fit 
-thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptabel significance level of line fit
+thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'unbinned';
+thetaSettings.phasePrecession.positionType = 'binned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be generated
 
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+%%
 %phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 
-plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings)
+tic; plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); toc;
 
 
 
