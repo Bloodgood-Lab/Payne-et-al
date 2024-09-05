@@ -30,6 +30,7 @@ function settings = saveFile_v1_20240718(processedDataPath, data, settings, data
             numLines = [1, 50];
             defaultAnswer = {'No commit message entered for this data'};
             commitMessage = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+            commitMessage = commitMessage{1};
             
             % Using the same pathway for loading data, get the most recent
             % file and save the new data

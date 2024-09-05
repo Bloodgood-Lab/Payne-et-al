@@ -11,13 +11,7 @@ function saveFigure_v1_20240902(fig, settings)
     %   1) plots saved in the folder specified by the user
     
     if strcmp(settings.appendedFolder.binary, 'yes') == 1;
-        % Create the main folder if needed
-%         mainFolder = [settings.filePath{1}, '\', settings.appendedFolder.name];
-%         if ~exist(mainFolder, 'dir')
-%             % Create the folder if it does not exist
-%             mkdir(mainFolder);
-%         end
-
+        
         % Create the subfolder with the
         % version and today's data
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
@@ -29,11 +23,24 @@ function saveFigure_v1_20240902(fig, settings)
         end
 
         % Get the file name and save
-        saveFile = settings.name; %[settings.name.geno, '_Animal', num2str(settings.name.animal),...
-            %'_Cluster', num2str(settings.name.cluster), '_', settings.name.direction];
-
+        saveFile = settings.name; 
         for iFileType = 1:length(settings.fileTypes)
             saveas(fig, [subFolder, '\', saveFile], settings.fileTypes{iFileType});
+        end
+        
+        if ~exist([subFolder, '\commitMessage.txt'], 'file')
+            display('confirmed no commit message'); 
+            % Ask the user to write a short message about the data
+            prompt = {'Please enter a commit message:'};
+            dlgTitle = 'Data Commit Message';
+            numLines = [1, 50];
+            defaultAnswer = {'No commit message entered for this figure'};
+            commitMessage = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+
+            % Save the commit message
+            commitFile = fopen([subFolder, '\commitMessage.txt'], 'w');
+            fprintf(commitFile, '%s', commitMessage{1}); 
+            fclose(commitFile); 
         end
     end
     

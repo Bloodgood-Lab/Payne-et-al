@@ -36,17 +36,10 @@ function data = getInFieldSpikes_v1_20240805(data, settings, processedDataPath)
                         display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                         for iDir = 1:length(directions);
-                            if strcmp(directions(iDir), 'cw') == 1; 
-                                barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.cw;
-                                binnedSpkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
-                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
-                            elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.ccw;
-                                binnedSpkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
-                                spkPos = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
-                                spkTimes = FRdata{iAnimal}(iCluster).binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
-                            end
+                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                            barcode = outputData.barcode; binnedSpkPos = outputData.binnedSpkPosForInField; 
+                            spkPos = outputData.spkPosForInField; spkTimes = outputData.spkTimes;
+                            
                             for iField = 1:max(barcode);
                                 inFieldLogical = []; inFieldSpkPos = {}; inFieldSpkTimes = {}; inFieldSpkPosBinned = {}; 
                                 inFieldIndex = find(barcode == iField); 

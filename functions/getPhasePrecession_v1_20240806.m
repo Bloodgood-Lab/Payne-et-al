@@ -45,30 +45,15 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                         % Assign variables based on running direction
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                         for iDir = 1:length(directions);
-                            if strcmp(directions(iDir), 'cw') == 1; 
-                                spkPhs = FRdata{iAnimal}(iCluster).theta.phases.cw; 
-                                spkPos = FRdata{iAnimal}(iCluster).inField.inFieldSpkPos.cw; 
-                                binnedSpkPos = FRdata{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.cw; 
-                            elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                spkPhs = FRdata{iAnimal}(iCluster).theta.phases.ccw; 
-                                spkPos = FRdata{iAnimal}(iCluster).inField.inFieldSpkPos.ccw; 
-                                binnedSpkPos = FRdata{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.ccw; 
-                            end
+                            % Extract variables based on running direction
+                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                            spkPhs = outputData.spkPhs; spkPos = outputData.spkPos; binnedSpkPos = outputData.binnedSpkPos; 
                         
                             % Loop through fields
-                            if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-                                numFieldsToAnalyze = length(spkPhs); 
-                            elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
-                                numFieldsToAnalyze = 1; 
-                            end
-                            slopeMedian = []; subplotCount = 1;
-                            slope = {}; 
-                            spkPhsInput = {}; spkPosInput = {};
+                            numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
+                            slopeMedian = []; slope = {}; spkPhsInput = {}; spkPosInput = {};
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
-                                %slope{iField} = NaN(1,length(spkPhs{iField}));
-                                %spkPhsInput{iField} = cell(1,length(spkPhs{iField}));
-                                %spkPosInput{iField} = cell(1,length(spkPhs{iField}));
                                 for iTrial = 1:length(spkPhs{iField});
                                     % If there are enough spatial bins
                                     if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold; 
@@ -87,6 +72,11 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             end
                                             [cir, lin] = thetaPrecess(spkPhsInput{iField}{iTrial}, spkPosInput{iField}{iTrial}, settings.phasePrecession.slopeRange); 
                                             y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
+                                            if isempty(cir) == 0;
+                                                fitInfo{iField}(iTrial).cir = cir; fitInfo{iField}(iTrial).lin = lin;
+                                            else 
+                                                fitInfo{iField}(iTrial).cir = NaN; fitInfo{iField}(iTrial).lin = NaN;
+                                            end
 
                                             % If the slope is below the significance
                                             % threshold, save the data
@@ -95,11 +85,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 slope{iField}(iTrial) = trialSlope;
                                             else
                                                 slope{iField}(iTrial) = NaN; 
-                                            end
-                                            if isempty(cir) == 0;
-                                                fitInfo{iField}(iTrial).cir = cir; fitInfo{iField}(iTrial).lin = lin;
-                                            else 
-                                                fitInfo{iField}(iTrial).cir = NaN; fitInfo{iField}(iTrial).lin = NaN;
                                             end
                                             
                                         else
@@ -117,6 +102,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                 else 
                                     slopeMedian(iField) = NaN; 
                                 end
+                                
+                                % Assign output data
                                 if strcmp(directions(iDir), 'cw') == 1;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.phsInput.cw = spkPhsInput;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.posInput.cw = spkPosInput;
@@ -145,5 +132,19 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     %% Step 2: Save
     settings = saveFile_v1_20240718(processedDataPath, data, settings, 'phasePrecession')
     
-    
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function numField = whichField(fieldsToAnalyze, spikes)  
+        % Loop through fields
+        if strcmp(fieldsToAnalyze, 'all fields') == 1;
+            numField = length(spikes); 
+        elseif strcmp(fieldsToAnalyze, 'best field') == 1;
+            numField = 1; 
+        end
+    end
+
+
     

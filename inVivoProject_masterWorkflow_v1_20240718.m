@@ -221,6 +221,7 @@ thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be g
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %%
+clc;
 %phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 
 tic; plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); toc;
 

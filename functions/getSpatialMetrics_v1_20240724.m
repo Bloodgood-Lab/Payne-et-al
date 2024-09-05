@@ -43,14 +43,17 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             directions = fieldnames(FRdata{iAnimal}(iCluster).rateMaps.rateMap);
                             for iDir = 1:length(directions);
+                                % Extract data based on running direction
+                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                                map = outputData.map; 
+                                
+                                % Assign data based on running direction
                                 if strcmp(directions(iDir), 'cw') == 1; 
-                                    map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.cw;
                                     [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.cw = PFsize;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.cw = PFnumber;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.cw = barcode;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                    map = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.ccw;
                                     [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.ccw = PFsize;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.ccw = PFnumber;

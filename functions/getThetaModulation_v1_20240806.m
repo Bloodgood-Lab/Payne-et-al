@@ -65,11 +65,8 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                         for iDir = 1:length(directions);
-                            if strcmp(directions(iDir), 'cw') == 1; 
-                                spikesByDirection = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw; 
-                            elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                spikesByDirection = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.ccw; 
-                            end
+                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                            spikesByDirection = outputData.spikesByDirection; 
 
                             allTrialPhases = {}; 
                             for iField = 1:length(spikesByDirection);  
