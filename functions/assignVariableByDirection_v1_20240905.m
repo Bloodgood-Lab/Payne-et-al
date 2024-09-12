@@ -1,4 +1,4 @@
-function outputData = assignVariableByDirection_v1_20240905(inputData, dir)
+function outputData = assignVariableByDirection_v1_20240905(inputData, dir, analysisType)
     % Given data from one cell obtained from the data structure, extract
     % the appropriate data based on the direction
     % Written by Anja Payne
@@ -21,14 +21,16 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir)
         outputData.spkPhs = inputData.theta.phases.cw; 
         outputData.spkPos = inputData.inField.inFieldSpkPos.cw; 
         outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.cw; 
-        outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.cw;
-        outputData.spkPosForPlot = inputData.phasePrecession.posInput.cw;
-        outputData.lineFit = inputData.phasePrecession.fitInfo.cw;
-        outputData.slopeMedian = inputData.phasePrecession.medianSlope.cw;
-        outputData.allSlopes = inputData.phasePrecession.allSlopes.cw;
+        if strcmp(analysisType, 'plotPhasePrecession') == 1; 
+            outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.cw;
+            outputData.spkPosForPlot = inputData.phasePrecession.posInput.cw;
+            outputData.lineFit = inputData.phasePrecession.fitInfo.cw;
+            outputData.slopeMedian = inputData.phasePrecession.medianSlope.cw;
+            outputData.allSlopes = inputData.phasePrecession.allSlopes.cw;
+        end
         
     elseif strcmp(dir, 'ccw') == 1; 
-        outputData.map = inputData.rateMaps.trialAverageMap.cw;
+        outputData.map = inputData.rateMaps.trialAverageMap.ccw;
         outputData.barcode = inputData.spatialMetrics.barcode.ccw;
         outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
         outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
@@ -37,11 +39,13 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir)
         outputData.spkPhs = inputData.theta.phases.ccw; 
         outputData.spkPos = inputData.inField.inFieldSpkPos.ccw; 
         outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.ccw;
-        outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.ccw;
-        outputData.spkPosForPlot = inputData.phasePrecession.posInput.ccw;
-        outputData.lineFit = inputData.phasePrecession.fitInfo.ccw;
-        outputData.slopeMedian = inputData.phasePrecession.medianSlope.ccw;
-        outputData.allSlopes = inputData.phasePrecession.allSlopes.ccw;
+        if strcmp(analysisType, 'plotPhasePrecession') == 1; 
+            outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.ccw;
+            outputData.spkPosForPlot = inputData.phasePrecession.posInput.ccw;
+            outputData.lineFit = inputData.phasePrecession.fitInfo.ccw;
+            outputData.slopeMedian = inputData.phasePrecession.medianSlope.ccw;
+            outputData.allSlopes = inputData.phasePrecession.allSlopes.ccw;
+        end
     end
     
     

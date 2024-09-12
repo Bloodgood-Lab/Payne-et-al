@@ -21,20 +21,20 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the phase precession
-    for iGenotype = 1:length(fieldnames(data.cellData));
+    for iGenotype = 1%:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationSlopes = []; 
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1:length(FRdata); 
+        for iAnimal = 1%:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 4%1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -46,9 +46,11 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                         for iDir = 1:length(directions);
                             % Extract variables based on running direction
-                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
-                            spkPhs = outputData.spkPhs; spkPos = outputData.spkPos; binnedSpkPos = outputData.binnedSpkPos; 
-                        
+                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'phasePrecession');
+                            spkPhs = outputData.spkPhs; spkPos = outputData.spkPos; binnedSpkPos = outputData.binnedSpkPos;
+                            spikeTimes = outputData.spikesByDirection;
+                            
+                            
                             % Loop through fields
                             numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
                             slopeMedian = []; slope = {}; spkPhsInput = {}; spkPosInput = {};
@@ -60,9 +62,10 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                         slope{iField}(iTrial) = NaN; 
                                         continue; 
                                     else
-                                        % If there were spikes in-field that trial
-                                        if isempty(spkPhs{iField}{iTrial}) == 0; 
-
+                                        % If the number of spikes is more than threshold
+                                        % and the time between spikes is within the threshold
+                                        if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold && ...
+                                                max(abs(diff(spikeTimes{iField}{iTrial}))) <= settings.phasePrecession.ISIthreshold; 
                                             % Get the phase precession for that trial
                                             spkPhsInput{iField}{iTrial} = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
@@ -70,6 +73,12 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             elseif strcmp(settings.phasePrecession.positionType, 'binned') == 1
                                                 spkPosInput{iField}{iTrial} = [binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial}); binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial})];
                                             end
+                                            % For cw trials, values will be decreasing since scale is
+                                            % absolute. To fit slope accurately, they need to be increasing. 
+                                            if strcmp(directions(iDir), 'cw') == 1; 
+                                                spkPosInput{iField}{iTrial} = abs(spkPosInput{iField}{iTrial}-nanmax(spkPosInput{iField}{iTrial})); 
+                                            end;
+                                            spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial}/max(spkPosInput{iField}{iTrial}); 
                                             [cir, lin] = thetaPrecess(spkPhsInput{iField}{iTrial}, spkPosInput{iField}{iTrial}, settings.phasePrecession.slopeRange); 
                                             y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
                                             if isempty(cir) == 0;

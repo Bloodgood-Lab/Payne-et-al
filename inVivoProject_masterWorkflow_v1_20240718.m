@@ -3,25 +3,21 @@
 % Written by Anja Payne
 % Last modified: 08/15/2024
 
-% Issues to resolve/currently working on:
-%   - Rerun from getThetaModulation so that we can also save the in-field
-%     position
-
 % Steps:
-%   1) Define pathway [done]
-%   2) Read in excel files and create the main data structure [done]
-%   3) Split the data into WT and KO [done]
-%   4) Save the spike times in msec aligned to 0 [done]
+%   1) Define pathway
+%   2) Read in excel files and create the main data structure 
+%   3) Split the data into WT and KO
+%   4) Save the spike times in msec aligned to 0 
 %   5) Exclude spikes that occur during low velocity and format so that the
-%      spikes are split by direction and trial number [done]
-%   6) Get the rate maps [done]
+%      spikes are split by direction and trial number
+%   6) Get the rate maps
 %   7) Using firing rates, divide data into high-firing (putative place
-%      cells) and low-firing [done]
-%   8) Get spatial metrics and field barcode [done]
-%   9) Get the in-field spikes [done]
+%      cells) and low-firing
+%   8) Get spatial metrics and field barcode
+%   9) Get the in-field spikes
 %   10) Additional rate map analysis on the high-firing and low-firing and
-%       in-field firing [skipping for now]
-%   11) Placeholder for all the stability analysis [skipping for now]
+%       in-field firing
+%   11) Placeholder for all the stability analysis 
 %   12) Get the theta modulation
 %   13) Get the phase precession
 
@@ -209,17 +205,19 @@ thetaData = data; thetaSettings = settings;
 
 
 % Settings: 
-thetaSettings.phasePrecession.spatialBinThreshold = 2; % minimum number of spatial bins needed
-thetaSettings.phasePrecession.spikeThreshold = 2; % minimum number of spikes needed
-thetaSettings.phasePrecession.slopeRange = [-2*2*pi:0.001:2*2*pi]; % range of slopes to try to fit 
+thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
+thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
+thetaSettings.phasePrecession.slopeRange = [-6*pi:0.001:6*pi]; % range of slopes to try to fit 
 thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
+thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'binned';
+thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be generated
 
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+
 %%
 clc;
 %phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 

@@ -17,7 +17,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
         % Ask the user to select the folder to save figures into
         figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save figures into');
 
-        for iGenotype = 1:length(fieldnames(data.cellData));
+        for iGenotype = 1%:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
             genotypeData = data.cellData.(genotypes{iGenotype});
 
@@ -29,7 +29,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                     continue
                 else
                     [~,n] = size(FRdata{iAnimal});
-                    for iCluster = 2%:n;
+                    for iCluster = 4%1:n;
                         % Skip if empty
                         if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                             display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -39,7 +39,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                             % Assign variables based on running direction
                             directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                             for iDir = 1:length(directions);
-                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
                                 slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
                                 
@@ -79,7 +79,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                             continue;
                                         else
                                             % If there were spikes in-field that trial
-                                            if nanmax(spkPhs{iField}{iTrial}) > settings.phasePrecession.spikeThreshold; 
+                                            if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
                                                 % Get the fit values
                                                 plotSlope = lineFit{iField}(iTrial).lin.Alpha;
                                                 yOffset = lineFit{iField}(iTrial).lin.Phi0;
@@ -107,13 +107,15 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                     
                                     % Clean up the slope overlay plot and
                                     % plot the average slope
-                                    inputData.subplotNumbRows = subplotNumbRows;
-                                    inputData.allLinePlotRange = allLinePlotRange;
-                                    inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
-                                    inputData.yOffset = allYoffsets; 
-                                    inputData.median = slopeMedian(iField);
-                                    inputData.mean = nanmean(allSlopes{iField});
-                                    cleanUpAndPlotOverlay(inputData);
+                                    if ~isnan(slopeMedian(iField)) && ~isnan(nanmean(allSlopes{iField}));
+                                        inputData.subplotNumbRows = subplotNumbRows;
+                                        inputData.allLinePlotRange = allLinePlotRange;
+                                        inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
+                                        inputData.yOffset = allYoffsets; 
+                                        inputData.median = slopeMedian(iField)
+                                        inputData.mean = nanmean(allSlopes{iField})
+                                        cleanUpAndPlotOverlay(inputData);
+                                    end
                                     
                                     % Plot a histogram of all slopes
                                     plotHistogram(subplotNumbRows, histoPlotRange, allSlopes{iField}, slopeMedian(iField));
@@ -181,8 +183,8 @@ function cleanUpAndPlotOverlay(inputData)
     inputData.yOffset(isinf(inputData.yOffset)==1) = NaN;
     yMedianLine = xAverageLine*inputData.median + nanmean(inputData.yOffset)-pi;
     yMeanLine = xAverageLine*inputData.mean + nanmean(inputData.yOffset)-pi;
-    medianLine = plot(xAverageLine, yMedianLine, 'r', 'LineWidth', 2);
-    meanLine = plot(xAverageLine, yMeanLine, 'b', 'LineWidth', 2);
+    medianLine = plot(xAverageLine, yMedianLine, '-r', 'LineWidth', 2)
+    meanLine = plot(xAverageLine, yMeanLine, '--b', 'LineWidth', 2)
     legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
     legend('boxoff');
     ylim([0, 4*pi]); 
