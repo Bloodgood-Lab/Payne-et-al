@@ -25,13 +25,15 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
     %% Step 1: Get the barcode, average size, and number of place fields
     thresholds(1) = settings.rateMaps.lowThresh; 
     thresholds(2) = settings.rateMaps.highThresh;
-    for iGenotype = 1:length(fieldnames(data));
+    biggerFieldModification = settings.rateMaps.biggerFieldModification;
+    smallerFieldModification = settings.rateMaps.smallerFieldModification;
+    for iGenotype = 1%:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype});
-        for iFR = 1:length(fieldnames(genotypeData)); 
+        for iFR = 1%:length(fieldnames(genotypeData)); 
             FRoptions = fieldnames(genotypeData); 
             FRdata = genotypeData.(FRoptions{iFR}); 
-            for iAnimal = 1:length(FRdata); 
+            for iAnimal = 1%:length(FRdata); 
                 if isempty(FRdata{iAnimal}) == 1; 
                     continue
                 else
@@ -42,22 +44,39 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                         else
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             directions = fieldnames(FRdata{iAnimal}(iCluster).rateMaps.rateMap);
-                            for iDir = 1:length(directions);
+                            for iDir = 1%:length(directions);
                                 % Extract data based on running direction
-                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'spatialMetrics');
                                 map = outputData.map; 
                                 
                                 % Assign data based on running direction
                                 if strcmp(directions(iDir), 'cw') == 1; 
                                     [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                    % For use in later control analyses, modify the 
+                                    % barcode to make the fields larger or smaller
+                                    [biggerFieldBarcode, biggerFieldIndices] = modifyPlaceFields(barcode, biggerFieldModification);
+                                    [smallerFieldBarcode, smallerFieldIndices] = modifyPlaceFields(barcode, smallerFieldModification);
+                                    % Define data within the structure
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.cw = PFsize;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.cw = PFnumber;
-                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.cw = barcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.original.cw = barcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.cw = biggerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.cw = biggerFieldIndices;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.cw = smallerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.cw = smallerFieldIndices;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
+                                    % For use in later control analyses, modify the 
+                                    % barcode to make the fields larger or smaller
+                                    [biggerFieldBarcode, biggerFieldIndices] = modifyPlaceFields(barcode, biggerFieldModification);
+                                    [smallerFieldBarcode, smallerFieldIndices] = modifyPlaceFields(barcode, smallerFieldModification);
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFsize.ccw = PFsize;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.PFnumber.ccw = PFnumber;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.ccw = barcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.ccw = biggerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.ccw = biggerFieldIndices;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.ccw = smallerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.ccw = smallerFieldIndices;
                                 end
                             end
                         end
@@ -125,4 +144,99 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
         %% Step 4: Get the number of place fields
         PFNumber = length(PFSize);
     end
+
+    function [outputBarcode, barcodeIndices] = modifyPlaceFields(inputBarcode, modification)
+        % Make the fields either larger or smaller
+        
+        barcodeIndices = 1:length(inputBarcode); 
+        binsToSetToPF = []; PFvalue = [];
+        % If the first bin is not zero, set the last bin to that value. Else, if
+        % the current bin is zero but the next one isn't, set the current bin to
+        % the non-zero value. 
+        if modification > 0; % make the field bigger
+            for iNumBins = 1:abs(modification);
+                startValue = 1; 
+                if inputBarcode(1) > 0 && inputBarcode(end) == 0; 
+                    binsToSetToPF = [binsToSetToPF, length(inputBarcode)]; 
+                    PFvalue = [PFvalue, inputBarcode(1)]; 
+                    startValue = 2; 
+                end
+                for i = startValue:length(inputBarcode)-1;
+                    if inputBarcode(i) == 0 && inputBarcode(i+1) > 0; 
+                        binsToSetToPF = [binsToSetToPF, i];
+                        PFvalue = [PFvalue, inputBarcode(i+1)];
+                    end
+                end
+                inputBarcode(binsToSetToPF) = PFvalue; 
+            end
+
+            % If the last bin is not zero, set the first bin to that value. Else, if
+            % the current bin is zero but the last one wasn't, set the current bin to
+            % the non-zero value. 
+            endValue = length(inputBarcode);
+            if inputBarcode(end) > 0 && inputBarcode(1) == 0; 
+                binsToSetToPF = [binsToSetToPF, 1]; 
+                PFvalue = [PFvalue, inputBarcode(end)];
+                endValue = length(inputBarcode) - 1; 
+            end
+            for i = 2:endValue;
+                if inputBarcode(i) == 0 && inputBarcode(i-1) > 0;
+                   binsToSetToPF = [binsToSetToPF, i];
+                   PFvalue = [PFvalue, inputBarcode(i-1)];
+                end
+            end
+            inputBarcode(binsToSetToPF) = PFvalue; 
+            % Repeat the same thing again to account for the next bin in. 
+            endValue = length(inputBarcode);
+            if inputBarcode(end) > 0 && inputBarcode(1) == 0; 
+                binsToSetToPF = [binsToSetToPF, 1]; 
+                PFvalue = [PFvalue, inputBarcode(end)];
+                endValue = length(inputBarcode) - 1; 
+            end
+            for i = 2:endValue; 
+                if inputBarcode(i) == 0 && inputBarcode(i-1) > 0;
+                   binsToSetToPF = [binsToSetToPF, i];
+                   PFvalue = [PFvalue, inputBarcode(i-1)];
+                end
+            end
+            inputBarcode(binsToSetToPF) = PFvalue; 
+
+            % If the field now 'straddles' the track
+            % (meaning, if it is goes past the beginning or
+            % the end) shift the track so that this isn't
+            % the case
+            if inputBarcode(1) ~=0 && inputBarcode(end) ~=0; 
+                zeroIndices = find(inputBarcode == 0); 
+                inputBarcode = circshift(inputBarcode, -zeroIndices(1), 2); 
+                barcodeIndices = circshift(barcodeIndices, -zeroIndices(1), 2);
+            end
+
+            % Some of the fields may have merged, account for this by running the
+            % bwlabel one more time
+            newBarcode = bwlabel(inputBarcode); 
+            if max(newBarcode) ~= max(inputBarcode); 
+                inputBarcode = newBarcode; 
+            end
+            
+        elseif modification < 0; % make the field smaller
+            for iNumBins = 1:abs(modification);
+                for i = 1:length(inputBarcode)-1; 
+                   if inputBarcode(i) == 0 && inputBarcode(i+1) > 0; 
+                       binsToSetToPF = [binsToSetToPF, i+1];
+                   end
+                end
+                % If the current bin is 0 and the last one was > 0, set the last bin to 0
+                for i = 2:length(inputBarcode); 
+                    if inputBarcode(i) == 0 && inputBarcode(i-1) > 0;
+                       binsToSetToPF = [binsToSetToPF, i-1];
+                    end
+                end
+                inputBarcode(binsToSetToPF) = 0; 
+            end
+        end
+        
+        outputBarcode = inputBarcode;
+        
+    end
+
 end
