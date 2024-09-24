@@ -27,13 +27,13 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
     thresholds(2) = settings.rateMaps.highThresh;
     biggerFieldModification = settings.rateMaps.biggerFieldModification;
     smallerFieldModification = settings.rateMaps.smallerFieldModification;
-    for iGenotype = 1%:length(fieldnames(data));
+    for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype});
-        for iFR = 1%:length(fieldnames(genotypeData)); 
+        for iFR = 1:length(fieldnames(genotypeData)); 
             FRoptions = fieldnames(genotypeData); 
             FRdata = genotypeData.(FRoptions{iFR}); 
-            for iAnimal = 1%:length(FRdata); 
+            for iAnimal = 1:length(FRdata); 
                 if isempty(FRdata{iAnimal}) == 1; 
                     continue
                 else
@@ -44,7 +44,7 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                         else
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             directions = fieldnames(FRdata{iAnimal}(iCluster).rateMaps.rateMap);
-                            for iDir = 1%:length(directions);
+                            for iDir = 1:length(directions);
                                 % Extract data based on running direction
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'spatialMetrics');
                                 map = outputData.map; 
@@ -62,8 +62,8 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.original.cw = barcode;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.cw = biggerFieldBarcode;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.cw = biggerFieldIndices;
-                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.cw = smallerFieldBarcode;
-                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.cw = smallerFieldIndices;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.smaller.barcode.cw = smallerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.smaller.indices.cw = smallerFieldIndices;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     [barcode, PFsize, PFnumber] = getPlaceFields(map, thresholds);
                                     % For use in later control analyses, modify the 
@@ -75,8 +75,8 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.ccw = barcode;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.ccw = biggerFieldBarcode;
                                     data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.ccw = biggerFieldIndices;
-                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.barcode.ccw = smallerFieldBarcode;
-                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.bigger.indices.ccw = smallerFieldIndices;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.smaller.barcode.ccw = smallerFieldBarcode;
+                                    data.(genotypes{iGenotype}).(FRoptions{iFR}){iAnimal}(iCluster).spatialMetrics.barcode.smaller.indices.ccw = smallerFieldIndices;
                                 end
                             end
                         end
