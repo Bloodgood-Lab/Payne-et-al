@@ -17,19 +17,19 @@ function plotPhasePrecession_v1_20240827(data, settings)
         % Ask the user to select the folder to save figures into
         figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save figures into');
 
-        for iGenotype = 1%:length(fieldnames(data.cellData));
+        for iGenotype = 1:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
             genotypeData = data.cellData.(genotypes{iGenotype});
 
             % Run analysis for high-firing cells only
             FRdata = genotypeData.highFiring;
-            for iAnimal = 1%:length(FRdata);
+            for iAnimal = 1:length(FRdata);
                 % Skip if empty
                 if isempty(FRdata{iAnimal}) == 1;
                     continue
                 else
                     [~,n] = size(FRdata{iAnimal});
-                    for iCluster = 4%1:n;
+                    for iCluster = 1:n;
                         % Skip if empty
                         if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                             display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -42,6 +42,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
                                 slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
+                                rSquared = outputData.rSquared;
                                 
                                 % Loop through fields
                                 if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
@@ -72,7 +73,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
                                         set(gca, 'FontSize', 12);
                                         title(num2str(iTrial));
-                                        ylim([0, 4*pi]); 
+                                        ylim([0, 2*pi]);  %ylim([-2*pi, 2*pi]); %
                                         
                                         % If there are enough spatial bins
                                         if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
@@ -81,29 +82,48 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                             % If there were spikes in-field that trial
                                             if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
                                                 % Get the fit values
-                                                plotSlope = lineFit{iField}(iTrial).lin.Alpha;
-                                                yOffset = lineFit{iField}(iTrial).lin.Phi0;
+                                                if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                                                    plotSlope = lineFit{iField}(iTrial).lin.Alpha;
+                                                    yOffset = lineFit{iField}(iTrial).lin.Phi0;
+                                                elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                                                    plotSlope = lineFit{iField}(iTrial).cir.Alpha;
+                                                    yOffset = lineFit{iField}(iTrial).cir.Phi0;
+                                                end
                                                 allPlotSlopes = [allPlotSlopes, plotSlope]; 
                                                 allYoffsets = [allYoffsets, yOffset]; 
-                                                maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})]);
+                                                maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})])
                                                 
                                                 % Plot that trial's scatter plot
-                                                xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})+1];
-                                                yPlot1 = (xPlot*(plotSlope) + yOffset) - pi;
-                                                yPlot2 = (xPlot*(plotSlope) + yOffset) + pi;
-                                                plot(xPlot, yPlot1, 'r');
-                                                plot(xPlot, yPlot2, 'r');     
+                                                xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
+                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                                                    yPlot = (xPlot*(plotSlope) + yOffset);
+                                                    plot(xPlot, yPlot, 'r'); 
+                                                elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                                                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                                                        yPlot1 = (xPlot*(plotSlope) + yOffset) - pi;
+                                                        yPlot2 = (xPlot*(plotSlope) + yOffset) + pi;
+                                                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                                                        yPlot1 = (xPlot*(plotSlope) + yOffset) + pi;
+                                                        yPlot2 = (xPlot*(plotSlope) + yOffset) + 3*pi;
+                                                    end
+                                                    plot(xPlot, yPlot1, 'r');
+                                                    plot(xPlot, yPlot2, 'r'); 
+                                                end
                                                 if length(xPlot>1); xlim([min(xPlot), max(xPlot)]); end
-                                                ylim([0, 4*pi]); 
+                                                ylim([0, 2*pi]); 
                                                 
                                                 % Plot the overlay of all slopes
                                                 subplot(subplotNumbRows, 13, allLinePlotRange); hold on;
-                                                plot(xPlot, yPlot1, 'k');
+                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                                                    plot(xPlot, yPlot, 'k');
+                                                elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                                                    plot(xPlot, yPlot1, 'k'); 
+                                                end
                                             end
                                         end
                                     end   
                                     % Clean up the scatter plots
-                                    cleanUpPlot(settings, slopeMedian(iField), nanmean(allSlopes{iField}));
+                                    cleanUpPlot(settings, slopeMedian(iField), nanmean(allSlopes{iField}), rSquared(iField));
                                     
                                     % Clean up the slope overlay plot and
                                     % plot the average slope
@@ -112,8 +132,8 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         inputData.allLinePlotRange = allLinePlotRange;
                                         inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
                                         inputData.yOffset = allYoffsets; 
-                                        inputData.median = slopeMedian(iField)
-                                        inputData.mean = nanmean(allSlopes{iField})
+                                        inputData.median = slopeMedian(iField);
+                                        inputData.mean = nanmean(allSlopes{iField});
                                         cleanUpAndPlotOverlay(inputData);
                                     end
                                     
@@ -157,7 +177,7 @@ function [numRows, linePlotRange, histoRange] = determineSubplotLocation(dataLen
     end
 end
 
-function cleanUpPlot(settings, slopeMedian, slopeMean)
+function cleanUpPlot(settings, slopeMedian, slopeMean, rSquared)
     han = axes('Position', [0.125 0.125 0.8 0.8], 'Visible', 'off');
     han.YLabel.Visible = 'on';
     ylabel(han, 'Theta Phase (degrees)', 'FontSize', 20);
@@ -167,12 +187,15 @@ function cleanUpPlot(settings, slopeMedian, slopeMean)
     annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
         ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
         'EdgeColor', 'none');
-    annotation('textbox', [0.75, 0.95, 0.2, 0.03], 'String', ...
+    annotation('textbox', [0.75, 0.98, 0.2, 0.03], 'String', ...
         ['Median Slope: ', num2str(slopeMedian)], 'FitBoxToText', 'on', ...
-        'BackgroundColor', 'none', 'EdgeColor', 'none');
-    annotation('textbox', [0.87, 0.95, 0.2, 0.03], 'String', ...
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
+    annotation('textbox', [0.87, 0.98, 0.2, 0.03], 'String', ...
         ['Mean Slope: ', num2str(slopeMean)], 'FitBoxToText', 'on', ...
-        'BackgroundColor', 'none', 'EdgeColor', 'none');
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
+    annotation('textbox', [0.75, 0.95, 0.2, 0.03], 'String', ...
+        ['R-squared: ', num2str(rSquared)], 'FitBoxToText', 'on', ...
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
     set(gcf, 'PaperUnits', 'Inches', 'PaperPositionMode', 'auto');
 end
 
@@ -181,13 +204,13 @@ function cleanUpAndPlotOverlay(inputData)
     xAverageLine = 0:inputData.maxX;
     inputData.allPlotSlopes(isinf(inputData.allPlotSlopes)==1) = NaN;
     inputData.yOffset(isinf(inputData.yOffset)==1) = NaN;
-    yMedianLine = xAverageLine*inputData.median + nanmean(inputData.yOffset)-pi;
-    yMeanLine = xAverageLine*inputData.mean + nanmean(inputData.yOffset)-pi;
-    medianLine = plot(xAverageLine, yMedianLine, '-r', 'LineWidth', 2)
-    meanLine = plot(xAverageLine, yMeanLine, '--b', 'LineWidth', 2)
+    yMedianLine = xAverageLine*inputData.median + nanmean(inputData.yOffset);
+    yMeanLine = xAverageLine*inputData.mean + nanmean(inputData.yOffset);
+    medianLine = plot(xAverageLine, yMedianLine, '-r', 'LineWidth', 2);
+    meanLine = plot(xAverageLine, yMeanLine, '--b', 'LineWidth', 2);
     legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
     legend('boxoff');
-    ylim([0, 4*pi]); 
+    ylim([0, 2*pi]); 
     ylabel('Theta Phase (degrees)');
     xlabel('Linear Position');  
     set(gca,'FontSize', 12);
