@@ -21,20 +21,20 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the phase precession
-    for iGenotype = 1%:length(fieldnames(data.cellData));
+    for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
-        populationSlopes = []; 
+        populationSlopes = []; rSquaredPopulation = []; 
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1%:length(FRdata); 
+        for iAnimal = 1:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 4%1:n;
+                for iCluster = 1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -50,37 +50,93 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             spkPhs = outputData.spkPhs; spkPos = outputData.spkPos; binnedSpkPos = outputData.binnedSpkPos;
                             spikeTimes = outputData.spikesByDirection;
                             
-                            
                             % Loop through fields
                             numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
-                            slopeMedian = []; slope = {}; spkPhsInput = {}; spkPosInput = {};
+                            slopeMedian = []; rSquared = []; rSquaredAllTrials = {}; slope = {}; spkPhsInput = {}; spkPosInput = {};
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
                                 for iTrial = 1:length(spkPhs{iField});
                                     % If there are enough spatial bins
                                     if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold; 
                                         slope{iField}(iTrial) = NaN; 
+                                        rSquaredAllTrials{iField}(iTrial) = NaN;
                                         continue; 
                                     else
                                         % If the number of spikes is more than threshold
                                         % and the time between spikes is within the threshold
                                         if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold && ...
-                                                max(abs(diff(spikeTimes{iField}{iTrial}))) <= settings.phasePrecession.ISIthreshold; 
-                                            % Get the phase precession for that trial
-                                            spkPhsInput{iField}{iTrial} = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi]; 
+                                                max(abs(diff(spikeTimes{iField}{iTrial}))) <= settings.phasePrecession.ISIthreshold && ...
+                                                max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial}) >= settings.phasePrecession.timeRange;
+                                            
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%% DEBUGGING STEPS %%%%%%%
+                                            %figure(1); clf; subplot(2,1,1); 
+                                            %plot(spkPos{iField}{iTrial}, 'o-k'); 
+                                            %xlim([0, length(spkPos{iField}{iTrial})+1]);
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            
+                                            % Get the position information
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
-                                                spkPosInput{iField}{iTrial} = [spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial}); spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial})];
+                                                spkPosInput{iField}{iTrial} = spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial});
                                             elseif strcmp(settings.phasePrecession.positionType, 'binned') == 1
-                                                spkPosInput{iField}{iTrial} = [binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial}); binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial})];
+                                                spkPosInput{iField}{iTrial} = binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial});
                                             end
                                             % For cw trials, values will be decreasing since scale is
                                             % absolute. To fit slope accurately, they need to be increasing. 
                                             if strcmp(directions(iDir), 'cw') == 1; 
                                                 spkPosInput{iField}{iTrial} = abs(spkPosInput{iField}{iTrial}-nanmax(spkPosInput{iField}{iTrial})); 
-                                            end;
-                                            spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial}/max(spkPosInput{iField}{iTrial}); 
+                                            end
+                                            if strcmp(settings.phasePrecession.normalized, 'yes') == 1; 
+                                                spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial}/max(spkPosInput{iField}{iTrial});
+                                            end
+                                            
+                                            if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                                                % To account for circularity in the data, find the phase
+                                                % shift that accounts for the best correlation between
+                                                % position and spike theta phases
+                                                spkPhsDegrees = rad2deg(spkPhs{iField}{iTrial});
+                                                phasesToShiftBy = [0:180/36:180];
+                                                correlation = [];
+                                                for iShift = 1:length(phasesToShiftBy);
+                                                    testShiftedPhs = circshift(spkPhsDegrees, phasesToShiftBy(iShift));
+                                                    R = corrcoef(spkPosInput{iField}{iTrial}, testShiftedPhs); correlation(iShift) = R(2);
+                                                end
+                                                [~, maxInd] = max(abs(correlation));
+                                                spkPhsInput{iField}{iTrial} = circshift(spkPhsDegrees, phasesToShiftBy(maxInd));
+                                                spkPhsInput{iField}{iTrial} = deg2rad(spkPhsInput{iField}{iTrial}) + pi;
+                                            elseif strcmp(settings.phasePrecession.circularity, 'double') == 1;
+                                                spkPosInput{iField}{iTrial} = [spkPosInput{iField}{iTrial}; spkPosInput{iField}{iTrial}];
+                                                spkPhsInput{iField}{iTrial} = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi];
+                                            elseif strcmp(settings.phasePrecession.circularity, 'none') == 1;
+                                                spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial};
+                                                spkPhsInput{iField}{iTrial} = spkPhs{iField}{iTrial};
+                                            end
+                                            
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%% DEBUGGING STEPS %%%%%%%
+                                            %figure(1); subplot(2,1,2); 
+                                            %plot(spkPosInput{iField}{iTrial}, 'o-k'); 
+                                            %xlim([0, length(spkPos{iField}{iTrial})+1]);
+                                            %pause;
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            
+                                            % Get the phase precession for that trial
                                             [cir, lin] = thetaPrecess(spkPhsInput{iField}{iTrial}, spkPosInput{iField}{iTrial}, settings.phasePrecession.slopeRange); 
-                                            y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
+                                            if strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                                                y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
+                                                r2 = (cir.Coeff)^2;
+                                            elseif strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                                                y1 = [lin.Phi0, lin.Phi0+lin.Alpha];
+                                                r2 = (lin.r)^2;
+                                            end
                                             if isempty(cir) == 0;
                                                 fitInfo{iField}(iTrial).cir = cir; fitInfo{iField}(iTrial).lin = lin;
                                             else 
@@ -90,26 +146,34 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             % If the slope is below the significance
                                             % threshold, save the data
                                             if cir.pValue < settings.phasePrecession.significanceThreshold; 
-                                                trialSlope = (y1(2) - y1(1))/(max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial}));
+                                                trialSlope = (y1(2) - y1(1))/(max(spkPosInput{iField}{iTrial})-min(spkPosInput{iField}{iTrial}));
                                                 slope{iField}(iTrial) = trialSlope;
+                                                rSquaredAllTrials{iField}(iTrial) = r2;
                                             else
-                                                slope{iField}(iTrial) = NaN; 
+                                                slope{iField}(iTrial) = NaN;
+                                                rSquaredAllTrials{iField}(iTrial) = NaN;
                                             end
                                             
                                         else
                                             spkPhsInput{iField}{iTrial} = []; 
                                             spkPosInput{iField}{iTrial} = []; 
                                             slope{iField}(iTrial) = NaN;
+                                            rSquaredAllTrials{iField}(iTrial) = NaN;
+                                            fitInfo{iField}(iTrial).cir = NaN; 
+                                            fitInfo{iField}(iTrial).lin = NaN;
                                         end
                                     end
+                                    
                                 end
                                 
                                 % If there are enough trials with slopes
                                 % calculated, get the median of all slopes
                                 if sum(~isnan(slope{iField})) >= settings.phasePrecession.trialThreshold; 
                                     slopeMedian(iField) = nanmedian(slope{iField});
+                                    rSquared(iField) = nanmean(rSquaredAllTrials{iField});
                                 else 
                                     slopeMedian(iField) = NaN; 
+                                    rSquared(iField) = NaN;
                                 end
                                 
                                 % Assign output data
@@ -119,23 +183,27 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.cw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.cw = slopeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.cw = fitInfo;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.rSquared.cw = rSquared;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.phsInput.ccw = spkPhsInput;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.posInput.ccw = spkPosInput;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.allSlopes.ccw = slope;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.ccw = slopeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.fitInfo.ccw = fitInfo;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.rSquared.cw = rSquared;
                                 end
                             end
                             
                             % Organize the population data and analysis
                             populationSlopes = [populationSlopes, slopeMedian];
+                            rSquaredPopulation = [rSquaredPopulation, rSquared]; 
                         end
                     end
                 end
             end
         end
         data.populationData(iGenotype).phasePrecessionSlopes = populationSlopes;
+        data.populationData(iGenotype).phasePrecessionRSquared = rSquaredPopulation;
     end
     
     %% Step 2: Save
