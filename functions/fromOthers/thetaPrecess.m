@@ -3,14 +3,14 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
 
     %if length(SpkPhase)>= 5
     if length(SpkPhase)>= 0 % moved this setting to external loops
-        [Circ.Alpha,Circ.Phi0] = CircLinFit(SpkPhase,SpkPosition,SlopeRange); % Anja modified
+        [Circ.Alpha,Circ.Phi0] = CircLinFit(SpkPhase,SpkPosition,SlopeRange); 
         [Circ.Coeff,Circ.pValue] = CircularCoeff(SpkPhase,SpkPosition,Circ.Alpha,Circ.Phi0);
         r=corrcoef(SpkPosition,SpkPhase);
         [P,S] = polyfit(SpkPosition,SpkPhase,1);% matlab default function
-        lin.r = r(1,2)
+        lin.r = r(1,2);
         lin.Alpha = P(1);
         lin.Phi0 = P(2);
-        [rho] = circ_corrcl(SpkPhase, SpkPosition)
+        [rho] = circ_corrcl(SpkPhase, SpkPosition);
     else
         Circ.Alpha = NaN;
         Circ.Phi0 = NaN;
@@ -45,14 +45,8 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
         idx = find(R==MaxR);
         alpha=a(idx(1));
         phi0 = atan2(S(idx(1)),C(idx(1)));
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%% DEBUGGING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        plot(a,R);
-        display(['Best slope is ', num2str(alpha), ' and offset is ', num2str(phi0), ' and R is ' num2str(R(idx(1)))]);
-        pause;
+        close all; figure(1); subplot(2,2,1);
+        plot(a,R); %pause; 
     end
 
     function [coeff,pValue] = CircularCoeff(phi,x,alpha,phi0)

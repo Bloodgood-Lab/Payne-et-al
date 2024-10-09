@@ -98,7 +98,8 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                                 
                                                 % Plot that trial's scatter plot
                                                 xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
-                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1 ...
+                                                        || strcmp(settings.phasePrecession.circularity, 'none') == 1;
                                                     yPlot = (xPlot*plotSlope) + yOffset;
                                                     plot(xPlot, yPlot, 'r'); 
                                                 elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;

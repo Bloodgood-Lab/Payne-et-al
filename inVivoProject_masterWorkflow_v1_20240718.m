@@ -210,12 +210,12 @@ thetaData = data; thetaSettings = settings;
 % Settings: 
 thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
 thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
-thetaSettings.phasePrecession.slopeRange = [-2:0.1:2]; % range of slopes to try to fit 
+thetaSettings.phasePrecession.slopeRange = [-4:0.3:4]; % range of slopes to try to fit 
 thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'unbinned';
+thetaSettings.phasePrecession.positionType = 'binned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
 thetaSettings.phasePrecession.normalized = 'yes'; % Is the field normalized?
 thetaSettings.phasePrecession.circularity = 'none'; % How is circularity accounted for? Could also be set to 'shift'

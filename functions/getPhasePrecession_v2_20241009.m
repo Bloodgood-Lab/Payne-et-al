@@ -1,6 +1,5 @@
-function [data, settings] = getPhasePrecession_v1_20240806(data, settings, processedDataPath)
-    % Relies on method described in "Robert Schmidt, 2009, Single-Trial 
-    % Place Precession in the Hippocampus" to get the phase precession
+function [data, settings] = getPhasePrecession_v2_20241009(data, settings, processedDataPath)
+    % Tries multiple methods for phase precession to find best approach
     % Written by Anja Payne
     % Last Modified: 10/09/2024
 
@@ -56,7 +55,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             slopeMedian = []; rSquared = []; rSquaredAllTrials = {}; slope = {}; spkPhsInput = {}; spkPosInput = {};
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
-                                allTrialsPosition = []; allTrialsPhases = [];
                                 for iTrial = 1:length(spkPhs{iField});
                                     % If there are enough spatial bins
                                     if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold; 
@@ -70,16 +68,10 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 max(abs(diff(spikeTimes{iField}{iTrial}))) <= settings.phasePrecession.ISIthreshold && ...
                                                 max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial}) >= settings.phasePrecession.timeRange;
                                             
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%% DEBUGGING STEPS %%%%%%%
-                                            %figure(1); clf; subplot(2,1,1); 
-                                            %plot(spkPos{iField}{iTrial}, 'o-k'); 
-                                            %xlim([0, length(spkPos{iField}{iTrial})+1]);
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                            % First approach: 
+                                            % Get the phase precession using a circular slope-fitting method
+                                            % described in Schmidt, 2009
+                                            
                                             
                                             % Get the position information
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
@@ -115,7 +107,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 spkPhsInput{iField}{iTrial} = [spkPhs{iField}{iTrial}+pi; spkPhs{iField}{iTrial}+3*pi];
                                             elseif strcmp(settings.phasePrecession.circularity, 'none') == 1;
                                                 spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial};
-                                                spkPhsInput{iField}{iTrial} = spkPhs{iField}{iTrial}+pi;
+                                                spkPhsInput{iField}{iTrial} = spkPhs{iField}{iTrial};
                                                 R = corrcoef(spkPosInput{iField}{iTrial}, spkPhs{iField}{iTrial}); correlation = R(2); maxInd = 1; 
                                             end
                                             
@@ -127,10 +119,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             %plot(spkPosInput{iField}{iTrial}, 'o-k'); 
                                             %xlim([0, length(spkPos{iField}{iTrial})+1]);
                                             %pause;
-
-                                            allTrialsPosition = [allTrialsPosition; spkPosInput{iField}{iTrial}]; 
-                                            spkPhsInput{iField}{iTrial}
-                                            allTrialsPhases = [allTrialsPhases; spkPhsInput{iField}{iTrial}]; 
                                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,23 +128,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             if strcmp(settings.phasePrecession.fit, 'circular') == 1;
                                                 %y1 = [cir.Phi0, cir.Phi0+cir.Alpha];
                                                 trialSlope = cir.Alpha; 
-                                                trialOffset = mod(cir.Phi0, 2*pi); % Ensures offset will be between 0 and 2pi
-                                                cir.Phi0 = trialOffset; 
+                                                trialOffset = cir.Phi0;
                                                 r2 = (cir.Coeff)^2;
-                                                
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%% DEBUGGING STEPS %%%%%%%
-                                                figure(1); subplot(2,2,2); hold on;
-                                                scatter(spkPosInput{iField}{iTrial}, spkPhsInput{iField}{iTrial}); 
-                                                xPlot = [0:max(spkPosInput{iField}{iTrial})-min(spkPosInput{iField}{iTrial})];
-                                                yPlot = (xPlot*trialSlope) + trialOffset;
-                                                plot(xPlot, yPlot, 'r'); 
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                    
                                             elseif strcmp(settings.phasePrecession.fit, 'linear') == 1;
                                                 %y1 = [lin.Phi0, lin.Phi0+lin.Alpha];
                                                 trialSlope = lin.Alpha;
@@ -200,6 +173,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             phasePosCorrelation{iField}(iTrial) = NaN;
                                         end
                                     end
+                                    
                                 end
                                 
                                 % If there are enough trials with slopes
@@ -233,23 +207,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                 allTrialsSlopes = cell2mat(slope); 
                                 allTrialsOffsets = cell2mat(offset);
                                 allTrialsCorrelation = cell2mat(phasePosCorrelation);
-                                
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                %%%%%%% DEBUGGING STEPS %%%%%%%
-                                allTrialsPhases
-                                allTrialsPosition
-                                [cir2, ~] = thetaPrecess(allTrialsPhases, allTrialsPosition, settings.phasePrecession.slopeRange); 
-                                figure(1); subplot(2,2,3); hold on;
-                                scatter(allTrialsPosition, allTrialsPhases); 
-                                xPlot = [0:max(allTrialsPosition)-min(allTrialsPosition)];
-                                yPlot = (xPlot*cir2.Alpha) + mod(cir2.Phi0, 2*pi);
-                                plot(xPlot, yPlot, 'r'); 
-                                pause;
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             end
                             
                             % Organize the population data and analysis
