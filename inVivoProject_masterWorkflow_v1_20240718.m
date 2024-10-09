@@ -140,7 +140,8 @@ clear;clc;tic;
 
 % Inputs:
 fileNameBase = 'rateMapsByFiringRate';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
@@ -149,6 +150,8 @@ rateMapByFRStructure = data; rateMapByFRSettings = settings;
 % Settings: 
 rateMapByFRSettings.rateMaps.lowThresh = 0.1;  % fields will be counted as contiguous bins above 10% of max
 rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin that is above 50% of the max
+rateMapByFRSettings.rateMaps.biggerFieldModification = 2; % for use in phase precession control analysis: extend field by X bins
+rateMapByFRSettings.rateMaps.smallerFieldModification = -2; % for use in phase precession control analysis: reduce field by X bins
 
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
@@ -207,21 +210,45 @@ thetaData = data; thetaSettings = settings;
 % Settings: 
 thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
 thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
-thetaSettings.phasePrecession.slopeRange = [-6*pi:0.001:6*pi]; % range of slopes to try to fit 
+thetaSettings.phasePrecession.slopeRange = [-2:0.1:2]; % range of slopes to try to fit 
 thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
 thetaSettings.phasePrecession.positionType = 'unbinned';
-thetaSettings.phasePrecession.plot = 'yes'; % Determines whether plots will be generated
+thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
+thetaSettings.phasePrecession.normalized = 'yes'; % Is the field normalized?
+thetaSettings.phasePrecession.circularity = 'none'; % How is circularity accounted for? Could also be set to 'shift'
+thetaSettings.phasePrecession.fit = 'circular'; % Using a linear or circular fit?
+thetaSettings.phasePrecession.timeRange = 5*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
 
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+%%
+plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
+
+%% Step 13B: Control analyses related to the phase precession
+clear;clc;close all; tic;
+
+% Inputs: 
+fileNameBase = 'phasePrecession';
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
+phasePrecessionData = data; phasePrecessionSettings = settings;
+
+
+% Settings: 
+
+
+% Outputs: 
+[data, settings] = getPhasePrecessionWithChangingFieldSize_v1_20240924(phasePrecessionData, phasePrecessionSettings, processedDataFolder)
 
 %%
-clc;
-%phasePrecessionData = getPhasePrecession_v2_20240828(thetaData, thetaSettings, processedDataFolder); toc 
-tic; plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); toc;
+
+
 
 
 

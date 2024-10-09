@@ -76,7 +76,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                         scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
                                         set(gca, 'FontSize', 12);
                                         title(num2str(iTrial));
-                                        ylim([0, 2*pi]);
+                                        ylim([0, 2*pi]);  %ylim([-2*pi, 2*pi]); %
                                         
                                         % If there are enough spatial bins
                                         if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
@@ -99,7 +99,8 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                                 % Plot that trial's scatter plot
                                                 xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
                                                 if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
-                                                    yPlot = (xPlot*plotSlope) + yOffset;
+                                                    if 
+                                                    yPlot = (xPlot*(plotSlope) + yOffset);
                                                     plot(xPlot, yPlot, 'r'); 
                                                 elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
                                                     if strcmp(settings.phasePrecession.fit, 'linear') == 1;

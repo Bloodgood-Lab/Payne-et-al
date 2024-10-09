@@ -7,10 +7,10 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
         [Circ.Coeff,Circ.pValue] = CircularCoeff(SpkPhase,SpkPosition,Circ.Alpha,Circ.Phi0);
         r=corrcoef(SpkPosition,SpkPhase);
         [P,S] = polyfit(SpkPosition,SpkPhase,1);% matlab default function
-        warning('off', 'last');
-        lin.r = r(1,2);
+        lin.r = r(1,2)
         lin.Alpha = P(1);
         lin.Phi0 = P(2);
+        [rho] = circ_corrcl(SpkPhase, SpkPosition)
     else
         Circ.Alpha = NaN;
         Circ.Phi0 = NaN;
@@ -36,11 +36,8 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
             for i = 1:length(phi)
                 C(j) = C(j) + cos(phi(i)-2*pi*a(j)*x(i));
                 S(j) = S(j) + sin(phi(i)-2*pi*a(j)*x(i));
-                %C(j) = C(j) + cos(phi(i)+2*pi*a(j)*x(i)); %AP changed to fit fernandez-ruiz pub
-                %S(j) = S(j) + sin(phi(i)+2*pi*a(j)*x(i)); 
             end
             R(j) = sqrt((C(j)/length(phi)).^2+(S(j)/length(phi)).^2); %fit of the line
-            %R(j) = sqrt((C(j)/length(phi)).^2+(S(j)/length(phi)).^2); %fit of the line
         end
         MaxR = max(R); %get the best fit
         % In case there is over 1 max value
@@ -48,19 +45,14 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
         idx = find(R==MaxR);
         alpha=a(idx(1));
         phi0 = atan2(S(idx(1)),C(idx(1)));
-        %phi0 = atan2(C(idx(1)),S(idx(1))); %AP changed because matlab wants inputs to be (y,x)
-
-        %     if S(idx)>=0 && C(idx)>0
-        %         phi0 = atan(S(idx)/C(idx));
-        %     elseif S(idx)>0 && C(idx)==0
-        %         phi0 =pi/2;
-        %     elseif C(idx)<0
-        %         phi0 = atan(S(idx)/C(idx))+pi;
-        %     elseif S(idx)<0 && C(idx)>=0
-        %         phi0 = atan(S(idx)/C(idx))+2*pi;
-        %     elseif S(idx)==0 && C(idx)==0
-        %         phi0=[];
-        %     end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%% DEBUGGING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        plot(a,R);
+        display(['Best slope is ', num2str(alpha), ' and offset is ', num2str(phi0), ' and R is ' num2str(R(idx(1)))]);
+        pause;
     end
 
     function [coeff,pValue] = CircularCoeff(phi,x,alpha,phi0)
@@ -82,8 +74,6 @@ function [Circ,lin]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
 
         phiEst = atan2(S,C);
         XEst = atan2(SX,CX);
-        %phiEst = atan2(C,S); %AP changed
-        %XEst = atan2(CX,SX); %AP changed
 
         for i=1:length(phi)
             YY = YY+sin(phi(i)-phiEst)*sin(X(i)-XEst);

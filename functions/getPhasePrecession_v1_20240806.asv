@@ -25,7 +25,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationSlopes = []; rSquaredPopulation = []; populationCorrelation = [];
-        populationAllTrialSlopes = []; populationAllTrialOffsets = []; 
+        populationAllTrialSlopes = [];
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
@@ -82,7 +82,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             
                                             % Get the position information
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
-                                                spkPosInput{iField}{iTrial} = spkPos{iField}{iTrial}-nanmin(spkPos{iField}{iTrial});
+                                                spkPosInput{iField}{iTrial} = spkPos{iField}{iTrial}-min(spkPos{iField}{iTrial});
                                             elseif strcmp(settings.phasePrecession.positionType, 'binned') == 1
                                                 spkPosInput{iField}{iTrial} = binnedSpkPos{iField}{iTrial}-min(binnedSpkPos{iField}{iTrial});
                                             end
@@ -100,13 +100,13 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 % shift that accounts for the best correlation between
                                                 % position and spike theta phases
                                                 spkPhsDegrees = rad2deg(spkPhs{iField}{iTrial});
-                                                phasesToShiftBy = [0:180/36:360];
+                                                phasesToShiftBy = [0:180/36:180];
                                                 correlation = [];
                                                 for iShift = 1:length(phasesToShiftBy);
                                                     testShiftedPhs = circshift(spkPhsDegrees, phasesToShiftBy(iShift));
                                                     R = corrcoef(spkPosInput{iField}{iTrial}, testShiftedPhs); correlation(iShift) = R(2);
                                                 end
-                                                [~, maxInd] = min(correlation);
+                                                [~, maxInd] = max(abs(correlation));
                                                 spkPhsInput{iField}{iTrial} = circshift(spkPhsDegrees, phasesToShiftBy(maxInd));
                                                 spkPhsInput{iField}{iTrial} = deg2rad(spkPhsInput{iField}{iTrial}) + pi;
                                             elseif strcmp(settings.phasePrecession.circularity, 'double') == 1;
@@ -115,7 +115,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             elseif strcmp(settings.phasePrecession.circularity, 'none') == 1;
                                                 spkPosInput{iField}{iTrial} = spkPosInput{iField}{iTrial};
                                                 spkPhsInput{iField}{iTrial} = spkPhs{iField}{iTrial};
-                                                R = corrcoef(spkPosInput{iField}{iTrial}, spkPhs{iField}{iTrial}); correlation = R(2); maxInd = 1; 
                                             end
                                             
                                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,8 +155,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 slope{iField}(iTrial) = trialSlope;
                                                 offset{iField}(iTrial) = trialOffset; 
                                                 rSquaredAllTrials{iField}(iTrial) = r2;
-                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1 || ...
-                                                        strcmp(settings.phasePrecession.circularity, 'none') == 1
+                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
                                                     phasePosCorrelation{iField}(iTrial) = correlation(maxInd);
                                                 else
                                                     phasePosCorrelation{iField}(iTrial) = NaN;
@@ -220,7 +218,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             populationSlopes = [populationSlopes, slopeMedian];
                             rSquaredPopulation = [rSquaredPopulation, rSquared]; 
                             populationAllTrialSlopes = [populationAllTrialSlopes, allTrialsSlopes]; 
-                            populationAllTrialOffsets = [populationAllTrialOffsets, allTrialsOffsets]; 
+                            populationAllTrialOffsets = [populationAllTrialOffsets, allTrialsOffsets];
                             populationCorrelation = [populationCorrelation, allTrialsCorrelation];
                         end
                     end
@@ -230,7 +228,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         data.populationData(iGenotype).phasePrecessionSlopes = populationSlopes;
         data.populationData(iGenotype).phasePrecessionRSquared = rSquaredPopulation;
         data.populationData(iGenotype).phasePrecessionAllTrialSlopes = populationAllTrialSlopes;
-        data.populationData(iGenotype).phasePrecessionAllTrialOffsets = populationAllTrialOffsets;
         data.populationData(iGenotype).phasePositionCorrelation = populationCorrelation;
     end
     
