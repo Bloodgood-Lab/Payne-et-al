@@ -29,7 +29,6 @@ function saveFigure_v1_20240902(fig, settings)
         end
         
         if ~exist([subFolder, '\commitMessage.txt'], 'file')
-            display('confirmed no commit message'); 
             % Ask the user to write a short message about the data
             prompt = {'Please enter a commit message:'};
             dlgTitle = 'Data Commit Message';
@@ -49,7 +48,6 @@ function saveFigure_v1_20240902(fig, settings)
         % version and today's data
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
         saveVersion = sprintf('%02d', saveVersion);
-        %subFolder = [settings.filePath{1}, '\', settings.appendedFolder.name, '_v', saveVersion, '_', date];
         
         % Get the file name and save
         saveFile = settings.name; 

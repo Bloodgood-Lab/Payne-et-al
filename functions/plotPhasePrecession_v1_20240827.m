@@ -1,7 +1,7 @@
 function plotPhasePrecession_v1_20240827(data, settings)
     % Generates plots related to phase precession analysis
     % Written by Anja Payne
-    % Last Modified: 08/28/2024
+    % Last Modified: 10/15/2024
 
     % Inputs:
     %   1) data: the matlab structure where the in-field theta phases
@@ -12,279 +12,56 @@ function plotPhasePrecession_v1_20240827(data, settings)
     % Outputs:
     %   1) plots saved in the folder specified by the user
     
-    fileNameBase = 'phasePrecession_spikesAndSlopes';
-    %settings.phasePrecession.plot = 'yes';
+    % Ask the user to select the folder they want plots saved into
+    plotFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
+    
+    for iGenotype = 1:length(fieldnames(data.cellData));
+        genotypes = fieldnames(data.cellData);
+        genotypeData = data.cellData.(genotypes{iGenotype});
 
-    if strcmp(settings.phasePrecession.plot, 'yes') == 1;
-        % Ask the user to select the folder to save figures into
-        figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save trial-by-trial line fits into');
-        
-        for iGenotype = 1:length(fieldnames(data.cellData));
-            genotypes = fieldnames(data.cellData);
-            genotypeData = data.cellData.(genotypes{iGenotype});
+        % Run analysis for high-firing cells only
+        FRdata = genotypeData.highFiring;
+        for iAnimal = 1:length(FRdata);
+            % Skip if empty
+            if isempty(FRdata{iAnimal}) == 1;
+                continue
+            else
+                [~,n] = size(FRdata{iAnimal});
+                for iCluster = 1:n;
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                        display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                        continue
+                    else
+                        display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                        % Assign variables based on running direction
+                        directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                        for iDir = 1:length(directions);
 
-            % Run analysis for high-firing cells only
-            FRdata = genotypeData.highFiring;
-            allTrialSlopes = []; allFieldSizes = [];
-            for iAnimal = 1:length(FRdata);
-                % Skip if empty
-                if isempty(FRdata{iAnimal}) == 1;
-                    continue
-                else
-                    [~,n] = size(FRdata{iAnimal});
-                    for iCluster = 1:n;
-                        % Skip if empty
-                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
-                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
-                            continue
-                        else
-                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                            % Assign variables based on running direction
-                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                            for iDir = 1:length(directions);
+                            % If user selected, plot spikes and slopes
+                            % for all trials
+                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+                                    strcmp(settings.phasePrecession.plot, 'spikesAndSlopes') == 1; 
+                                % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
-                                spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
-                                slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
-                                rSquared = outputData.rSquared;
-                                
-                                % Loop through fields
-                                if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-                                    numFieldsToAnalyze = length(spkPhs);
-                                elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
-                                    numFieldsToAnalyze = 1;
-                                end
-                                for iField = 1:numFieldsToAnalyze;
-                                    close all; 
-                                    % Set the values for the subplots
-                                    [subplotNumbRows, allLinePlotRange, histoPlotRange] = determineSubplotLocation(length(spkPhs{iField}));
-                                    
-                                    % Loop through all the trials
-                                    allPlotSlopes = []; allYoffsets = []; maxX = []; 
-                                    for iTrial = 1:length(spkPhs{iField});
-                                        figures.allTrialsFig = figure(1); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
-                                        if iTrial == 1; clf(figures.allTrialsFig); else hold on; end;
-                                        
-                                        % Determine subplot to plot onto
-                                        if iTrial <= 10; iScatterSub = iTrial; 
-                                        elseif iTrial > 10 && iTrial <= 20; iScatterSub = iTrial+3; 
-                                        elseif iTrial > 20 && iTrial <= 30; iScatterSub = iTrial+6;
-                                        elseif iTrial > 30; iScatterSub = iTrial+9; 
-                                        end
-                                        
-                                        % Plot scatter subplot
-                                        subplot(subplotNumbRows, 13, iScatterSub); hold on;
-                                        scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
-                                        set(gca, 'FontSize', 12);
-                                        title(num2str(iTrial));
-                                        ylim([0, 2*pi]);
-                                        
-                                        % If there are enough spatial bins
-                                        if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
-                                            continue;
-                                        else
-                                            % If there were spikes in-field that trial
-                                            if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
-                                                % Get the fit values
-                                                if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                                                    plotSlope = lineFit{iField}(iTrial).lin.Alpha;
-                                                    yOffset = lineFit{iField}(iTrial).lin.Phi0;
-                                                elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                                                    plotSlope = lineFit{iField}(iTrial).cir.Alpha;
-                                                    yOffset = lineFit{iField}(iTrial).cir.Phi0;
-                                                end
-                                                allPlotSlopes = [allPlotSlopes, plotSlope]; 
-                                                allYoffsets = [allYoffsets, yOffset]; 
-                                                maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})]);
-                                                
-                                                % Plot that trial's scatter plot
-                                                xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
-                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1 ...
-                                                        || strcmp(settings.phasePrecession.circularity, 'none') == 1;
-                                                    yPlot = (xPlot*plotSlope) + yOffset;
-                                                    plot(xPlot, yPlot, 'r'); 
-                                                elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
-                                                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                                                        yPlot1 = (xPlot*(plotSlope) + yOffset) - pi;
-                                                        yPlot2 = (xPlot*(plotSlope) + yOffset) + pi;
-                                                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                                                        yPlot1 = (xPlot*(plotSlope) + yOffset) + pi;
-                                                        yPlot2 = (xPlot*(plotSlope) + yOffset) + 3*pi;
-                                                    end
-                                                    plot(xPlot, yPlot1, 'r');
-                                                    plot(xPlot, yPlot2, 'r'); 
-                                                end
-                                                if length(xPlot)>1; xlim([min(xPlot), max(xPlot)]); end
-                                                ylim([0, 2*pi]); 
-                                                
-                                                % Plot the overlay of all slopes
-                                                subplot(subplotNumbRows, 13, allLinePlotRange); hold on;
-                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
-                                                    plot(xPlot, yPlot, 'k');
-                                                elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
-                                                    plot(xPlot, yPlot1, 'k'); 
-                                                end
-                                            end
-                                        end
-                                    end   
-                                    % Clean up the scatter plots
-                                    cleanUpPlot(settings, slopeMedian(iField), nanmean(allSlopes{iField}), nanmean(rSquared{iField}));
-                                    
-                                    % Clean up the slope overlay plot and
-                                    % plot the average slope
-                                    if ~isnan(slopeMedian(iField)) && ~isnan(nanmean(allSlopes{iField}));
-                                        inputData.subplotNumbRows = subplotNumbRows;
-                                        inputData.allLinePlotRange = allLinePlotRange;
-                                        inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
-                                        inputData.yOffset = allYoffsets; 
-                                        inputData.median = slopeMedian(iField);
-                                        inputData.mean = nanmean(allSlopes{iField});
-                                        cleanUpAndPlotOverlay(inputData);
-                                    end
-                                    
-                                    % Plot a histogram of all slopes
-                                    plotHistogram(subplotNumbRows, histoPlotRange, allSlopes{iField}, slopeMedian(iField));
-                    
-                                    % Save the figure
-                                    figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
-                                        num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)]; 
-                                    figureSettings.appendedFolder.binary = 'yes'; 
-                                    figureSettings.appendedFolder.name = fileNameBase;
-                                    figureSettings.fileTypes = {'fig', 'tiff'};
-                                    saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
-                                end
+                                outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
+                                % Plot 
+                                plotSpikesAndSlopes(outputData, plotFolder, settings); 
+                            end
+                            
+                            % If user selected, plot the relationship plots
+                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+                                    strcmp(settings.phasePrecession.plot, 'relationships') == 1; 
+                                % Extract the needed data from structure
+                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                % Plot 
+                                plotRelationships(outputData, plotFolder); 
                             end
                         end
                     end
                 end
             end
         end
-    end
-
-    fileNameBase = 'phasePrecession_relationshipsBetweenVariables';
-    if strcmp(settings.phasePrecession.plot, 'relationshipsOnly') == 1; 
-        % Ask the user to select the folder to save figures into
-        figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save plots of relationships into');
-        
-        allTrialSlopes_bothGenotypes = {}; allTrialFieldSizes_bothGenotypes = {}; 
-        allSpikeTrainLengths_bothGenotypes = {}; allSpikeNumbers_bothGenotypes = {}; 
-        allISIs_bothGenotypes = {}; 
-        for iGenotype = 1:length(fieldnames(data.cellData));
-            genotypes = fieldnames(data.cellData);
-            genotypeData = data.cellData.(genotypes{iGenotype});
-
-            % Run analysis for high-firing cells only
-            FRdata = genotypeData.highFiring;
-            allTrialSlopes = []; allFieldSizes = []; allSpikeTrainLengths = []; 
-            allSpikeNumbers = []; allISIs = []; 
-            for iAnimal = 1:length(FRdata);
-                % Skip if empty
-                if isempty(FRdata{iAnimal}) == 1;
-                    continue
-                else
-                    [~,n] = size(FRdata{iAnimal});
-                    for iCluster = 1:n;
-                        % Skip if empty
-                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
-                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
-                            continue
-                        else
-                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                            % Assign variables based on running direction
-                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                            for iDir = 1:length(directions);
-                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
-                                spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
-                                slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
-                                %rSquared = outputData.rSquared; 
-                                spikeTimes = outputData.spikesByDirection;
-                                
-                                % Loop through fields
-                                if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-                                    numFieldsToAnalyze = length(spkPhs);
-                                elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
-                                    numFieldsToAnalyze = 1;
-                                end
-                                for iField = 1:numFieldsToAnalyze;
-                                    for iTrial = 1:length(spkPhs{iField});
-
-                                        % If there are enough spatial bins
-                                        if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
-                                            continue;
-                                        else
-                                            % If there were spikes in-field that trial and there are values saved
-                                            if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
-                                                % Get the fit values
-                                                if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                                                    plotSlope = lineFit{iField}(iTrial).lin.Alpha;
-                                                elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                                                    plotSlope = lineFit{iField}(iTrial).cir.Alpha;
-                                                end
-                                                xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
-                                                trainLength = max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial});
-                                                numberOfSpikes = length(spkPhs{iField}{iTrial}); 
-                                                ISIs = max(abs(diff(spikeTimes{iField}{iTrial})));
-                                                
-                                                % Collect all the slopes into one array
-                                                allFieldSizes = [allFieldSizes, length(xPlot)]; 
-                                                allTrialSlopes = [allTrialSlopes, plotSlope]; 
-                                                allSpikeTrainLengths = [allSpikeTrainLengths, trainLength];
-                                                allSpikeNumbers = [allSpikeNumbers, numberOfSpikes]; 
-                                                allISIs = [allISIs, ISIs]; 
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            allTrialSlopes_bothGenotypes{iGenotype} = allTrialSlopes;
-            allTrialFieldSizes_bothGenotypes{iGenotype} = allFieldSizes;
-            allSpikeTrainLengths_bothGenotypes{iGenotype} = allSpikeTrainLengths;
-            allSpikeNumbers_bothGenotypes{iGenotype} = allSpikeNumbers; 
-            allISIs_bothGenotypes{iGenotype} = allISIs; 
-        end
-        
-        if length(allTrialSlopes_bothGenotypes{1}) ~= length(allTrialFieldSizes_bothGenotypes{1})
-            error('Variables are not the same size; scatter plot cannot be generated'); 
-        end
-        
-        % Plot relationship between the slope and the size of the field
-        figures.relationships = figure(2); subplot(2,2,1); hold on;
-        scatter(allISIs_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-        scatter(allISIs_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-        ylabel('Slope'); 
-        xlabel('Largest ISI of Train (msec)');
-        
-        % Plot relationship between the slope and the size of the field
-        figures.relationships = figure(2); subplot(2,2,2); hold on;
-        scatter(allTrialFieldSizes_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-        scatter(allTrialFieldSizes_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-        ylabel('Slope'); 
-        xlabel('Place Field Size (cm)'); 
-        
-        % Plot relationship between the slope and the length of the spike bout
-        figures.relationships = figure(2); subplot(2,2,3); hold on;
-        scatter(allSpikeTrainLengths_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-        scatter(allSpikeTrainLengths_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-        ylabel('Slope'); 
-        xlabel('Length of Spike Train (msec)'); 
-        
-        % Plot relationship between the slope and the number of spikes
-        figures.relationships = figure(2); subplot(2,2,4); hold on;
-        scatter(allSpikeNumbers_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-        scatter(allSpikeNumbers_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-        ylabel('Slope'); 
-        xlabel('Number of Spikes in Train'); 
-        
-        % Save the figure
-        figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
-            num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)]; 
-        figureSettings.appendedFolder.binary = 'no'; 
-        figureSettings.appendedFolder.name = fileNameBase;
-        figureSettings.fileTypes = {'fig', 'tiff'};
-        saveFigure_v1_20240902(figures.relationships, figureSettings)
     end
 end         
          
@@ -292,6 +69,122 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function plotSpikesAndSlopes(inputData, mainFolder, settings)
+    % Ask the user to select the folder to save figures into
+    fileNameBase = 'phasePrecession_spikesAndSlopes';
+    figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, '', mainFolder);
+
+    spkPhs = inputData.spkPhsForPlot; spkPos = inputData.spkPosForPlot; binnedSpkPos = inputData.binnedSpkPos; 
+    slopeMedian = inputData.slopeMedian; allSlopes = inputData.allSlopes; lineFit = inputData.lineFit; 
+    rSquared = inputData.rSquared;
+
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(spkPhs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        close all; 
+        % Set the values for the subplots
+        [subplotNumbRows, allLinePlotRange, histoPlotRange] = determineSubplotLocation(length(spkPhs{iField}));
+
+        % Loop through all the trials
+        allPlotSlopes = []; allYoffsets = []; maxX = []; 
+        for iTrial = 1:length(spkPhs{iField});
+            figures.allTrialsFig = figure(1); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
+            if iTrial == 1; clf(figures.allTrialsFig); else hold on; end;
+
+            % Determine subplot to plot onto
+            if iTrial <= 10; iScatterSub = iTrial; 
+            elseif iTrial > 10 && iTrial <= 20; iScatterSub = iTrial+3; 
+            elseif iTrial > 20 && iTrial <= 30; iScatterSub = iTrial+6;
+            elseif iTrial > 30; iScatterSub = iTrial+9; 
+            end
+
+            % Plot scatter subplot
+            subplot(subplotNumbRows, 13, iScatterSub); hold on;
+            scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
+            set(gca, 'FontSize', 12);
+            title(num2str(iTrial));
+            ylim([0, 2*pi]);
+
+            % If there are enough spatial bins
+            if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
+                continue;
+            else
+                % If there were spikes in-field that trial
+                if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
+                    % Get the fit values
+                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                        plotSlope = lineFit{iField}(iTrial).lin.Alpha;
+                        yOffset = lineFit{iField}(iTrial).lin.Phi0;
+                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                        plotSlope = lineFit{iField}(iTrial).cir.Alpha;
+                        yOffset = lineFit{iField}(iTrial).cir.Phi0;
+                    end
+                    allPlotSlopes = [allPlotSlopes, plotSlope]; 
+                    allYoffsets = [allYoffsets, yOffset]; 
+                    maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})]);
+
+                    % Plot that trial's scatter plot
+                    xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
+                    if strcmp(settings.phasePrecession.circularity, 'shift') == 1 ...
+                            || strcmp(settings.phasePrecession.circularity, 'none') == 1;
+                        yPlot = (xPlot*plotSlope) + yOffset;
+                        plot(xPlot, yPlot, 'r'); 
+                    elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                        if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                            yPlot1 = (xPlot*(plotSlope) + yOffset) - pi;
+                            yPlot2 = (xPlot*(plotSlope) + yOffset) + pi;
+                        elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                            yPlot1 = (xPlot*(plotSlope) + yOffset) + pi;
+                            yPlot2 = (xPlot*(plotSlope) + yOffset) + 3*pi;
+                        end
+                        plot(xPlot, yPlot1, 'r');
+                        plot(xPlot, yPlot2, 'r'); 
+                    end
+                    if length(xPlot)>1; xlim([min(xPlot), max(xPlot)]); end
+                    ylim([0, 2*pi]); 
+
+                    % Plot the overlay of all slopes
+                    subplot(subplotNumbRows, 13, allLinePlotRange); hold on;
+                    if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                        plot(xPlot, yPlot, 'k');
+                    elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                        plot(xPlot, yPlot1, 'k'); 
+                    end
+                end
+            end
+        end   
+        % Clean up the scatter plots
+        cleanUpPlot(settings, slopeMedian(iField), nanmean(allSlopes{iField}), nanmean(rSquared{iField}));
+
+        % Clean up the slope overlay plot and
+        % plot the average slope
+        if ~isnan(slopeMedian(iField)) && ~isnan(nanmean(allSlopes{iField}));
+            inputData.subplotNumbRows = subplotNumbRows;
+            inputData.allLinePlotRange = allLinePlotRange;
+            inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
+            inputData.yOffset = allYoffsets; 
+            inputData.median = slopeMedian(iField);
+            inputData.mean = nanmean(allSlopes{iField});
+            cleanUpAndPlotOverlay(inputData);
+        end
+
+        % Plot a histogram of all slopes
+        plotHistogram(subplotNumbRows, histoPlotRange, allSlopes{iField}, slopeMedian(iField));
+
+        % Save the figure
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.appendedFolder.name = fileNameBase;
+        figureSettings.fileTypes = {'fig', 'tiff'};
+        saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
+    end
+end
+
 function [numRows, linePlotRange, histoRange] = determineSubplotLocation(dataLength)
     numRows = ceil(dataLength/10);
     if dataLength <= 10;
@@ -359,6 +252,99 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     xlabel('Phase Precession Slopes');  
     set(gca,'FontSize', 12); 
 end
+
+function plotRelationships(inputData, mainFolder)
+    fileNameBase = 'phasePrecession_relationshipsBetweenVariables';
+    % Ask the user to select the folder to save figures into
+    figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save plots of relationships into', mainFolder);
+           
+    spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
+    slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
+    spikeTimes = outputData.spikesByDirection;
+
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(spkPhs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        for iTrial = 1:length(spkPhs{iField});
+
+            % If there are enough spatial bins
+            if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
+                continue;
+            else
+                % If there were spikes in-field that trial and there are values saved
+                if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
+                    % Get the fit values
+                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                        plotSlope = lineFit{iField}(iTrial).lin.Alpha;
+                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                        plotSlope = lineFit{iField}(iTrial).cir.Alpha;
+                    end
+                    xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
+                    trainLength = max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial});
+                    numberOfSpikes = length(spkPhs{iField}{iTrial}); 
+                    ISIs = max(abs(diff(spikeTimes{iField}{iTrial})));
+
+                    % Collect all the slopes into one array
+                    allFieldSizes = [allFieldSizes, length(xPlot)]; 
+                    allTrialSlopes = [allTrialSlopes, plotSlope]; 
+                    allSpikeTrainLengths = [allSpikeTrainLengths, trainLength];
+                    allSpikeNumbers = [allSpikeNumbers, numberOfSpikes]; 
+                    allISIs = [allISIs, ISIs]; 
+                end
+            end
+        end
+    end
                     
+    allTrialSlopes_bothGenotypes{iGenotype} = allTrialSlopes;
+    allTrialFieldSizes_bothGenotypes{iGenotype} = allFieldSizes;
+    allSpikeTrainLengths_bothGenotypes{iGenotype} = allSpikeTrainLengths;
+    allSpikeNumbers_bothGenotypes{iGenotype} = allSpikeNumbers; 
+    allISIs_bothGenotypes{iGenotype} = allISIs; 
+
+    if length(allTrialSlopes_bothGenotypes{1}) ~= length(allTrialFieldSizes_bothGenotypes{1})
+        error('Variables are not the same size; scatter plot cannot be generated'); 
+    end
+
+    % Plot relationship between the slope and the size of the field
+    figures.relationships = figure(2); subplot(2,2,1); hold on;
+    scatter(allISIs_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
+    scatter(allISIs_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
+    ylabel('Slope'); 
+    xlabel('Largest ISI of Train (msec)');
+
+    % Plot relationship between the slope and the size of the field
+    figures.relationships = figure(2); subplot(2,2,2); hold on;
+    scatter(allTrialFieldSizes_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
+    scatter(allTrialFieldSizes_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
+    ylabel('Slope'); 
+    xlabel('Place Field Size (cm)'); 
+
+    % Plot relationship between the slope and the length of the spike bout
+    figures.relationships = figure(2); subplot(2,2,3); hold on;
+    scatter(allSpikeTrainLengths_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
+    scatter(allSpikeTrainLengths_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
+    ylabel('Slope'); 
+    xlabel('Length of Spike Train (msec)'); 
+
+    % Plot relationship between the slope and the number of spikes
+    figures.relationships = figure(2); subplot(2,2,4); hold on;
+    scatter(allSpikeNumbers_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
+    scatter(allSpikeNumbers_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
+    ylabel('Slope'); 
+    xlabel('Number of Spikes in Train'); 
+
+    % Save the figure
+    figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
+        num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)]; 
+    figureSettings.appendedFolder.binary = 'no'; 
+    figureSettings.appendedFolder.name = fileNameBase;
+    figureSettings.fileTypes = {'fig', 'tiff'};
+    saveFigure_v1_20240902(figures.relationships, figureSettings)
+end
+
                     
                     
