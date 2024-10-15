@@ -225,7 +225,7 @@ thetaSettings.phasePrecession.timeRange = 5*125; % Over what range of time shoul
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %%
 clc;
-phasePrecessionSettings.phasePrecession.plot = 'spikesAndSlopes'; 
+phasePrecessionSettings.phasePrecession.plot = 'pValues'; 
 plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
 
 %% Step 13B: Control analyses related to the phase precession

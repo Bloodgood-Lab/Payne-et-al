@@ -12,8 +12,7 @@ function saveFigure_v1_20240902(fig, settings)
     
     if strcmp(settings.appendedFolder.binary, 'yes') == 1;
         
-        % Create the subfolder with the
-        % version and today's data
+        % Create the subfolder with the version and today's date
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
         saveVersion = sprintf('%02d', saveVersion);
         subFolder = [settings.filePath{1}, '\', settings.appendedFolder.name, '_v', saveVersion, '_', date];
@@ -44,8 +43,7 @@ function saveFigure_v1_20240902(fig, settings)
         
     elseif strcmp(settings.appendedFolder.binary, 'no') == 1;
         
-        % Create the subfolder with the
-        % version and today's data
+        % Create the subfolder with the version and today's data
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
         saveVersion = sprintf('%02d', saveVersion);
         

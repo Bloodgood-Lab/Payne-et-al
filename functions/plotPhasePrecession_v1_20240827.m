@@ -12,9 +12,11 @@ function plotPhasePrecession_v1_20240827(data, settings)
     % Outputs:
     %   1) plots saved in the folder specified by the user
     
-    % Ask the user to select the folder they want plots saved into
-    plotFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
+    % Get the folders to save plots into
+    mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
+    figureSettings = getFigureFolders(mainFolder, settings); 
     
+    count_allTrials = 1; 
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData);
         genotypeData = data.cellData.(genotypes{iGenotype});
@@ -45,17 +47,20 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
+                                outputData.figureSettings = figureSettings;
                                 % Plot 
-                                plotSpikesAndSlopes(outputData, plotFolder, settings); 
+                                plotSpikesAndSlopes(outputData, settings); 
                             end
                             
                             % If user selected, plot the relationship plots
                             if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-                                    strcmp(settings.phasePrecession.plot, 'relationships') == 1; 
+                                    strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
                                 % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
+                                outputData.figureSettings = figureSettings;
                                 % Plot 
-                                plotRelationships(outputData, plotFolder); 
+                                plotPvalues(outputData, settings, count_allTrials); count_allTrials = count_allTrials + 1;  
                             end
                         end
                     end
@@ -69,11 +74,23 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotSpikesAndSlopes(inputData, mainFolder, settings)
-    % Ask the user to select the folder to save figures into
-    fileNameBase = 'phasePrecession_spikesAndSlopes';
-    figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, '', mainFolder);
+function figureSettings = getFigureFolders(mainFolder, settings)
+    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+        strcmp(settings.phasePrecession.plot, 'spikesAndSlopes') == 1; 
+        figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
+        figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
+    end
 
+    % If user selected, plot the relationship plots
+    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+            strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
+        figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
+        figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
+    end
+end
+
+function plotSpikesAndSlopes(inputData, settings)
+    % Ask the user to select the folder to save figures into
     spkPhs = inputData.spkPhsForPlot; spkPos = inputData.spkPosForPlot; binnedSpkPos = inputData.binnedSpkPos; 
     slopeMedian = inputData.slopeMedian; allSlopes = inputData.allSlopes; lineFit = inputData.lineFit; 
     rSquared = inputData.rSquared;
@@ -176,10 +193,11 @@ function plotSpikesAndSlopes(inputData, mainFolder, settings)
         plotHistogram(subplotNumbRows, histoPlotRange, allSlopes{iField}, slopeMedian(iField));
 
         % Save the figure
+        figureSettings.filePath = inputData.figureSettings.filePath.spikesAndSlopes;
         figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
             num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
         figureSettings.appendedFolder.binary = 'yes'; 
-        figureSettings.appendedFolder.name = fileNameBase;
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.spikesAndSlopes;
         figureSettings.fileTypes = {'fig', 'tiff'};
         saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
     end
@@ -253,97 +271,50 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     set(gca,'FontSize', 12); 
 end
 
-function plotRelationships(inputData, mainFolder)
-    fileNameBase = 'phasePrecession_relationshipsBetweenVariables';
-    % Ask the user to select the folder to save figures into
-    figureSettings.filePath = getMostRecentFilePath_v1_20240723(fileNameBase, 'Select directory to save plots of relationships into', mainFolder);
-           
-    spkPhs = outputData.spkPhsForPlot; spkPos = outputData.spkPosForPlot; binnedSpkPos = outputData.binnedSpkPos; 
-    slopeMedian = outputData.slopeMedian; allSlopes = outputData.allSlopes; lineFit = outputData.lineFit; 
-    spikeTimes = outputData.spikesByDirection;
-
+function plotPvalues(inputData, settings, count_allTrials)
+    lineFit = inputData.lineFit; 
+    
     % Loop through fields
     if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-        numFieldsToAnalyze = length(spkPhs);
+        numFieldsToAnalyze = length(lineFit);
     elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
         numFieldsToAnalyze = 1;
     end
     for iField = 1:numFieldsToAnalyze;
-        for iTrial = 1:length(spkPhs{iField});
-
-            % If there are enough spatial bins
-            if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
-                continue;
-            else
-                % If there were spikes in-field that trial and there are values saved
-                if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
-                    % Get the fit values
-                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                        plotSlope = lineFit{iField}(iTrial).lin.Alpha;
-                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                        plotSlope = lineFit{iField}(iTrial).cir.Alpha;
-                    end
-                    xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
-                    trainLength = max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial});
-                    numberOfSpikes = length(spkPhs{iField}{iTrial}); 
-                    ISIs = max(abs(diff(spikeTimes{iField}{iTrial})));
-
-                    % Collect all the slopes into one array
-                    allFieldSizes = [allFieldSizes, length(xPlot)]; 
-                    allTrialSlopes = [allTrialSlopes, plotSlope]; 
-                    allSpikeTrainLengths = [allSpikeTrainLengths, trainLength];
-                    allSpikeNumbers = [allSpikeNumbers, numberOfSpikes]; 
-                    allISIs = [allISIs, ISIs]; 
+        close all; p = []; count = 1; 
+        for iTrial = 1:length(lineFit{iField}); 
+            if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                if isstruct(lineFit{iField}(iTrial).lin) == 1; 
+                    p(count) = lineFit{iField}(iTrial).lin.pValue;
+                    count = count + 1;
+                end
+            elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                if isstruct(lineFit{iField}(iTrial).cir) == 1; 
+                    p(count) = lineFit{iField}(iTrial).cir.pValue;
+                    count = count + 1;
                 end
             end
+            p_allTrials{count_allTrials} = p;
         end
+        
+        % Plot the pValues across all fields for one cell
+        hold on; pValuesPerCell = histogram(p, [0:0.05:1]);
+        maxValue = max(pValuesPerCell.Values);
+        plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+        ylabel('Number of Trials');
+        xlabel('pValue');  
+        set(gca,'FontSize', 12); 
+        xlim([0,1]);
+        
+        % Save the figure
+        figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+        figureSettings.fileTypes = {'tiff'};
+        saveFigure_v1_20240902(pValuesPerCell, figureSettings)
     end
-                    
-    allTrialSlopes_bothGenotypes{iGenotype} = allTrialSlopes;
-    allTrialFieldSizes_bothGenotypes{iGenotype} = allFieldSizes;
-    allSpikeTrainLengths_bothGenotypes{iGenotype} = allSpikeTrainLengths;
-    allSpikeNumbers_bothGenotypes{iGenotype} = allSpikeNumbers; 
-    allISIs_bothGenotypes{iGenotype} = allISIs; 
-
-    if length(allTrialSlopes_bothGenotypes{1}) ~= length(allTrialFieldSizes_bothGenotypes{1})
-        error('Variables are not the same size; scatter plot cannot be generated'); 
-    end
-
-    % Plot relationship between the slope and the size of the field
-    figures.relationships = figure(2); subplot(2,2,1); hold on;
-    scatter(allISIs_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-    scatter(allISIs_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-    ylabel('Slope'); 
-    xlabel('Largest ISI of Train (msec)');
-
-    % Plot relationship between the slope and the size of the field
-    figures.relationships = figure(2); subplot(2,2,2); hold on;
-    scatter(allTrialFieldSizes_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-    scatter(allTrialFieldSizes_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-    ylabel('Slope'); 
-    xlabel('Place Field Size (cm)'); 
-
-    % Plot relationship between the slope and the length of the spike bout
-    figures.relationships = figure(2); subplot(2,2,3); hold on;
-    scatter(allSpikeTrainLengths_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-    scatter(allSpikeTrainLengths_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-    ylabel('Slope'); 
-    xlabel('Length of Spike Train (msec)'); 
-
-    % Plot relationship between the slope and the number of spikes
-    figures.relationships = figure(2); subplot(2,2,4); hold on;
-    scatter(allSpikeNumbers_bothGenotypes{1}, allTrialSlopes_bothGenotypes{1}, 'ok'); 
-    scatter(allSpikeNumbers_bothGenotypes{2}, allTrialSlopes_bothGenotypes{2}, 'ok'); 
-    ylabel('Slope'); 
-    xlabel('Number of Spikes in Train'); 
-
-    % Save the figure
-    figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
-        num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)]; 
-    figureSettings.appendedFolder.binary = 'no'; 
-    figureSettings.appendedFolder.name = fileNameBase;
-    figureSettings.fileTypes = {'fig', 'tiff'};
-    saveFigure_v1_20240902(figures.relationships, figureSettings)
 end
 
                     

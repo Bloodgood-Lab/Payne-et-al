@@ -1,0 +1,187 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>saveFigure_v1_20240902</title><meta name="generator" content="MATLAB 8.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2024-10-15"><meta name="DC.source" content="saveFigure_v1_20240902.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> saveFigure_v1_20240902(fig, settings)
+    <span class="comment">% Saves plots at the location and in the formats defined by settings</span>
+    <span class="comment">% Last Modified: 09/02/2024</span>
+
+    <span class="comment">% Inputs:</span>
+    <span class="comment">%   1) fig: the figure handle for the figure your want to save</span>
+    <span class="comment">%   2) settings: the settings file where the settings for saving are</span>
+    <span class="comment">%      stored</span>
+
+    <span class="comment">% Outputs:</span>
+    <span class="comment">%   1) plots saved in the folder specified by the user</span>
+
+    <span class="keyword">if</span> strcmp(settings.appendedFolder.binary, <span class="string">'yes'</span>) == 1;
+
+        <span class="comment">% Create the subfolder with the version and today's date</span>
+        saveVersion = str2double(settings.filePath{2}) + 1;
+        saveVersion = sprintf(<span class="string">'%02d'</span>, saveVersion);
+        subFolder = [settings.filePath{1}, <span class="string">'\'</span>, settings.appendedFolder.name, <span class="string">'_v'</span>, saveVersion, <span class="string">'_'</span>, date];
+        <span class="keyword">if</span> ~exist(subFolder, <span class="string">'dir'</span>)
+            <span class="comment">% Create the folder if it does not exist</span>
+            mkdir(subFolder);
+        <span class="keyword">end</span>
+
+        <span class="comment">% Get the file name and save</span>
+        saveFile = settings.name;
+        <span class="keyword">for</span> iFileType = 1:length(settings.fileTypes)
+            saveas(fig, [subFolder, <span class="string">'\'</span>, saveFile], settings.fileTypes{iFileType});
+        <span class="keyword">end</span>
+
+        <span class="keyword">if</span> ~exist([subFolder, <span class="string">'\commitMessage.txt'</span>], <span class="string">'file'</span>)
+            <span class="comment">% Ask the user to write a short message about the data</span>
+            prompt = {<span class="string">'Please enter a commit message:'</span>};
+            dlgTitle = <span class="string">'Data Commit Message'</span>;
+            numLines = [1, 50];
+            defaultAnswer = {<span class="string">'No commit message entered for this figure'</span>};
+            commitMessage = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+
+            <span class="comment">% Save the commit message</span>
+            commitFile = fopen([subFolder, <span class="string">'\commitMessage.txt'</span>], <span class="string">'w'</span>);
+            fprintf(commitFile, <span class="string">'%s'</span>, commitMessage{1});
+            fclose(commitFile);
+        <span class="keyword">end</span>
+
+    <span class="keyword">elseif</span> strcmp(settings.appendedFolder.binary, <span class="string">'no'</span>) == 1;
+
+        <span class="comment">% Create the subfolder with the version and today's data</span>
+        saveVersion = str2double(settings.filePath{2}) + 1;
+        saveVersion = sprintf(<span class="string">'%02d'</span>, saveVersion);
+
+        <span class="comment">% Get the file name and save</span>
+        saveFile = settings.name;
+        <span class="keyword">for</span> iFileType = 1:length(settings.fileTypes)
+            saveas(fig, [settings.filePath{1}, <span class="string">'\_v'</span>, saveVersion, <span class="string">'_'</span>, date, <span class="string">'\'</span>, saveFile], settings.fileTypes{iFileType});
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in saveFigure_v1_20240902 (line 13)
+    if strcmp(settings.appendedFolder.binary, 'yes') == 1;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function saveFigure_v1_20240902(fig, settings)
+    % Saves plots at the location and in the formats defined by settings
+    % Last Modified: 09/02/2024
+
+    % Inputs:
+    %   1) fig: the figure handle for the figure your want to save
+    %   2) settings: the settings file where the settings for saving are
+    %      stored
+
+    % Outputs:
+    %   1) plots saved in the folder specified by the user
+    
+    if strcmp(settings.appendedFolder.binary, 'yes') == 1;
+        
+        % Create the subfolder with the version and today's date
+        saveVersion = str2double(settings.filePath{2}) + 1;                                        
+        saveVersion = sprintf('%02d', saveVersion);
+        subFolder = [settings.filePath{1}, '\', settings.appendedFolder.name, '_v', saveVersion, '_', date];
+        if ~exist(subFolder, 'dir')
+            % Create the folder if it does not exist
+            mkdir(subFolder);
+        end
+
+        % Get the file name and save
+        saveFile = settings.name; 
+        for iFileType = 1:length(settings.fileTypes)
+            saveas(fig, [subFolder, '\', saveFile], settings.fileTypes{iFileType});
+        end
+        
+        if ~exist([subFolder, '\commitMessage.txt'], 'file')
+            % Ask the user to write a short message about the data
+            prompt = {'Please enter a commit message:'};
+            dlgTitle = 'Data Commit Message';
+            numLines = [1, 50];
+            defaultAnswer = {'No commit message entered for this figure'};
+            commitMessage = inputdlg(prompt, dlgTitle, numLines, defaultAnswer);
+
+            % Save the commit message
+            commitFile = fopen([subFolder, '\commitMessage.txt'], 'w');
+            fprintf(commitFile, '%s', commitMessage{1}); 
+            fclose(commitFile); 
+        end
+        
+    elseif strcmp(settings.appendedFolder.binary, 'no') == 1;
+        
+        % Create the subfolder with the version and today's data
+        saveVersion = str2double(settings.filePath{2}) + 1;                                        
+        saveVersion = sprintf('%02d', saveVersion);
+        
+        % Get the file name and save
+        saveFile = settings.name; 
+        for iFileType = 1:length(settings.fileTypes)
+            saveas(fig, [settings.filePath{1}, '\_v', saveVersion, '_', date, '\', saveFile], settings.fileTypes{iFileType});
+        end
+    end
+    
+##### SOURCE END #####
+--></body></html>
