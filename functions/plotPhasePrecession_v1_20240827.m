@@ -16,7 +16,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
     mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
     figureSettings = getFigureFolders(mainFolder, settings); 
     
-    count_allTrials = 1; 
+    p_allTrials = []; p_allCells = [];
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData);
         genotypeData = data.cellData.(genotypes{iGenotype});
@@ -29,7 +29,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -60,7 +60,8 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
                                 outputData.figureSettings = figureSettings;
                                 % Plot 
-                                plotPvalues(outputData, settings, count_allTrials); count_allTrials = count_allTrials + 1;  
+                                p = plotPvalues_perCell(outputData, settings); 
+                                p_allTrials = [p_allTrials, p]; p_allCells = [p_allCells, nanmedian(p)]; 
                             end
                         end
                     end
@@ -68,7 +69,13 @@ function plotPhasePrecession_v1_20240827(data, settings)
             end
         end
     end
-end         
+    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+        strcmp(settings.phasePrecession.plot, 'pValues') == 1;
+        outputData.p_allTrials = p_allTrials; outputData.p_allCells = p_allCells; 
+        outputData.figureSettings = figureSettings;
+        close all; plotPvalues_population(outputData); 
+    end
+end   
          
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +88,7 @@ function figureSettings = getFigureFolders(mainFolder, settings)
         figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
     end
 
-    % If user selected, plot the relationship plots
+    % If user selected, plot the p-value plots
     if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
             strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
         figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
@@ -271,7 +278,7 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     set(gca,'FontSize', 12); 
 end
 
-function plotPvalues(inputData, settings, count_allTrials)
+function p = plotPvalues_perCell(inputData, settings)
     lineFit = inputData.lineFit; 
     
     % Loop through fields
@@ -294,7 +301,6 @@ function plotPvalues(inputData, settings, count_allTrials)
                     count = count + 1;
                 end
             end
-            p_allTrials{count_allTrials} = p;
         end
         
         % Plot the pValues across all fields for one cell
@@ -315,6 +321,41 @@ function plotPvalues(inputData, settings, count_allTrials)
         figureSettings.fileTypes = {'tiff'};
         saveFigure_v1_20240902(pValuesPerCell, figureSettings)
     end
+end
+
+function plotPvalues_population(inputData)
+    % Plot the pValues across all fields for all cells
+    figure(2); hold on; pValuesAllFields = histogram(inputData.p_allTrials, [0:0.05:1], 'Normalization', 'probability');
+    maxValue = max(pValuesAllFields.Values);
+    plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+    ylabel('Number of Trials');
+    xlabel('pValue');  
+    set(gca,'FontSize', 12); 
+    xlim([0,1]);
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+    figureSettings.name = 'allFieldsCombined';
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllFields, figureSettings)
+    
+    % Plot the median pValues for all cells
+    figure(3); hold on; pValuesAllCells = histogram(inputData.p_allCells, [0:0.05:1], 'Normalization', 'probability');
+    maxValue = max(pValuesAllCells.Values);
+    plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+    ylabel('Number of Trials');
+    xlabel('pValue');  
+    set(gca,'FontSize', 12); 
+    xlim([0,1]);
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+    figureSettings.name = ['medianOfEachCell'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllCells, figureSettings)
+    
 end
 
                     

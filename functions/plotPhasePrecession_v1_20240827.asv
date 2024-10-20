@@ -16,6 +16,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
     mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
     figureSettings = getFigureFolders(mainFolder, settings); 
     
+    p_allTrials = []; 
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData);
         genotypeData = data.cellData.(genotypes{iGenotype});
@@ -28,7 +29,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1:2%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -59,7 +60,8 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
                                 outputData.figureSettings = figureSettings;
                                 % Plot 
-                                plotPvalues(outputData, settings); 
+                                p = plotPvalues_perCell(outputData, settings); 
+                                p_allTrials = [p_allTrials, p]; 
                             end
                         end
                     end
@@ -67,7 +69,12 @@ function plotPhasePrecession_v1_20240827(data, settings)
             end
         end
     end
-end         
+    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+        strcmp(settings.phasePrecession.plot, 'pValues') == 1;
+        outputData.p = p_allTrials; outputData.figureSettings = figureSettings;
+        plotPvalues_allTrials(outputData); 
+    end
+end   
          
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,14 +84,14 @@ function figureSettings = getFigureFolders(mainFolder, settings)
     if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
         strcmp(settings.phasePrecession.plot, 'spikesAndSlopes') == 1; 
         figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
-        figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(fileNameBase, '', mainFolder);
+        figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
     end
 
-    % If user selected, plot the relationship plots
+    % If user selected, plot the p-value plots
     if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
             strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
-        figureSettings.fileNameBase = 'phasePrecession_pValues';
-        figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(fileNameBase, '', mainFolder);
+        figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
+        figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
     end
 end
 
@@ -196,7 +203,7 @@ function plotSpikesAndSlopes(inputData, settings)
         figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
             num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
         figureSettings.appendedFolder.binary = 'yes'; 
-        figureSettings.appendedFolder.name = fileNameBase;
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.spikesAndSlopes;
         figureSettings.fileTypes = {'fig', 'tiff'};
         saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
     end
@@ -270,7 +277,7 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     set(gca,'FontSize', 12); 
 end
 
-function plotPvalues(inputData, settings)
+function p = plotPvalues_perCell(inputData, settings)
     lineFit = inputData.lineFit; 
     
     % Loop through fields
@@ -309,10 +316,29 @@ function plotPvalues(inputData, settings)
         figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
             num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
         figureSettings.appendedFolder.binary = 'yes'; 
-        figureSettings.appendedFolder.name = fileNameBase;
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
         figureSettings.fileTypes = {'tiff'};
         saveFigure_v1_20240902(pValuesPerCell, figureSettings)
     end
+end
+
+function plotPvalues_allTrials(inputData)
+    % Plot the pValues across all fields for one cell
+    hold on; pValuesAllTrials = histogram(inputData.p, [0:0.05:1], 'Normalization', 'probab);
+    maxValue = max(pValuesAllTrials.Values);
+    plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+    ylabel('Number of Trials');
+    xlabel('pValue');  
+    set(gca,'FontSize', 12); 
+    xlim([0,1]);
+
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+    figureSettings.name = ['allFieldsCombined'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllTrials, figureSettings)
 end
 
                     
