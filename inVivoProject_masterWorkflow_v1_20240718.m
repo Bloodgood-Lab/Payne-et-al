@@ -219,7 +219,7 @@ thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
 thetaSettings.phasePrecession.normalized = 'yes'; % Is the field normalized?
 thetaSettings.phasePrecession.circularity = 'none'; % How is circularity accounted for? Could also be set to 'shift'
-thetaSettings.phasePrecession.fit = 'circular'; % Using a linear or circular fit?
+thetaSettings.phasePrecession.fit = 'circularSlope'; % Using a linear or circular fit?
 thetaSettings.phasePrecession.timeRange = 5*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
 
 % Outputs: 
