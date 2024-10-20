@@ -70,17 +70,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 max(abs(diff(spikeTimes{iField}{iTrial}))) <= settings.phasePrecession.ISIthreshold && ...
                                                 max(spikeTimes{iField}{iTrial}) - min(spikeTimes{iField}{iTrial}) >= settings.phasePrecession.timeRange;
                                             
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%% DEBUGGING STEPS %%%%%%%
-                                            %figure(1); clf; subplot(2,1,1); 
-                                            %plot(spkPos{iField}{iTrial}, 'o-k'); 
-                                            %xlim([0, length(spkPos{iField}{iTrial})+1]);
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            
                                             % Get the position information
                                             if strcmp(settings.phasePrecession.positionType, 'unbinned') == 1
                                                 spkPosInput{iField}{iTrial} = spkPos{iField}{iTrial}-nanmin(spkPos{iField}{iTrial});
@@ -118,23 +107,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 spkPhsInput{iField}{iTrial} = spkPhs{iField}{iTrial}+pi;
                                                 R = corrcoef(spkPosInput{iField}{iTrial}, spkPhs{iField}{iTrial}); correlation = R(2); maxInd = 1; 
                                             end
-                                            
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%% DEBUGGING STEPS %%%%%%%
-                                            %figure(1); subplot(2,1,2); 
-                                            %plot(spkPosInput{iField}{iTrial}, 'o-k'); 
-                                            %xlim([0, length(spkPos{iField}{iTrial})+1]);
-                                            %pause;
 
-                                            allTrialsPosition = [allTrialsPosition; spkPosInput{iField}{iTrial}]; 
-                                            spkPhsInput{iField}{iTrial}
-                                            allTrialsPhases = [allTrialsPhases; spkPhsInput{iField}{iTrial}]; 
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                            
                                             % Get the phase precession for that trial
                                             [cir, lin] = thetaPrecess(spkPhsInput{iField}{iTrial}, spkPosInput{iField}{iTrial}, settings.phasePrecession.slopeRange); 
                                             if strcmp(settings.phasePrecession.fit, 'circular') == 1;
@@ -144,19 +117,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 cir.Phi0 = trialOffset; 
                                                 r2 = (cir.Coeff)^2;
                                                 
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%% DEBUGGING STEPS %%%%%%%
-                                                figure(1); subplot(2,2,2); hold on;
-                                                scatter(spkPosInput{iField}{iTrial}, spkPhsInput{iField}{iTrial}); 
-                                                xPlot = [0:max(spkPosInput{iField}{iTrial})-min(spkPosInput{iField}{iTrial})];
-                                                yPlot = (xPlot*trialSlope) + trialOffset;
-                                                plot(xPlot, yPlot, 'r'); 
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                    
                                             elseif strcmp(settings.phasePrecession.fit, 'linear') == 1;
                                                 %y1 = [lin.Phi0, lin.Phi0+lin.Alpha];
                                                 trialSlope = lin.Alpha;

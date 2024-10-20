@@ -1,7 +1,7 @@
 function plotPhasePrecession_v1_20240827(data, settings)
     % Generates plots related to phase precession analysis
     % Written by Anja Payne
-    % Last Modified: 10/15/2024
+    % Last Modified: 10/20/2024
 
     % Inputs:
     %   1) data: the matlab structure where the in-field theta phases
@@ -52,7 +52,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 plotSpikesAndSlopes(outputData, settings); 
                             end
                             
-                            % If user selected, plot the relationship plots
+                            % If user selected, plot the p-value plots
                             if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
                                     strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
                                 % Extract the needed data from structure
@@ -62,6 +62,21 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 % Plot 
                                 p = plotPvalues_perCell(outputData, settings); 
                                 p_allTrials = [p_allTrials, p]; p_allCells = [p_allCells, nanmedian(p)]; 
+                            end
+                            
+                            % If user selected, plot the shuffles
+                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+                                    strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
+                                % Extract the needed data from structure
+                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
+                                outputData.figureSettings = figureSettings;
+                                % Calculate the shuffles
+                                calculateShuffles(outputData); 
+                                
+                                % Plot 
+                                %p = plotPvalues_perCell(outputData, settings); 
+                                %p_allTrials = [p_allTrials, p]; p_allCells = [p_allCells, nanmedian(p)]; 
                             end
                         end
                     end
@@ -355,6 +370,23 @@ function plotPvalues_population(inputData)
     figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
     figureSettings.fileTypes = {'tiff'};
     saveFigure_v1_20240902(pValuesAllCells, figureSettings)
+    
+end
+
+function calculateShuffles(inputData, numShuffles)
+    % Shuffle the phases by mixing up the order
+    phs = inputData.spkPhsForPlot; 
+    for iShuffPhs = 1:numShuffles; 
+        randomOrder = randperm(length(phs));
+        shuffledPhases = phs(randomOrder); 
+        
+    end
+    
+    
+    
+    % Shuffle the positions by mixing up the order
+    
+    
     
 end
 
