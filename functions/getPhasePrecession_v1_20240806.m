@@ -101,19 +101,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                                 trialOffset{iField}(iTrial) = NaN; 
                                                 trialR2{iField}(iTrial) = NaN;
                                                 trialPvalue{iField}(iTrial) = NaN; 
-                                                %{
-                                                if strcmp(settings.phasePrecession.circularity, 'shift') == 1 || ...
-                                                        strcmp(settings.phasePrecession.circularity, 'none') == 1
-                                                    phasePosCorrelation{iField}(iTrial) = correlation(maxInd);
-                                                else
-                                                    phasePosCorrelation{iField}(iTrial) = NaN;
-                                                end
-                                            else
-                                                slope{iField}(iTrial) = NaN;
-                                                offset{iField}(iTrial) = NaN; 
-                                                rSquaredAllTrials{iField}(iTrial) = NaN;
-                                                phasePosCorrelation{iField}(iTrial) = NaN;
-                                                %}
                                             end
                                             
                                         else

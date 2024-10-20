@@ -53,11 +53,4 @@ function outputData = calculatePhasePrecession_v1_20241020(inputData, settings)
         outputData.r2 = (circFit.rho)^2;   
         outputData.p = circFit.p; 
     end
-    %{
-    if isempty(cir) == 0;
-        fitInfo{iField}(iTrial).cir = cir; fitInfo{iField}(iTrial).lin = lin;
-    else 
-        fitInfo{iField}(iTrial).cir = NaN; fitInfo{iField}(iTrial).lin = NaN;
-    end
-    %}
                                     
