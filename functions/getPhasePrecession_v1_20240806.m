@@ -35,7 +35,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:2%:n;
+                for iCluster = 1:4%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -45,7 +45,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                         
                         % Assign variables based on running direction
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                        for iDir = 1%:length(directions);
+                        for iDir = 1:length(directions);
                             % Extract variables based on running direction
                             outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'phasePrecession');
                             spkPhs = outputData.spkPhs; spkPos = outputData.spkPos; binnedSpkPos = outputData.binnedSpkPos;

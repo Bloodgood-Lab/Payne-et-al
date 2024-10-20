@@ -23,13 +23,13 @@ function plotPhasePrecession_v1_20240827(data, settings)
 
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1:length(FRdata);
+        for iAnimal = 1%:length(FRdata);
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1;
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1%:n;
+                for iCluster = 1:2%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -72,11 +72,15 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
                                 outputData.figureSettings = figureSettings;
                                 % Calculate the shuffles
-                                calculateShuffles(outputData); 
+                                [shOutputData] = calculateShuffles(outputData, settings, 10); 
                                 
-                                % Plot 
-                                %p = plotPvalues_perCell(outputData, settings); 
-                                %p_allTrials = [p_allTrials, p]; p_allCells = [p_allCells, nanmedian(p)]; 
+                                % Plot shuffled slopes
+                                plotInput.shPhs = shOutputData.shPhsSlopes;
+                                plotInput.shPos = shOutputData.shPosSlopes;
+                                plotInput.realSlopes = outputData.allSlopes;
+                                plotInput.figureSettings = figureSettings;
+                                plotInput.genotype = genotypes{iGenotype}; plotInput.animal = iAnimal; plotInput.cell = iCluster; plotInput.dir = directions{iDir}; 
+                                plotShuffles_perTrial(plotInput, settings); 
                             end
                         end
                     end
@@ -108,6 +112,14 @@ function figureSettings = getFigureFolders(mainFolder, settings)
             strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
         figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
         figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
+    end
+    
+    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+        strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
+        figureSettings.fileNameBase.shuffles{1} = 'phasePrecession_shuffledPhases';
+        figureSettings.fileNameBase.shuffles{2} = 'phasePrecession_shuffledPositions';
+        figureSettings.filePath.shuffles{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{1}, '', mainFolder);
+        figureSettings.filePath.shuffles{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{2}, '', mainFolder);
     end
 end
 
@@ -373,22 +385,128 @@ function plotPvalues_population(inputData)
     
 end
 
-function calculateShuffles(inputData, numShuffles)
-    % Shuffle the phases by mixing up the order
-    phs = inputData.spkPhsForPlot; 
-    for iShuffPhs = 1:numShuffles; 
-        randomOrder = randperm(length(phs));
-        shuffledPhases = phs(randomOrder); 
-        
+function outputData = calculateShuffles(inputData, settings, numShuffles)
+    phs = inputData.spkPhsForPlot; pos = inputData.spkPosForPlot; 
+    
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(phs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
     end
-    
-    
-    
-    % Shuffle the positions by mixing up the order
-    
-    
-    
+    for iField = 1:numFieldsToAnalyze;
+        for iTrial = 1:length(phs{iField}); 
+            % If there are no phases, skip that trial
+            if isempty(phs{iField}{iTrial}) == 1; 
+                outputData.shPhsSlopes{iField}{iTrial} = NaN(1,numShuffles); 
+                outputData.shPosSlopes{iField}{iTrial} = NaN(1,numShuffles); 
+            else
+                for iShuff = 1:numShuffles; 
+                    % Shuffle the phases by mixing up the order
+                    randomOrder = randperm(length(phs{iField}{iTrial}));
+                    shuffledPhases = phs{iField}{iTrial}(randomOrder); 
+                    % Now rerun phase precession
+                    phasePrecessionInputData.spkPhs = shuffledPhases; 
+                    phasePrecessionInputData.spkPos = pos{iField}{iTrial}; 
+                    [cir, lin, circFit] = thetaPrecess(phasePrecessionInputData.spkPhs, phasePrecessionInputData.spkPos, settings.phasePrecession.slopeRange); 
+                    if strcmp(settings.phasePrecession.fit, 'circularSlope') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = cir.Alpha; 
+                    elseif strcmp(settings.phasePrecession.fit, 'linearFit') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = lin.Alpha;
+                    elseif strcmp(settings.phasePrecession.fit, 'circularFit') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = circFit.Alpha;
+                    end
+
+                    % Shuffle the positions by mixing up the order
+                    randomOrder = randperm(length(pos{iField}{iTrial}));
+                    shuffledPositions = pos{iField}{iTrial}(randomOrder); 
+                    % Now rerun phase precession
+                    phasePrecessionInputData.spkPhs = phs{iField}{iTrial}; 
+                    phasePrecessionInputData.spkPos = shuffledPositions; 
+                    [cir, lin, circFit] = thetaPrecess(phasePrecessionInputData.spkPhs, phasePrecessionInputData.spkPos, settings.phasePrecession.slopeRange); 
+                    if strcmp(settings.phasePrecession.fit, 'circularSlope') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = cir.Alpha; 
+                    elseif strcmp(settings.phasePrecession.fit, 'linearFit') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = lin.Alpha;
+                    elseif strcmp(settings.phasePrecession.fit, 'circularFit') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = circFit.Alpha;
+                    end
+                end
+            end
+            outputData.shPhsAveSlope{iField} = nanmean(outputData.shPhsSlopes{iField}{iTrial}); 
+            outputData.shPosAveSlope{iField} = nanmean(outputData.shPosSlopes{iField}{iTrial}); 
+        end
+    end
 end
 
+function plotShuffles_perTrial(inputData, settings)
+    sh1 = inputData.shPhs; sh2 = inputData.shPos;
+    realSlopes = inputData.realSlopes;
+    
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(sh1);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        close all; 
+        % Set the values for the subplots
+        subplotNumbRows = ceil(length(sh1{iField})/10);
+        
+        % Loop through all the trials
+        for iTrial = 1:length(sh1{iField});
+            
+            % Plot the shuffled positions
+            shuffledPhases = figure(1); set(shuffledPhases, 'Position', [100, 200, 1800, 800]);
+            set(shuffledPhases, 'PaperPositionMode', 'auto');
+            if iTrial == 1; clf(shuffledPhases); else hold on; end;
+            % Plot scatter subplot
+            if sum(~isnan(sh1{iField}{iTrial})) == 0;
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            else
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                tempHist = histogram(sh1{iField}{iTrial}, 10); 
+                maxValue = max(tempHist.Values); 
+                plot([realSlopes{iField}(iTrial), realSlopes{iField}(iTrial)], [0, maxValue], '-r', 'LineWidth', 2); 
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            end
+            
+            % Plot the shuffled positions
+            shuffledPositions = figure(2); set(shuffledPositions, 'Position', [100, 200, 1800, 800]);
+            set(shuffledPositions, 'PaperPositionMode', 'auto');
+            if iTrial == 1; clf(shuffledPositions); else hold on; end;
+            % Plot scatter subplot
+            if sum(~isnan(sh1{iField}{iTrial})) == 0;
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            else
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                tempHist = histogram(sh2{iField}{iTrial}, 10); 
+                maxValue = max(tempHist.Values); 
+                plot([realSlopes{iField}(iTrial), realSlopes{iField}(iTrial)], [0, maxValue], '-r', 'LineWidth', 2); 
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            end
+        end
+        % Save the figures
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+        % Shuffled phases figure
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{1};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{1};
+        saveFigure_v1_20240902(shuffledPhases, figureSettings);
+        % Shuffled positions figure
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{2};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{2};
+        saveFigure_v1_20240902(shuffledPositions, figureSettings)
+    end
+end
                     
                     

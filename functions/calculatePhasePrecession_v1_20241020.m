@@ -36,7 +36,7 @@ function outputData = calculatePhasePrecession_v1_20241020(inputData, settings)
     end
 
     % Get the phase precession for that trial
-    [cir, lin] = thetaPrecess(outputData.spkPhs, outputData.spkPos, settings.phasePrecession.slopeRange); 
+    [cir, lin, circFit] = thetaPrecess(outputData.spkPhs, outputData.spkPos, settings.phasePrecession.slopeRange); 
     if strcmp(settings.phasePrecession.fit, 'circularSlope') == 1;
         outputData.trialSlope = cir.Alpha; 
         outputData.trialOffset = cir.Phi0;
