@@ -17,8 +17,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
     figureSettings = getFigureFolders(mainFolder, settings); 
     
     p_allTrials = []; p_allCells = [];
-    populationShPhs = []; populationShPos = []; populationRealSlopes = []; 
-    for iGenotype = 1%:length(fieldnames(data.cellData));
+    for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData);
         genotypeData = data.cellData.(genotypes{iGenotype});
 
@@ -30,7 +29,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:4%:n;
+                for iCluster = 1:2%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -39,7 +38,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                         display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                         % Assign variables based on running direction
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                        for iDir = 1%:length(directions);
+                        for iDir = 1:length(directions);
 
                             % If user selected, plot spikes and slopes
                             % for all trials
@@ -74,9 +73,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 outputData.figureSettings = figureSettings;
                                 % Calculate the shuffles
                                 shOutputData = calculateShuffles(outputData, settings, 10); 
-                                populationShPhs = [populationShPhs, shOutputData.shPhsFieldAverage]; 
-                                populationShPos = [populationShPos, shOutputData.shPosFieldAverage]; 
-                                populationRealSlopes = [populationRealSlopes, outputData.slopeMedian]; 
+                                populationShPhs = [populationShPhs, ]; 
                                 
                                 % Plot shuffled slopes for each trial
                                 plotInput.shPhs = shOutputData.shPhsSlopes;
@@ -109,13 +106,11 @@ function plotPhasePrecession_v1_20240827(data, settings)
     
     if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
         strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
-        inputData.shPhs = populationShPhs;
-        (populationShPhs)
-        populationRealSlopes
-        inputData.shPos = populationShPos;
-        inputData.realSlopes = populationRealSlopes;
-        inputData.figureSettings = figureSettings;
+        inputData.shPhs = shOutputData.shPhsFieldAverage;
+        inputData.shPos = shOutputData.shPhsFieldAverage;
+        inputData.realSlopes = outputData.slopeMedian;
         plotShuffles_population(inputData);
+        
     end
 end   
          
@@ -463,8 +458,8 @@ function outputData = calculateShuffles(inputData, settings, numShuffles)
             outputData.shPhsAveSlope{iField}(iTrial) = nanmean(outputData.shPhsSlopes{iField}{iTrial}); 
             outputData.shPosAveSlope{iField}(iTrial) = nanmean(outputData.shPosSlopes{iField}{iTrial}); 
         end
-        outputData.shPhsFieldAverage(iField) = nanmedian(outputData.shPhsAveSlope{iField});
-        outputData.shPosFieldAverage(iField) = nanmedian(outputData.shPosAveSlope{iField});
+        outputData.shPhsFieldAverage(iField) = nanmedian(outputData.shPhsAveSlope{iField}(iTrial)); 
+        outputData.shPosFieldAverage(iField) = nanmedian(outputData.shPosAveSlope{iField}(iTrial)); 
     end
 end
 
@@ -579,34 +574,20 @@ function plotShuffles_perCell(inputData, settings)
 end
                     
 function plotShuffles_population(inputData)
-    figureSettings.name = ['populationShuffleComparison'];
-    figureSettings.appendedFolder.binary = 'yes'; 
-        figureSettings.fileTypes = {'tiff'};
-
     % Plot the median shuffled phases for all cells
-    close all; phaseShuffleFigure = figure(1); hold on; 
-    phaseShuffle = histogram(inputData.shPhs, 20, 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, 20, 'Normalization', 'probability');
+    close all; figure(1); hold on; 
+    phaseShuffle = histogram(inputData.shPhs, [0:0.05:1], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [0:0.05:1], 'Normalization', 'probability');
     maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
     ylabel('Probability');
     xlabel('Median Slope');  
     set(gca,'FontSize', 12); 
     % Save the figure
     figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
-    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
-    saveFigure_v1_20240902(phaseShuffleFigure, figureSettings)
-    
-    % Plot the median shuffled positions for all cells
-    close all; posShuffleFigure = figure(1); hold on; 
-    phaseShuffle = histogram(inputData.shPhs, 20, 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, 20, 'Normalization', 'probability');
-    maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
-    ylabel('Probability');
-    xlabel('Median Slope');  
-    set(gca,'FontSize', 12); 
-    % Save the figure
-    figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
-    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{4};
-    saveFigure_v1_20240902(posShuffleFigure, figureSettings)
+    figureSettings.name = ['populationShuffleComparison'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllCells, figureSettings)
 end
                     

@@ -27,6 +27,7 @@ function saveFigure_v1_20240902(fig, settings)
             saveas(fig, [subFolder, '\', saveFile], settings.fileTypes{iFileType});
         end
         
+        %{
         if ~exist([subFolder, '\commitMessage.txt'], 'file')
             % Ask the user to write a short message about the data
             prompt = {'Please enter a commit message:'};
@@ -40,6 +41,7 @@ function saveFigure_v1_20240902(fig, settings)
             fprintf(commitFile, '%s', commitMessage{1}); 
             fclose(commitFile); 
         end
+        %}
         
     elseif strcmp(settings.appendedFolder.binary, 'no') == 1;
         
