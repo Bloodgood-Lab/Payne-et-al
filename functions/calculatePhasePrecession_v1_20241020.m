@@ -31,7 +31,7 @@ function outputData = calculatePhasePrecession_v1_20241020(inputData, settings)
         outputData.spkPos = [inputData.spkPos; inputData.spkPos];
     elseif strcmp(settings.phasePrecession.circularity, 'none') == 1;
         outputData.spkPos = inputData.spkPos;
-        outputData.spkPhs = inputData.spkPhs;
+        outputData.spkPhs = inputData.spkPhs+pi;
         R = corrcoef(outputData.spkPos, outputData.spkPhs); correlation = R(2); maxInd = 1; 
     end
 

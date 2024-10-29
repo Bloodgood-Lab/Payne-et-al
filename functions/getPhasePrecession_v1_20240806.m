@@ -21,7 +21,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the phase precession
-    for iGenotype = 1%:length(fieldnames(data.cellData));
+    for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationSlopes = []; rSquaredPopulation = [];
@@ -29,13 +29,13 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1%:length(FRdata); 
+        for iAnimal = 1:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:4%:n;
+                for iCluster = 1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -87,7 +87,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             
                                             % Calculate the phase precession depending on the user settings
                                             inputData.spkPhs = spkPhs{iField}{iTrial}; 
-                                            inputData.spkPos = spkPos{iField}{iTrial}; 
+                                            inputData.spkPos = spkPosInput{iField}{iTrial}; 
                                             outputData = calculatePhasePrecession_v1_20241020(inputData, settings); 
                                             spkPhsInput{iField}{iTrial} = outputData.spkPhs; 
                                             spkPosInput{iField}{iTrial} = outputData.spkPos; 

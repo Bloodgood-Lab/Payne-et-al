@@ -209,23 +209,22 @@ thetaData = data; thetaSettings = settings;
 % Settings: 
 thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
 thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
-thetaSettings.phasePrecession.slopeRange = [-4:0.3:4]; % range of slopes to try to fit 
+thetaSettings.phasePrecession.slopeRange = [-4:0.125:4]; % range of slopes to try to fit 
 thetaSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'binned';
+thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
 thetaSettings.phasePrecession.normalized = 'yes'; % Is the field normalized?
 thetaSettings.phasePrecession.circularity = 'none'; % How is circularity accounted for? Could also be set to 'shift'
 thetaSettings.phasePrecession.fit = 'circularSlope'; % Using a linear or circular fit?
-thetaSettings.phasePrecession.timeRange = 5*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
+thetaSettings.phasePrecession.timeRange = 3*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
 
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %%
 clc;
-phasePrecessionSettings.phasePrecession.plot = 'shuffles'; 
 plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
 
 %% Step 13B: Control analyses related to the phase precession

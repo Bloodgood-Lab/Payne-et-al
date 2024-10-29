@@ -30,10 +30,11 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
             outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.cw; 
             outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.cw;
             outputData.spkPosForPlot = inputData.phasePrecession.posInput.cw;
-            %outputData.lineFit = inputData.phasePrecession.fitInfo.cw;
             outputData.slopeMedian = inputData.phasePrecession.medianSlope.cw;
             outputData.allSlopes = inputData.phasePrecession.allSlopes.cw;
+            outputData.offsets = inputData.phasePrecession.offsets.cw; 
             outputData.rSquared = inputData.phasePrecession.rSquared.cw; 
+            outputData.pValues = inputData.phasePrecession.pValues.cw; 
         end
         
     elseif strcmp(dir, 'ccw') == 1; 
@@ -55,10 +56,11 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
             outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.ccw;
             outputData.spkPhsForPlot = inputData.phasePrecession.phsInput.ccw;
             outputData.spkPosForPlot = inputData.phasePrecession.posInput.ccw;
-            %outputData.lineFit = inputData.phasePrecession.fitInfo.ccw;
             outputData.slopeMedian = inputData.phasePrecession.medianSlope.ccw;
             outputData.allSlopes = inputData.phasePrecession.allSlopes.ccw;
+            outputData.offsets = inputData.phasePrecession.offsets.ccw; 
             outputData.rSquared = inputData.phasePrecession.rSquared.ccw; 
+            outputData.pValues = inputData.phasePrecession.pValues.ccw; 
         end
     end
     

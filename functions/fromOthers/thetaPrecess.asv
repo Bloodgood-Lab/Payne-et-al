@@ -46,8 +46,7 @@ function [Circ,lin,circFit]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
         alpha=a(idx(1));
         phi0 = atan2(S(idx(1)),C(idx(1)));
         % Shift phi0 so that it is between 0 and 2pi
-        phi0 = mod(phi0, 2*pi);
-
+        
     end
 
     function [coeff,pValue] = CircularCoeff(phi,x,alpha,phi0)

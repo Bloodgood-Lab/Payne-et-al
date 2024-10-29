@@ -1,7 +1,7 @@
 function plotPhasePrecession_v1_20240827(data, settings)
     % Generates plots related to phase precession analysis
     % Written by Anja Payne
-    % Last Modified: 10/20/2024
+    % Last Modified: 10/22/2024
 
     % Inputs:
     %   1) data: the matlab structure where the in-field theta phases
@@ -14,60 +14,193 @@ function plotPhasePrecession_v1_20240827(data, settings)
     
     % Get the folders to save plots into
     mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
-    figureSettings = getFigureFolders(mainFolder, settings); 
+    figureSettings = getFigureFolders(mainFolder); 
+
+    % Have the user select which plots they want to generate
+    listOfFigures = getFiguresToPlot();
     
-    p_allTrials = []; p_allCells = [];
-    populationShPhs = []; populationShPos = []; populationRealSlopes = []; 
-    for iGenotype = 1%:length(fieldnames(data.cellData));
-        genotypes = fieldnames(data.cellData);
-        genotypeData = data.cellData.(genotypes{iGenotype});
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%   1. Plots of the spikes with slopes   %%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%    Plotted by trial and saved by field   %%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        % Run analysis for high-firing cells only
-        FRdata = genotypeData.highFiring;
-        for iAnimal = 1%:length(FRdata);
-            % Skip if empty
-            if isempty(FRdata{iAnimal}) == 1;
-                continue
-            else
-                [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:4%:n;
-                    % Skip if empty
-                    if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
-                        display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
-                        continue
-                    else
-                        display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                        % Assign variables based on running direction
-                        directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                        for iDir = 1%:length(directions);
+    if ismember(1, listOfFigures) == 1; 
+        for iGenotype = 1:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
 
-                            % If user selected, plot spikes and slopes
-                            % for all trials
-                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-                                    strcmp(settings.phasePrecession.plot, 'spikesAndSlopes') == 1; 
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1:length(directions);
+                                
                                 % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
                                 outputData.figureSettings = figureSettings;
+                                
                                 % Plot 
                                 plotSpikesAndSlopes(outputData, settings); 
+
                             end
-                            
-                            % If user selected, plot the p-value plots
-                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-                                    strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
+                        end
+                    end
+                end
+            end
+        end
+    end
+   
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%   2. Plots of the pValues   %%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%   Plotted by field and saved by field   %%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    % Plots of the pValues for all fields saved in one plot
+    if ismember(2, listOfFigures) == 1; 
+        p_allTrials = []; p_allCells = [];
+        for iGenotype = 1:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
+
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1:length(directions);
+
                                 % Extract the needed data from structure
-                                outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
-                                outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
-                                outputData.figureSettings = figureSettings;
-                                % Plot 
-                                p = plotPvalues_perCell(outputData, settings); 
-                                p_allTrials = [p_allTrials, p]; p_allCells = [p_allCells, nanmedian(p)]; 
+                                input_getPvalues = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                input_getPvalues.genotype = genotypes{iGenotype}; input_getPvalues.animal = iAnimal; input_getPvalues.cell = iCluster; input_getPvalues.dir = directions{iDir}; 
+                                input_getPvalues.figureSettings = figureSettings;
+       
+                                % Plot
+                                input_plotPvalues = input_getPvalues; 
+                                plotPvalues_perCell(input_plotPvalues, settings); 
+                                
                             end
-                            
-                            % If user selected, plot the shuffles
-                            if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-                                    strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%   3. Plots of the pValues (x2)   %%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%   Plotted by trial and saved for all data   %%%%%%%%%%%%%%
+    %%%%%%%%%   Plotted by field median and saved for all data   %%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    % Plots of the pValues for all fields saved in one plot
+    if ismember(2, listOfFigures) == 1; 
+        p_allTrials = []; p_allCells = [];
+        for iGenotype = 1:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
+
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1%:length(directions);
+
+                                % Extract the needed data from structure
+                                input_getPvalues = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                input_getPvalues.genotype = genotypes{iGenotype}; input_getPvalues.animal = iAnimal; input_getPvalues.cell = iCluster; input_getPvalues.dir = directions{iDir}; 
+                                input_getPvalues.figureSettings = figureSettings;
+                                
+                                % Calculate
+                                pValues = getPvalues(input_getPvalues, settings); 
+                                p_allTrials = [p_allTrials, p]; 
+                                p_allCells = [p_allCells, nanmedian(p)]; 
+                                
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        % Plot
+        input_plotPvalues.p_allTrials = p_allTrials; 
+        input_plotPvalues.p_allCells = p_allCells; 
+        input_plotPvalues.figureSettings = figureSettings;
+        close all; plotPvalues_population(input_plotPvalues); 
+
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%   4. Plots of the shuffles   %%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%   ??? Plotted by trial and saved for all data   %%%%%%%%%%%%%%
+    %%%%%%%%%   ??? Plotted by field median and saved for all data   %%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if ismember(4, listOfFigures) == 1; 
+
+        populationShPhs = []; populationShPos = []; populationRealSlopes = []; 
+        for iGenotype = 1:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
+
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1%:length(directions);
+
                                 % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
@@ -77,7 +210,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 populationShPhs = [populationShPhs, shOutputData.shPhsFieldAverage]; 
                                 populationShPos = [populationShPos, shOutputData.shPosFieldAverage]; 
                                 populationRealSlopes = [populationRealSlopes, outputData.slopeMedian]; 
-                                
+
                                 % Plot shuffled slopes for each trial
                                 plotInput.shPhs = shOutputData.shPhsSlopes;
                                 plotInput.shPos = shOutputData.shPosSlopes;
@@ -85,7 +218,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
                                 plotInput.figureSettings = figureSettings;
                                 plotInput.genotype = genotypes{iGenotype}; plotInput.animal = iAnimal; plotInput.cell = iCluster; plotInput.dir = directions{iDir}; 
                                 plotShuffles_perTrial(plotInput, settings); 
-                                
+
                                 % Plot shuffled slopes for each field
                                 plotInput.shPhs = shOutputData.shPhsAveSlope;
                                 plotInput.shPos = shOutputData.shPosAveSlope; 
@@ -99,62 +232,131 @@ function plotPhasePrecession_v1_20240827(data, settings)
                 end
             end
         end
-    end
-    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-        strcmp(settings.phasePrecession.plot, 'pValues') == 1;
-        outputData.p_allTrials = p_allTrials; outputData.p_allCells = p_allCells; 
-        outputData.figureSettings = figureSettings;
-        close all; plotPvalues_population(outputData); 
+
+        if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
+            strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
+            inputData.shPhs = populationShPhs;
+            inputData.shPos = populationShPos;
+            inputData.realSlopes = populationRealSlopes;
+            inputData.figureSettings = figureSettings;
+            plotShuffles_population(inputData);
+        end
     end
     
-    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-        strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
-        inputData.shPhs = populationShPhs;
-        (populationShPhs)
-        populationRealSlopes
-        inputData.shPos = populationShPos;
-        inputData.realSlopes = populationRealSlopes;
-        inputData.figureSettings = figureSettings;
-        plotShuffles_population(inputData);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%   5. Plots of the shuffles (x2)   %%%%%%%%%%%%%%%%%%
+    %%%%%%%%%   Plotted for all trials and saved for all data   %%%%%%%%%%%
+    %%%%%%%%%   Plotted by field median and saved for all data   %%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if ismember(5, listOfFigures) == 1; 
+
+        phsShuffle_allFields = []; posShuffle_allFields = []; realSlopes_allFields = []; 
+        for iGenotype = 1:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
+
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1%:length(directions);
+
+                                % Extract the needed data from structure
+                                input_getShuffles = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                input_getShuffles.genotype = genotypes{iGenotype}; input_getShuffles.animal = iAnimal; input_getShuffles.cell = iCluster; input_getShuffles.dir = directions{iDir}; 
+                                input_getShuffles.figureSettings = figureSettings;
+
+                                % Calculate the shuffles
+                                input_getShuffles.numShuffles = 10; 
+                                shuffleData = calculateShuffles(input_getShuffles, settings); 
+                                phsShuffle_allFields = [phsShuffle_allFields, shuffleData.shPhsFieldAverage]; 
+                                posShuffle_allFields = [posShuffle_allFields, shuffleData.shPosFieldAverage]; 
+                                realSlopes_allFields = [realSlopes_allFields, input_getShuffles.slopeMedian]; 
+
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    
+        % If the real slopes are NaN (which happens if they don't meet a
+        % threshold), set the corresponding shuffle to NaN as well
+        if length(phsShuffle_allFields) ~= length(realSlopes_allFields) || ...
+            length(posShuffle_allFields) ~= length(realSlopes_allFields); 
+            error('Shuffles are not the same length as the real data'); 
+        end
+        phsShuffle_allFields(isnan(realSlopes_allFields)) = NaN; 
+        posShuffle_allFields(isnan(realSlopes_allFields)) = NaN; 
+        input_plotShuffPop.shPhs = phsShuffle_allFields;
+        input_plotShuffPop.shPos = posShuffle_allFields;
+        input_plotShuffPop.realSlopes = realSlopes_allFields;
+        input_plotShuffPop.figureSettings = figureSettings;
+        plotShuffles_population(input_plotShuffPop);
+        
     end
+    
 end   
          
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function figureSettings = getFigureFolders(mainFolder, settings)
-    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-        strcmp(settings.phasePrecession.plot, 'spikesAndSlopes') == 1; 
-        figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
-        figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
-    end
-
-    % If user selected, plot the p-value plots
-    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-            strcmp(settings.phasePrecession.plot, 'pValues') == 1; 
-        figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
-        figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
-    end
+function selectedPlots = getFiguresToPlot()
+   % Define the list of available plots
+    plotOptions = {'spikes with slopes - plotted by trial - saved by cell',...
+        'p-values of slope fits - plotted and saved by cell',...
+        'p-values of slope fits - plotted and saved for all data',...
+        'shuffles - plotted by trial - saved by cell'...
+        'shuffles - plotted and saved for all data'}; 
     
-    if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-        strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
-        figureSettings.fileNameBase.shuffles{1} = 'phasePrecession_shuffledPhases_allTrials';
-        figureSettings.fileNameBase.shuffles{2} = 'phasePrecession_shuffledPositions_allTrials';
-        figureSettings.fileNameBase.shuffles{3} = 'phasePrecession_shuffledPhases';
-        figureSettings.fileNameBase.shuffles{4} = 'phasePrecession_shuffledPositions';
-        figureSettings.filePath.shuffles{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{1}, '', mainFolder);
-        figureSettings.filePath.shuffles{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{2}, '', mainFolder);
-        figureSettings.filePath.shuffles{3} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{3}, '', mainFolder);
-        figureSettings.filePath.shuffles{4} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{4}, '', mainFolder);
-    end
+    % Display a dialog box to select the plots
+    selectedPlots = listdlg('ListString', plotOptions, ...
+    	'SelectionMode', 'multiple', ...
+    	'PromptString', 'Select the plots you want to generate:', ...
+    	'ListSize', [300, 100]);
+end
+
+function figureSettings = getFigureFolders(mainFolder)
+
+    % For the spikes and slopes plots
+    figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
+    figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
+
+    % For the p-value plots
+    figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
+    figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
+    
+    % For the shuffles plots
+    figureSettings.fileNameBase.shuffles{1} = 'phasePrecession_shuffledPhases_allTrials';
+    figureSettings.fileNameBase.shuffles{2} = 'phasePrecession_shuffledPositions_allTrials';
+    figureSettings.fileNameBase.shuffles{3} = 'phasePrecession_shuffledPhases';
+    figureSettings.fileNameBase.shuffles{4} = 'phasePrecession_shuffledPositions';
+    figureSettings.filePath.shuffles{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{1}, '', mainFolder);
+    figureSettings.filePath.shuffles{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{2}, '', mainFolder);
+    figureSettings.filePath.shuffles{3} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{3}, '', mainFolder);
+    figureSettings.filePath.shuffles{4} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{4}, '', mainFolder);
 end
 
 function plotSpikesAndSlopes(inputData, settings)
     % Ask the user to select the folder to save figures into
     spkPhs = inputData.spkPhsForPlot; spkPos = inputData.spkPosForPlot; binnedSpkPos = inputData.binnedSpkPos; 
-    slopeMedian = inputData.slopeMedian; allSlopes = inputData.allSlopes; lineFit = inputData.lineFit; 
-    rSquared = inputData.rSquared;
+    slopeMedian = inputData.slopeMedian; allSlopes = inputData.allSlopes; 
+    offsets = inputData.offsets; rSquared = inputData.rSquared;
 
     % Loop through fields
     if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
@@ -194,13 +396,8 @@ function plotSpikesAndSlopes(inputData, settings)
                 % If there were spikes in-field that trial
                 if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
                     % Get the fit values
-                    if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                        plotSlope = lineFit{iField}(iTrial).lin.Alpha;
-                        yOffset = lineFit{iField}(iTrial).lin.Phi0;
-                    elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                        plotSlope = lineFit{iField}(iTrial).cir.Alpha;
-                        yOffset = lineFit{iField}(iTrial).cir.Phi0;
-                    end
+                    plotSlope = allSlopes{iField}(iTrial);
+                    yOffset = offsets{iField}(iTrial);
                     allPlotSlopes = [allPlotSlopes, plotSlope]; 
                     allYoffsets = [allYoffsets, yOffset]; 
                     maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})]);
@@ -311,7 +508,7 @@ function cleanUpAndPlotOverlay(inputData)
     yMeanLine = xAverageLine*inputData.mean + nanmean(inputData.yOffset);
     medianLine = plot(xAverageLine, yMedianLine, '-r', 'LineWidth', 2);
     meanLine = plot(xAverageLine, yMeanLine, '--b', 'LineWidth', 2);
-    legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
+    %legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
     legend('boxoff');
     ylim([0, 2*pi]); 
     ylabel('Theta Phase (degrees)');
@@ -332,33 +529,19 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     set(gca,'FontSize', 12); 
 end
 
-function p = plotPvalues_perCell(inputData, settings)
-    lineFit = inputData.lineFit; 
+function plotPvalues_perCell(inputData, settings)
+    pValues = inputData.pValues; 
     
     % Loop through fields
     if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-        numFieldsToAnalyze = length(lineFit);
+        numFieldsToAnalyze = length(pValues);
     elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
         numFieldsToAnalyze = 1;
     end
     for iField = 1:numFieldsToAnalyze;
-        close all; p = []; count = 1; 
-        for iTrial = 1:length(lineFit{iField}); 
-            if strcmp(settings.phasePrecession.fit, 'linear') == 1;
-                if isstruct(lineFit{iField}(iTrial).lin) == 1; 
-                    p(count) = lineFit{iField}(iTrial).lin.pValue;
-                    count = count + 1;
-                end
-            elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
-                if isstruct(lineFit{iField}(iTrial).cir) == 1; 
-                    p(count) = lineFit{iField}(iTrial).cir.pValue;
-                    count = count + 1;
-                end
-            end
-        end
-        
+
         % Plot the pValues across all fields for one cell
-        hold on; pValuesPerCell = histogram(p, [0:0.05:1]);
+        hold on; pValuesPerCell = histogram(inputData.pValues{iField}, [0:0.05:1]);
         maxValue = max(pValuesPerCell.Values);
         plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
         ylabel('Number of Trials');
@@ -412,8 +595,9 @@ function plotPvalues_population(inputData)
     
 end
 
-function outputData = calculateShuffles(inputData, settings, numShuffles)
+function outputData = calculateShuffles(inputData, settings)
     phs = inputData.spkPhsForPlot; pos = inputData.spkPosForPlot; 
+    numShuffles = inputData.numShuffles; 
     
     % Loop through fields
     if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
