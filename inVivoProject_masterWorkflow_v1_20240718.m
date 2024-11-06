@@ -216,9 +216,9 @@ thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in 
 thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
 thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
-thetaSettings.phasePrecession.normalized = 'yes'; % Is the field normalized?
-thetaSettings.phasePrecession.circularity = 'none'; % How is circularity accounted for? Could also be set to 'shift'
-thetaSettings.phasePrecession.fit = 'circularSlope'; % Using a linear or circular fit?
+thetaSettings.phasePrecession.normalized = 'no'; % Is the field normalized?
+thetaSettings.phasePrecession.circularity = 'shift'; % How is circularity accounted for? Could also be set to 'shift'
+thetaSettings.phasePrecession.fit = 'linearFit'; % Using a linear or circular fit?
 thetaSettings.phasePrecession.timeRange = 3*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
 
 % Outputs: 

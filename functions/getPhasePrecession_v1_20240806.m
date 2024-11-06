@@ -87,8 +87,10 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             
                                             % Calculate the phase precession depending on the user settings
                                             inputData.spkPhs = spkPhs{iField}{iTrial}; 
-                                            inputData.spkPos = spkPosInput{iField}{iTrial}; 
+                                            inputData.spkPos = spkPosInput{iField}{iTrial};
+                                            
                                             outputData = calculatePhasePrecession_v1_20241020(inputData, settings); 
+                                            
                                             spkPhsInput{iField}{iTrial} = outputData.spkPhs; 
                                             spkPosInput{iField}{iTrial} = outputData.spkPos; 
                                             trialSlope{iField}(iTrial) = outputData.trialSlope; 

@@ -96,12 +96,11 @@ function plotPhasePrecession_v1_20240827(data, settings)
                             for iDir = 1:length(directions);
 
                                 % Extract the needed data from structure
-                                input_getPvalues = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
-                                input_getPvalues.genotype = genotypes{iGenotype}; input_getPvalues.animal = iAnimal; input_getPvalues.cell = iCluster; input_getPvalues.dir = directions{iDir}; 
-                                input_getPvalues.figureSettings = figureSettings;
+                                input_plotPvalues = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                input_plotPvalues.genotype = genotypes{iGenotype}; input_plotPvalues.animal = iAnimal; input_plotPvalues.cell = iCluster; input_plotPvalues.dir = directions{iDir}; 
+                                input_plotPvalues.figureSettings = figureSettings;
        
                                 % Plot
-                                input_plotPvalues = input_getPvalues; 
                                 plotPvalues_perCell(input_plotPvalues, settings); 
                                 
                             end
@@ -113,13 +112,13 @@ function plotPhasePrecession_v1_20240827(data, settings)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%   3. Plots of the pValues (x2)   %%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%   3. Plots of the pValues   %%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%   Plotted by trial and saved for all data   %%%%%%%%%%%%%%
     %%%%%%%%%   Plotted by field median and saved for all data   %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Plots of the pValues for all fields saved in one plot
-    if ismember(2, listOfFigures) == 1; 
+    if ismember(3, listOfFigures) == 1; 
         p_allTrials = []; p_allCells = [];
         for iGenotype = 1:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
@@ -142,18 +141,23 @@ function plotPhasePrecession_v1_20240827(data, settings)
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             % Assign variables based on running direction
                             directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                            for iDir = 1%:length(directions);
+                            for iDir = 1:length(directions);
 
                                 % Extract the needed data from structure
                                 input_getPvalues = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 input_getPvalues.genotype = genotypes{iGenotype}; input_getPvalues.animal = iAnimal; input_getPvalues.cell = iCluster; input_getPvalues.dir = directions{iDir}; 
                                 input_getPvalues.figureSettings = figureSettings;
                                 
-                                % Calculate
-                                pValues = getPvalues(input_getPvalues, settings); 
-                                p_allTrials = [p_allTrials, p]; 
-                                p_allCells = [p_allCells, nanmedian(p)]; 
-                                
+                                % Loop through fields
+                                if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+                                    numFieldsToAnalyze = length(input_getPvalues.pValues);
+                                elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+                                    numFieldsToAnalyze = 1;
+                                end
+                                for iField = 1:numFieldsToAnalyze;
+                                    p_allTrials = [p_allTrials, input_getPvalues.pValues{iField}]; 
+                                    p_allCells = [p_allCells, nanmedian(input_getPvalues.pValues{iField})]; 
+                                end
                             end
                         end
                     end
@@ -170,9 +174,9 @@ function plotPhasePrecession_v1_20240827(data, settings)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%   4. Plots of the shuffles   %%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%   ??? Plotted by trial and saved for all data   %%%%%%%%%%%%%%
-    %%%%%%%%%   ??? Plotted by field median and saved for all data   %%%%%%%%%%
+    %%%%%%%%%   4. Plots of the shuffles for individual cells   %%%%%%%%%%%
+    %%%%%%%%%   Plotted by all trials and saved for each cell   %%%%%%%%%%%
+    %%%%%%%%   Plotted by field median and saved for each cell   %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     if ismember(4, listOfFigures) == 1; 
@@ -199,14 +203,15 @@ function plotPhasePrecession_v1_20240827(data, settings)
                             display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                             % Assign variables based on running direction
                             directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
-                            for iDir = 1%:length(directions);
+                            for iDir = 1:length(directions);
 
                                 % Extract the needed data from structure
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
                                 outputData.genotype = genotypes{iGenotype}; outputData.animal = iAnimal; outputData.cell = iCluster; outputData.dir = directions{iDir}; 
-                                outputData.figureSettings = figureSettings;
+                                outputData.numShuffles = 100; outputData.figureSettings = figureSettings;
+                                
                                 % Calculate the shuffles
-                                shOutputData = calculateShuffles(outputData, settings, 10); 
+                                shOutputData = calculateShuffles(outputData, settings); 
                                 populationShPhs = [populationShPhs, shOutputData.shPhsFieldAverage]; 
                                 populationShPos = [populationShPos, shOutputData.shPosFieldAverage]; 
                                 populationRealSlopes = [populationRealSlopes, outputData.slopeMedian]; 
@@ -232,21 +237,12 @@ function plotPhasePrecession_v1_20240827(data, settings)
                 end
             end
         end
-
-        if strcmp(settings.phasePrecession.plot, 'all') == 1 || ...
-            strcmp(settings.phasePrecession.plot, 'shuffles') == 1; 
-            inputData.shPhs = populationShPhs;
-            inputData.shPos = populationShPos;
-            inputData.realSlopes = populationRealSlopes;
-            inputData.figureSettings = figureSettings;
-            plotShuffles_population(inputData);
-        end
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%   5. Plots of the shuffles (x2)   %%%%%%%%%%%%%%%%%%
-    %%%%%%%%%   Plotted for all trials and saved for all data   %%%%%%%%%%%
-    %%%%%%%%%   Plotted by field median and saved for all data   %%%%%%%%%%
+    %%%%%%%%%   5. Plots of the shuffles for whole population   %%%%%%%%%%%
+    %%%%%%%%%   Plotted by all trials and saved for each cell   %%%%%%%%%%%
+    %%%%%%%%   Plotted by field median and saved for each cell   %%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     if ismember(5, listOfFigures) == 1; 
@@ -321,8 +317,8 @@ function selectedPlots = getFiguresToPlot()
     plotOptions = {'spikes with slopes - plotted by trial - saved by cell',...
         'p-values of slope fits - plotted and saved by cell',...
         'p-values of slope fits - plotted and saved for all data',...
-        'shuffles - plotted by trial - saved by cell'...
-        'shuffles - plotted and saved for all data'}; 
+        'shuffles - plotted by trial AND by cell - saved by cell'...
+        'shuffles - plotted and saved for all data using median slopes'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
@@ -338,8 +334,10 @@ function figureSettings = getFigureFolders(mainFolder)
     figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
 
     % For the p-value plots
-    figureSettings.fileNameBase.pValues = 'phasePrecession_pValues';
-    figureSettings.filePath.pValues = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues, '', mainFolder);
+    figureSettings.fileNameBase.pValues{1} = 'phasePrecession_pValues_byCell';
+    figureSettings.fileNameBase.pValues{2} = 'phasePrecession_pValues_population';
+    figureSettings.filePath.pValues{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues{1}, '', mainFolder);
+    figureSettings.filePath.pValues{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues{2}, '', mainFolder);
     
     % For the shuffles plots
     figureSettings.fileNameBase.shuffles{1} = 'phasePrecession_shuffledPhases_allTrials';
@@ -541,20 +539,24 @@ function plotPvalues_perCell(inputData, settings)
     for iField = 1:numFieldsToAnalyze;
 
         % Plot the pValues across all fields for one cell
-        hold on; pValuesPerCell = histogram(inputData.pValues{iField}, [0:0.05:1]);
+        close all; figure(1); hold on; 
+        pValuesPerCell = histogram(inputData.pValues{iField}, [0:0.05:1]);
         maxValue = max(pValuesPerCell.Values);
         plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
         ylabel('Number of Trials');
         xlabel('pValue');  
         set(gca,'FontSize', 12); 
         xlim([0,1]);
+        annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
         
         % Save the figure
-        figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+        figureSettings.filePath = inputData.figureSettings.filePath.pValues{1};
         figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
             num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
         figureSettings.appendedFolder.binary = 'yes'; 
-        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{1};
         figureSettings.fileTypes = {'tiff'};
         saveFigure_v1_20240902(pValuesPerCell, figureSettings)
     end
@@ -567,13 +569,17 @@ function plotPvalues_population(inputData)
     plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
     ylabel('Number of Trials');
     xlabel('pValue');  
+    title('All p-value across all cells'); 
     set(gca,'FontSize', 12); 
     xlim([0,1]);
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
     % Save the figure
-    figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues{2};
     figureSettings.name = 'allFieldsCombined';
     figureSettings.appendedFolder.binary = 'yes'; 
-    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{2};
     figureSettings.fileTypes = {'tiff'};
     saveFigure_v1_20240902(pValuesAllFields, figureSettings)
     
@@ -583,13 +589,17 @@ function plotPvalues_population(inputData)
     plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
     ylabel('Number of Trials');
     xlabel('pValue');  
+    title('Median p-value for each cell');
     set(gca,'FontSize', 12); 
     xlim([0,1]);
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
     % Save the figure
-    figureSettings.filePath = inputData.figureSettings.filePath.pValues;
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues{2};
     figureSettings.name = ['medianOfEachCell'];
     figureSettings.appendedFolder.binary = 'yes'; 
-    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues;
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{2};
     figureSettings.fileTypes = {'tiff'};
     saveFigure_v1_20240902(pValuesAllCells, figureSettings)
     
@@ -712,10 +722,16 @@ function plotShuffles_perTrial(inputData, settings)
         figureSettings.appendedFolder.binary = 'yes'; 
         figureSettings.fileTypes = {'tiff'};
         % Shuffled phases figure
+        figure(1); annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
         figureSettings.filePath = inputData.figureSettings.filePath.shuffles{1};
         figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{1};
         saveFigure_v1_20240902(shuffledPhases, figureSettings);
         % Shuffled positions figure
+        figure(2); annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
         figureSettings.filePath = inputData.figureSettings.filePath.shuffles{2};
         figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{2};
         saveFigure_v1_20240902(shuffledPositions, figureSettings)
@@ -742,6 +758,7 @@ function plotShuffles_perCell(inputData, settings)
         plot([inputData.realSlopes(iField), inputData.realSlopes(iField)], [0, maxValue], '-r', 'LineWidth', 2); 
         ylabel('Probability');
         xlabel('Slopes');  
+        title('Slopes of Shuffled Data for All Trials of a Given Cell; Shuffled Phases'); 
         set(gca,'FontSize', 12); 
         % Save the figure for the shuffled phases
         figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
@@ -753,7 +770,8 @@ function plotShuffles_perCell(inputData, settings)
         maxValue = max(shuffledPositions.Values);
         plot([inputData.realSlopes(iField), inputData.realSlopes(iField)], [0, maxValue], '-r', 'LineWidth', 2); 
         ylabel('Probability');
-        xlabel('Slopes');  
+        xlabel('Slopes'); 
+        title('Slopes of Shuffled Data for All Trials of a Given Cell; Shuffled Position'); 
         set(gca,'FontSize', 12); 
         % Save the figure for the shuffled phases
         figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
@@ -769,12 +787,17 @@ function plotShuffles_population(inputData)
 
     % Plot the median shuffled phases for all cells
     close all; phaseShuffleFigure = figure(1); hold on; 
-    phaseShuffle = histogram(inputData.shPhs, 20, 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, 20, 'Normalization', 'probability');
+    phaseShuffle = histogram(inputData.shPhs, [-4:0.1:4], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-4:0.1:4], 'Normalization', 'probability');
     maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
     ylabel('Probability');
-    xlabel('Median Slope');  
+    xlabel('Median Slope'); 
+    title('Median Slope for Shuffled Data; Shuffled by Phase');
+    legend('Shuffled Data', 'Real Data'); 
     set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
     % Save the figure
     figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
     figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
@@ -782,12 +805,17 @@ function plotShuffles_population(inputData)
     
     % Plot the median shuffled positions for all cells
     close all; posShuffleFigure = figure(1); hold on; 
-    phaseShuffle = histogram(inputData.shPhs, 20, 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, 20, 'Normalization', 'probability');
-    maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
+    positionShuffle = histogram(inputData.shPos, [-4:0.1:4], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-4:0.1:4], 'Normalization', 'probability');
+    maxValue = max([positionShuffle.Values, phaseRealData.Values]);
     ylabel('Probability');
     xlabel('Median Slope');  
+    title('Median Slope for Shuffled Data; Shuffled by Position'); 
+    legend('Shuffled Data', 'Real Data'); 
     set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
     % Save the figure
     figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
     figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{4};
