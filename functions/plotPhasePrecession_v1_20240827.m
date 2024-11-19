@@ -1,4 +1,4 @@
-function plotPhasePrecession_v1_20240827(data, settings)
+function allFields_R2 = plotPhasePrecession_v1_20240827(data, settings)
     % Generates plots related to phase precession analysis
     % Written by Anja Payne
     % Last Modified: 10/22/2024
@@ -120,7 +120,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
     % Plots of the pValues for all fields saved in one plot
     if ismember(3, listOfFigures) == 1; 
         p_allTrials = []; p_allCells = [];
-        for iGenotype = 1:length(fieldnames(data.cellData));
+        for iGenotype = 2%:length(fieldnames(data.cellData));
             genotypes = fieldnames(data.cellData);
             genotypeData = data.cellData.(genotypes{iGenotype});
 
@@ -169,7 +169,7 @@ function plotPhasePrecession_v1_20240827(data, settings)
         input_plotPvalues.p_allTrials = p_allTrials; 
         input_plotPvalues.p_allCells = p_allCells; 
         input_plotPvalues.figureSettings = figureSettings;
-        close all; plotPvalues_population(input_plotPvalues); 
+        close all; plotPvalues_population(input_plotPvalues, settings); 
 
     end
     
@@ -302,8 +302,62 @@ function plotPhasePrecession_v1_20240827(data, settings)
         input_plotShuffPop.shPos = posShuffle_allFields;
         input_plotShuffPop.realSlopes = realSlopes_allFields;
         input_plotShuffPop.figureSettings = figureSettings;
-        plotShuffles_population(input_plotShuffPop);
+        plotShuffles_population(input_plotShuffPop, settings);
         
+    end
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%   6. Plots of the shuffles for whole population   %%%%%%%%%%%
+    %%%%%%%%%   Plotted by all trials and saved for each cell   %%%%%%%%%%%
+    %%%%%%%%   Plotted by field median and saved for each cell   %%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if ismember(6, listOfFigures) == 1; 
+
+        allFields_R2 = []; 
+        for iGenotype = 2%:length(fieldnames(data.cellData));
+            genotypes = fieldnames(data.cellData);
+            genotypeData = data.cellData.(genotypes{iGenotype});
+
+            % Run analysis for high-firing cells only
+            FRdata = genotypeData.highFiring;
+            for iAnimal = 1:length(FRdata);
+                % Skip if empty
+                if isempty(FRdata{iAnimal}) == 1;
+                    continue
+                else
+                    [~,n] = size(FRdata{iAnimal});
+                    for iCluster = 1:n;
+                        % Skip if empty
+                        if isempty(FRdata{iAnimal}(iCluster).metaData) == 1;
+                            display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                            continue
+                        else
+                            display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                            % Assign variables based on running direction
+                            directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                            for iDir = 1%:length(directions);
+
+                                % Extract the needed data from structure
+                                input_getR2 = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'plotPhasePrecession');
+                                input_getR2.genotype = genotypes{iGenotype}; input_getR2.animal = iAnimal; input_getR2.cell = iCluster; input_getR2.dir = directions{iDir}; 
+                                input_getR2.figureSettings = figureSettings;
+                                
+                                for iField = 1:length(input_getR2.rSquared); 
+                                	% Calculate the shuffles
+                                    allFields_R2 = [allFields_R2, input_getR2.rSquared{iField}]; 
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    
+        input_plotR2.r2 = allFields_R2;
+        input_plotR2.figureSettings = figureSettings;
+        plotR2_population(input_plotR2, settings);
     end
     
 end   
@@ -318,7 +372,8 @@ function selectedPlots = getFiguresToPlot()
         'p-values of slope fits - plotted and saved by cell',...
         'p-values of slope fits - plotted and saved for all data',...
         'shuffles - plotted by trial AND by cell - saved by cell'...
-        'shuffles - plotted and saved for all data using median slopes'}; 
+        'shuffles - plotted and saved for all data using median slopes',...
+        'R2 - plotted and saved for the mean of the population'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
@@ -562,7 +617,7 @@ function plotPvalues_perCell(inputData, settings)
     end
 end
 
-function plotPvalues_population(inputData)
+function plotPvalues_population(inputData, settings)
     % Plot the pValues across all fields for all cells
     figure(2); hold on; pValuesAllFields = histogram(inputData.p_allTrials, [0:0.05:1], 'Normalization', 'probability');
     maxValue = max(pValuesAllFields.Values);
@@ -780,15 +835,15 @@ function plotShuffles_perCell(inputData, settings)
     end
 end
                     
-function plotShuffles_population(inputData)
+function plotShuffles_population(inputData, settings)
     figureSettings.name = ['populationShuffleComparison'];
     figureSettings.appendedFolder.binary = 'yes'; 
         figureSettings.fileTypes = {'tiff'};
 
     % Plot the median shuffled phases for all cells
     close all; phaseShuffleFigure = figure(1); hold on; 
-    phaseShuffle = histogram(inputData.shPhs, [-4:0.1:4], 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, [-4:0.1:4], 'Normalization', 'probability');
+    phaseShuffle = histogram(inputData.shPhs, [-1.5:0.025:1.5], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-1.5:0.025:1.5], 'Normalization', 'probability');
     maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
     ylabel('Probability');
     xlabel('Median Slope'); 
@@ -805,13 +860,13 @@ function plotShuffles_population(inputData)
     
     % Plot the median shuffled positions for all cells
     close all; posShuffleFigure = figure(1); hold on; 
-    positionShuffle = histogram(inputData.shPos, [-4:0.1:4], 'Normalization', 'probability');
-    phaseRealData = histogram(inputData.realSlopes, [-4:0.1:4], 'Normalization', 'probability');
-    maxValue = max([positionShuffle.Values, phaseRealData.Values]);
+    %positionShuffle = histogram(inputData.shPos, [-4:0.1:4], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-1.5:0.025:0.5], 'Normalization', 'probability');
+    maxValue = max([phaseRealData.Values]); %max([positionShuffle.Values, phaseRealData.Values]);
     ylabel('Probability');
     xlabel('Median Slope');  
     title('Median Slope for Shuffled Data; Shuffled by Position'); 
-    legend('Shuffled Data', 'Real Data'); 
+    %legend('Shuffled Data', 'Real Data'); 
     set(gca,'FontSize', 12); 
     annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
             ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
@@ -820,5 +875,33 @@ function plotShuffles_population(inputData)
     figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
     figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{4};
     saveFigure_v1_20240902(posShuffleFigure, figureSettings)
+    
+    figure;
+    cdfplot(inputData.realSlopes); 
+end
+
+function plotR2_population(inputData, settings)
+    figureSettings.name = ['populationR2'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+
+    % Plot the median shuffled phases for all cells
+    close all; R2figure = figure(1); hold on; 
+    r2_histogram = histogram(inputData.r2, [0:0.025:1], 'Normalization', 'probability');
+    maxValue = max(r2_histogram.Values);
+    ylabel('Probability');
+    xlabel('Average R^2 per Field'); 
+    title('R^2 Population');
+    set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+    % Save the figure
+    %{
+    figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
+    saveFigure_v1_20240902(R2figure, figureSettings)
+    %}
+    
 end
                     

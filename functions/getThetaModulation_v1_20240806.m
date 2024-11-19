@@ -17,11 +17,14 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
     %   phase
     %   2) Ask the user if they want to save the newly generated data
     
+    
+    data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the theta phases
     directoryPath = ''; tetrode = NaN; 
-    for iGenotype = 1:length(fieldnames(data));
-        genotypes = fieldnames(data); 
-        genotypeData = data.(genotypes{iGenotype}); 
+    for iGenotype = 1:length(fieldnames(data.cellData));
+        genotypes = fieldnames(data.cellData); 
+        genotypeData = data.cellData.(genotypes{iGenotype}); 
+        populationMVL = []; populationDir = []; 
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
@@ -65,19 +68,22 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
                         for iDir = 1:length(directions);
-                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir));
+                            outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'theta');
                             spikesByDirection = outputData.spikesByDirection; 
 
-                            allTrialPhases = {}; 
-                            for iField = 1:length(spikesByDirection);  
+                            % Loop through fields
+                            numFieldsToAnalyze = whichField(settings.theta.fieldsToAnalyze, spikesByDirection);
+                            allSpikes_allFields = []; allTrialPhases = {}; 
+                            for iField = 1:numFieldsToAnalyze;
                                 for iTrial = 1:length(spikesByDirection{iField});
                                     spikesByTrial = spikesByDirection{iField}{iTrial};
+                                    allSpikes_allFields = [allSpikes_allFields; spikesByTrial]; 
                                     if isempty(spikesByTrial) == 0; 
                                         % Define the rest of the inputs for
                                         % the theta modulation script
                                         dataForPhaseLocking.spikeTimes = round(spikesByTrial);
                                         thetaBand = settings.theta.frequencyBand; 
-                                        % Get the theta phase locking
+                                        % Get the theta phase for each spike
                                         thetaData = getPhaseLocking(dataForPhaseLocking, thetaBand);
                                         allTrialPhases{iField}{iTrial} = thetaData.allPhs;
 
@@ -87,9 +93,35 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                                 end
 
                                 if strcmp(directions(iDir), 'cw') == 1;
-                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.cw = allTrialPhases;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.cw = allTrialPhases;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                    data.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.ccw = allTrialPhases;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.ccw = allTrialPhases;
+                                end
+                            
+                                if isempty(allSpikes_allFields) == 0; 
+                                    % Define the rest of the inputs for the theta modulation script
+                                    dataForPhaseLocking_allFields.spikeTimes = round(allSpikes_allFields);
+                                    dataForPhaseLocking_allFields.LFPsamples = dataForPhaseLocking.LFPsamples;
+                                    dataForPhaseLocking_allFields.LFPtimes = dataForPhaseLocking.LFPtimes;
+                                    dataForPhaseLocking_allFields.samplingFreq = dataForPhaseLocking.samplingFreq; 
+                                    thetaBand = settings.theta.frequencyBand; 
+
+                                    % Get the theta locking for all spikes for that field
+                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allFields, thetaBand);
+
+                                    % Save the data by field
+                                    if strcmp(directions(iDir), 'cw') == 1;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.mvl.cw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.cw = thetaData_allTrials.dir;
+                                    elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.mvl.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.ccw = thetaData_allTrials.dir;
+                                    end
+
+                                    % Save the data for the population
+                                    populationMVL = [populationMVL, thetaData_allTrials.mvl]; 
+                                    populationDir = [populationDir, thetaData_allTrials.dir];
+
                                 end
                             end
                         end
@@ -97,6 +129,10 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                 end
             end
         end
+        
+        % Save the population data
+        data.populationData(iGenotype).MVL = populationMVL;
+        data.populationData(iGenotype).preferredDirection = populationDir;
     end
     
     %% Step 2: Save
@@ -142,6 +178,15 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         outputData.mvl = circ_r(deg2rad(thetaPhs(match_time)));
         outputData.dir = rad2deg(circ_mean(deg2rad(thetaPhs(match_time))));
         [outputData.p, outputData.z] = circ_rtest(deg2rad(thetaPhs(match_time)));
+    end
+
+    function numField = whichField(fieldsToAnalyze, spikes)  
+        % Loop through fields
+        if strcmp(fieldsToAnalyze, 'all fields') == 1;
+            numField = length(spikes); 
+        elseif strcmp(fieldsToAnalyze, 'best field') == 1;
+            numField = 1; 
+        end
     end
 
 end

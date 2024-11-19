@@ -182,8 +182,7 @@ display(['Estimated time to finish is ', datestr(datetime('now')+hours(1.5), 'HH
 
 % Inputs: 
 fileNameBase = 'inFieldSpkTimes';
-folderMessage = 'Select directory with data to analyze'; 
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
@@ -191,7 +190,6 @@ inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
 
 % Settings: 
 inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
-inFieldSpkTimesSettings.theta.fieldsToAnalyze = 'best field'; 
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
@@ -213,9 +211,9 @@ thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spati
 thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
 thetaSettings.phasePrecession.slopeRange = [-4:0.125:4]; % range of slopes to try to fit 
 thetaSettings.phasePrecession.significanceThreshold = 0.05; % maximum acceptable significance level of line fit
-thetaSettings.phasePrecession.trialThreshold = 3; % minimum number of trials
+thetaSettings.phasePrecession.trialThreshold = 5; % minimum number of trials
 thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
-thetaSettings.phasePrecession.fieldsToAnalyze = 'best field'; % Could also be 'best field'
+thetaSettings.phasePrecession.fieldsToAnalyze = 'all fields'; % Could also be 'best field'
 thetaSettings.phasePrecession.positionType = 'unbinned';
 thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
 thetaSettings.phasePrecession.normalized = 'no'; % Is the field normalized?

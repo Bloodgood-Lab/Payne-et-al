@@ -19,7 +19,9 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     %   2) Ask the user if they want to save the newly generated data
     %   3) Run the statistics on the data and output the p-value
     
-    data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
+    if isfield(data, 'WT')
+        data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
+    end
     %% Step 1: Get the phase precession
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 

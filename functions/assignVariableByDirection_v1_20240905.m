@@ -19,6 +19,9 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
             outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
             outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
         end
+        if strcmp(analysisType, 'theta') == 1;
+            outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
+        end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
             outputData.spkPhs = inputData.theta.phases.cw; 
@@ -44,6 +47,9 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
             outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
             outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
             outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
+        end
+        if strcmp(analysisType, 'theta') == 1;
+            outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.ccw; 
         end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.ccw; 
