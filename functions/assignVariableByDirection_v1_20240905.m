@@ -12,15 +12,27 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
     %   1) outputData: the extracted variables for that direction
 
     if strcmp(dir, 'cw') == 1; 
-        outputData.map = inputData.rateMaps.trialAverageMap.cw;
+        if strcmp(analysisType, 'spikeTiming') == 1; 
+            outputData.spkTimes = inputData.highVelocityData.spikeTimesByTrial.cw;
+        end
+        if strcmp(analysisType, 'spatialMetrics') == 1;
+            outputData.map = inputData.rateMaps.trialAverageMap.cw;
+        end
         if strcmp(analysisType, 'getInField') == 1;
-            outputData.barcode = inputData.spatialMetrics.barcode.cw;
-            outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
-            outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
-            outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
+            outputData.barcode = inputData.spatialMetrics.barcode.original.cw;
+            %outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
+            %outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
+            %outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
+            outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkPos.cw;
+            outputData.spkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.unbinnedSpkPos.cw;
+            outputData.spkTimes = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkTimes.cw;
+            outputData.bursts = inputData.spikeTiming.bursts.cw; 
+            outputData.singles = inputData.spikeTiming.singles.cw; 
         end
         if strcmp(analysisType, 'theta') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
+            outputData.inFieldBursts = inputData.inField.inFieldBursts.cw; 
+            outputData.inFieldSingles = inputData.inField.inFieldSingles.cw; 
         end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
@@ -41,15 +53,27 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         
     elseif strcmp(dir, 'ccw') == 1; 
-        outputData.map = inputData.rateMaps.trialAverageMap.ccw;
+        if strcmp(analysisType, 'spikeTiming') == 1; 
+            outputData.spkTimes = inputData.highVelocityData.spikeTimesByTrial.ccw;
+        end
+        if strcmp(analysisType, 'spatialMetrics') == 1;
+            outputData.map = inputData.rateMaps.trialAverageMap.ccw;
+        end
         if strcmp(analysisType, 'getInField') == 1;
-            outputData.barcode = inputData.spatialMetrics.barcode.ccw;
-            outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
-            outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
-            outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
+            outputData.barcode = inputData.spatialMetrics.barcode.original.ccw;
+            %outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
+            %outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
+            %outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
+            outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkPos.ccw;
+            outputData.spkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.unbinnedSpkPos.ccw;
+            outputData.spkTimes = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkTimes.ccw;
+            outputData.bursts = inputData.spikeTiming.bursts.ccw; 
+            outputData.singles = inputData.spikeTiming.singles.ccw;         
         end
         if strcmp(analysisType, 'theta') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.ccw; 
+            outputData.inFieldBursts = inputData.inField.inFieldBursts.ccw; 
+            outputData.inFieldSingles = inputData.inField.inFieldSingles.ccw;
         end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.ccw; 

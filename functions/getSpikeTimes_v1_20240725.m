@@ -1,4 +1,4 @@
-function data = getSpikeTimes_v1_20240725(data, settings, processedDataPath)
+whefunction data = getSpikeTimes_v1_20240725(data, settings, processedDataPath)
     % Gets the spike times and appends them to the data structure
     % Written by Anja Payne
     % Last Modified: 07/25/2024

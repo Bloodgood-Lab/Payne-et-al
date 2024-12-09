@@ -98,31 +98,51 @@ spikeTimeSettings.rateMaps.trackLength = 80; % cm; used to convert from pixels t
 spikeTimeSettings.rateMaps.binSize = 4; % 4 cm bins
 
 % Outputs: 
-binnedSpikesByTrial = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, processedDataFolder); toc
+highVelocitySpikeTimes = getHighVelocitySpikesByTrial_v1_20240725(spikeTimes, spikeTimeSettings, processedDataFolder); toc
 
-%% Step 6: Get the linearized rate maps (takes ~3 min)
+%% Step 6: Look at spike timing (bursts vs. singles)
 clear;clc;tic;
 
-% Input: 
+% Inputs: 
 fileNameBase = 'highVelocitySpikeTimes';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
-binnedSpikesByTrial = data; binnedSpikesByTrialSettings = settings; 
+highVelSpkTimes = data; highVelSpkTimesSettings = settings; 
 
 % Settings: 
-binnedSpikesByTrialSettings.rateMaps.trackSize = 264; 
+
+
+% Outputs: 
+spikeTiming = getSpikeTimingData_v1_20241124(highVelSpkTimes, highVelSpkTimesSettings, processedDataFolder); toc
+
+%% Step 7: Get the linearized rate maps (takes ~3 min)
+clear;clc;tic;
+
+% Input: 
+fileNameBase = 'spikeTiming';
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
+spikeTimingData = data; spikeTimingSettings = settings; 
+
+% Settings: 
+spikeTimingSettings.rateMaps.trackSize = 264; 
 
 % Output: 
-rateMaps = calculateRateMap_v1_20240718(binnedSpikesByTrial, binnedSpikesByTrialSettings, processedDataFolder); toc
+rateMaps = calculateRateMap_v1_20240718(spikeTimingData, spikeTimingSettings, processedDataFolder); toc
 
-%% Step 7: Split into high-firing and low-firing cells (takes seconds)
+%% Step 8: Split into high-firing and low-firing cells (takes seconds)
 clear;clc;tic;
 
 % Inputs:
 fileNameBase = 'rateMaps';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}(1:end-4)];
 load([filePath{1}, '\', loadFileName, '.mat']);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
@@ -135,7 +155,7 @@ rateMapSettings.firingRates.maxThresh = 1;
 % Outputs:
 dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); toc
 
-%% Step 8: Get spatial metrics and associated barcode (takes seconds)
+%% Step 9: Get spatial metrics and associated barcode (takes seconds)
 clear;clc;tic;
 
 % Inputs:
@@ -156,12 +176,13 @@ rateMapByFRSettings.rateMaps.smallerFieldModification = -2; % for use in phase p
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
     
-%% Step 9: Get the in-field spikes for each field (takes seconds)
+%% Step 10: Get the in-field spikes for each field (takes seconds)
 clear;clc;tic;
 
 % Inputs: 
 fileNameBase = 'spatialMetrics';
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
@@ -172,11 +193,11 @@ binnedSpikes = data; binnedSpikeSettings = settings;
 % Outputs: 
 inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings, processedDataFolder); toc
 
-%% Step 10: Additional rate map analysis
+%% Step 11: Additional rate map analysis
 
-%% Step 11: Stability analysis
+%% Step 12: Stability analysis
 
-%% Step 12: Get the theta modulation (takes ~1.5 hours)
+%% Step 13: Get the theta modulation (takes ~1.5 hours)
 clear;clc;tic;
 display(['Estimated time to finish is ', datestr(datetime('now')+hours(1.5), 'HH:MM:SS')]); 
 
@@ -192,11 +213,12 @@ inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
 % Settings: 
 inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
 inFieldSpkTimesSettings.theta.fieldsToAnalyze = 'best field'; 
+inFieldSpkTimesSettings.theta.numBins = 24;
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
 
-%% Step 13: Get the phase precession (takes ~8 min)
+%% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
 
 % Inputs: 
@@ -229,7 +251,7 @@ thetaSettings.phasePrecession.timeRange = 3*125; % Over what range of time shoul
 clc;
 check = plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
 
-%% Step 13B: Control analyses related to the phase precession
+%% Step 14B: Control analyses related to the phase precession
 clear;clc;close all; tic;
 
 % Inputs: 

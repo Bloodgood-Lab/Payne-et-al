@@ -68,6 +68,8 @@ function outputData = splitLowAndHighFR_v01_20240802(data, settings, processedDa
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).rateMaps.trialAverageMap.(dir) = genotypeData{iAnimal}(iCluster).rateMap.trialAverageRates.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.mean.(dir) = genotypeData{iAnimal}(iCluster).firingRates.mean.(dir);
                         outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).firingRates.max.(dir) = genotypeData{iAnimal}(iCluster).firingRates.max.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spikeTiming.bursts.(dir) = genotypeData{iAnimal}(iCluster).spikeTiming.bursts.(dir);
+                        outputData.(genotypes{iGenotype}).(fr){iAnimal}(iCluster).spikeTiming.singles.(dir) = genotypeData{iAnimal}(iCluster).spikeTiming.singles.(dir);
                     end
                 end
             end
