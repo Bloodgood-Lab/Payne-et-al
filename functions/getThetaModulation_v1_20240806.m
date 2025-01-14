@@ -36,7 +36,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -195,7 +195,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                                     % Save the data for the population
                                     populationBurstsMVL = [populationBurstsMVL, thetaData_allTrials.mvl]; 
-                                    populationBurstsDir = [populationDir, thetaData_allTrials.dir];
+                                    populationBurstsDir = [populationBurstsDir, thetaData_allTrials.dir];
 
                                     % Get the data for the population rose plot
                                     fieldHistCount = (hist(cell2mat(allTrialPhases_bursts{iField}), settings.theta.numBins))/length(cell2mat(allTrialPhases_bursts{iField}));
@@ -203,7 +203,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                                 end
                                 
                                 % Get the all-trials singles theta modulation
-                                if isempty(allBursts_allTrials) == 0; 
+                                if isempty(allSingles_allTrials) == 0; 
                                     % Define the rest of the inputs for the theta modulation script
                                     dataForPhaseLocking_allTrials.spikeTimes = round(allSingles_allTrials);
                                     dataForPhaseLocking_allTrials.LFPsamples = dataForPhaseLocking.LFPsamples;
@@ -238,22 +238,27 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
             end
         end
         
-        % Get the average rose plot across the population
-        averagePopHistogram = round(10000*nanmean(populationHistogram, 1));
-        
-        % Create the average representation of phases
-        phasesToSample = pi/24 : pi/12 : 2*pi; averageRosePlot = [];
-        for iBins = 1:settings.theta.numBins; 
-            numSpikesPerBin = phasesToSample(iBins) * ones(1, averagePopHistogram(iBins));
-            averageRosePlot = [averageRosePlot, numSpikesPerBin];
+        % Get the average MVL represented as a rose plot across the population
+        binnedPhases = -pi+pi/12 : pi/12 : pi;
+        binIndices = discretize(deg2rad(populationDir), binnedPhases);
+
+        %[counts, binIndices] = histcounts(deg2rad(populationDir), binnedPhases); 
+        averageMVLrosePlot = NaN(1, length(binnedPhases)); 
+        for iBins = 1:length(binIndices);
+            check1 = averageMVLrosePlot(binIndices(iBins))
+            check2 = populationMVL(iBins)
+            averageMVLrosePlot(binIndices(iBins)) = nanmean([averageMVLrosePlot(binIndices(iBins)), populationMVL(iBins)]);
+            display(['finished ', num2str(iBins), ' bin of ', num2str(length(binIndices))])
         end
         
         % Save the population data
         data.populationData(iGenotype).MVL = populationMVL;
         data.populationData(iGenotype).preferredDirection = populationDir;
-        data.populationData(iGenotype).popAveRosePlot = averageRosePlot;
+        data.populationData(iGenotype).popAveRosePlot = averageMVLrosePlot;
         data.populationData(iGenotype).burstsMVL = populationBurstsMVL;
+        data.populationData(iGenotype).burstsPreferredDir = populationBurstsDir;
         data.populationData(iGenotype).singlesMVL = populationSinglesMVL;
+        data.populationData(iGenotype).singlesPreferredDir = populationSinglesDir;
     end
     
     %% Step 2: Save

@@ -25,6 +25,8 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationMVL = []; populationDir = []; populationHistogram = [];
+        populationBurstsMVL = []; populationBurstsDir = []; populationBurstsHistogram = [];
+        populationSinglesMVL = []; populationSinglesDir = []; populationSinglesHistogram = [];
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
@@ -34,7 +36,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1:n;
+                for iCluster = 1%:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -66,7 +68,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                             clear csc_data csc_timepoints_lowSampling csc_timepoints_raw csc_samples csc_timepoints
                         end
 
-                        directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode);
+                        directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
                         for iDir = 1:length(directions);
                             outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'theta');
                             spikesByDirection = outputData.spikesByDirection; 
@@ -80,11 +82,11 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                             for iField = 1:numFieldsToAnalyze;
                                 for iTrial = 1:length(spikesByDirection{iField});
                                     spikesByTrial = spikesByDirection{iField}{iTrial};
-                                    burstsByTrial = inFieldBursts{iField}{iTrial}; 
+                                    burstsByTrial = inFieldBursts{iField}{iTrial};
                                     singlesByTrial = inFieldSingles{iField}{iTrial};
                                     allSpikes_allTrials = [allSpikes_allTrials; spikesByTrial]; 
-                                    allBursts_allTrials = [allBursts_allTrials; burstsByTrial]; 
-                                    allSingles_allTrials = [allSingles_allTrials; singlesByTrial]; 
+                                    allBursts_allTrials = [allBursts_allTrials, burstsByTrial]; 
+                                    allSingles_allTrials = [allSingles_allTrials, singlesByTrial]; 
                                     
                                     % Get theta modulation for all spikes
                                     if isempty(spikesByTrial) == 0; 
@@ -143,14 +145,14 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                                 % Get the all-trials theta modulation
                                 if isempty(allSpikes_allTrials) == 0; 
                                     % Define the rest of the inputs for the theta modulation script
-                                    dataForPhaseLocking_allFields.spikeTimes = round(allSpikes_allTrials);
-                                    dataForPhaseLocking_allFields.LFPsamples = dataForPhaseLocking.LFPsamples;
-                                    dataForPhaseLocking_allFields.LFPtimes = dataForPhaseLocking.LFPtimes;
-                                    dataForPhaseLocking_allFields.samplingFreq = dataForPhaseLocking.samplingFreq; 
+                                    dataForPhaseLocking_allTrials.spikeTimes = round(allSpikes_allTrials);
+                                    dataForPhaseLocking_allTrials.LFPsamples = dataForPhaseLocking.LFPsamples;
+                                    dataForPhaseLocking_allTrials.LFPtimes = dataForPhaseLocking.LFPtimes;
+                                    dataForPhaseLocking_allTrials.samplingFreq = dataForPhaseLocking.samplingFreq; 
                                     thetaBand = settings.theta.frequencyBand; 
 
                                     % Get the theta locking for all spikes for that field
-                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allFields, thetaBand);
+                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allTrials, thetaBand);
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
@@ -173,32 +175,61 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                                 % Get the all-trials bursts theta modulation
                                 if isempty(allBursts_allTrials) == 0; 
                                     % Define the rest of the inputs for the theta modulation script
-                                    dataForPhaseLocking_allFields.spikeTimes = round(allBursts_allTrials);
-                                    dataForPhaseLocking_allFields.LFPsamples = dataForPhaseLocking.LFPsamples;
-                                    dataForPhaseLocking_allFields.LFPtimes = dataForPhaseLocking.LFPtimes;
-                                    dataForPhaseLocking_allFields.samplingFreq = dataForPhaseLocking.samplingFreq; 
+                                    dataForPhaseLocking_allTrials.spikeTimes = round(allBursts_allTrials);
+                                    dataForPhaseLocking_allTrials.LFPsamples = dataForPhaseLocking.LFPsamples;
+                                    dataForPhaseLocking_allTrials.LFPtimes = dataForPhaseLocking.LFPtimes;
+                                    dataForPhaseLocking_allTrials.samplingFreq = dataForPhaseLocking.samplingFreq; 
                                     thetaBand = settings.theta.frequencyBand; 
 
                                     % Get the theta locking for all spikes for that field
-                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allFields, thetaBand);
+                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allTrials, thetaBand);
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
                                         data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsMVL.cw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.cw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsDir.cw = thetaData_allTrials.dir;
                                     elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.mvl.ccw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.ccw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsMVL.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsDir.ccw = thetaData_allTrials.dir;
                                     end
 
                                     % Save the data for the population
-                                    populationMVL = [populationMVL, thetaData_allTrials.mvl]; 
-                                    populationDir = [populationDir, thetaData_allTrials.dir];
+                                    populationBurstsMVL = [populationBurstsMVL, thetaData_allTrials.mvl]; 
+                                    populationBurstsDir = [populationBurstsDir, thetaData_allTrials.dir];
 
                                     % Get the data for the population rose plot
-                                    fieldHistCount = (hist(cell2mat(allTrialPhases{iField}), settings.theta.numBins))/length(cell2mat(allTrialPhases{iField}));
-                                    populationHistogram = [populationHistogram; fieldHistCount];
-                                    
+                                    fieldHistCount = (hist(cell2mat(allTrialPhases_bursts{iField}), settings.theta.numBins))/length(cell2mat(allTrialPhases_bursts{iField}));
+                                    populationBurstsHistogram = [populationBurstsHistogram; fieldHistCount];
+                                end
+                                
+                                % Get the all-trials singles theta modulation
+                                if isempty(allSingles_allTrials) == 0; 
+                                    % Define the rest of the inputs for the theta modulation script
+                                    dataForPhaseLocking_allTrials.spikeTimes = round(allSingles_allTrials);
+                                    dataForPhaseLocking_allTrials.LFPsamples = dataForPhaseLocking.LFPsamples;
+                                    dataForPhaseLocking_allTrials.LFPtimes = dataForPhaseLocking.LFPtimes;
+                                    dataForPhaseLocking_allTrials.samplingFreq = dataForPhaseLocking.samplingFreq; 
+                                    thetaBand = settings.theta.frequencyBand; 
+
+                                    % Get the theta locking for all spikes for that field
+                                    thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allTrials, thetaBand);
+
+                                    % Save the data by field
+                                    if strcmp(directions(iDir), 'cw') == 1;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesMVL.cw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesDir.cw = thetaData_allTrials.dir;
+                                    elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesMVL.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesDir.ccw = thetaData_allTrials.dir;
+                                    end
+
+                                    % Save the data for the population
+                                    populationSinglesMVL = [populationSinglesMVL, thetaData_allTrials.mvl]; 
+                                    populationSinglesDir = [populationSinglesDir, thetaData_allTrials.dir];
+
+                                    % Get the data for the population rose plot
+                                    fieldHistCount = (hist(cell2mat(allTrialPhases_singles{iField}), settings.theta.numBins))/length(cell2mat(allTrialPhases_singles{iField}));
+                                    populationSinglesHistogram = [populationSinglesHistogram; fieldHistCount];
                                 end
                             end
                         end
@@ -207,22 +238,20 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
             end
         end
         
-        % Get the average rose plot across the population
-        averagePopHistogram = round(10000*nanmean(populationHistogram, 1));
         
-        % Create the average representation of phases
-        phasesToSample = pi/24 : pi/12 : 2*pi; averageRosePlot = [];
-        for iBins = 1:settings.theta.numBins; 
-            numSpikesPerBin = phasesToSample(iBins) * ones(1, averagePopHistogram(iBins));
-            averageRosePlot = [averageRosePlot, numSpikesPerBin];
-        end
         
         % Save the population data
         data.populationData(iGenotype).MVL = populationMVL;
         data.populationData(iGenotype).preferredDirection = populationDir;
-        data.populationData(iGenotype).popAveRosePlot = averageRosePlot;
-
+        data.populationData(iGenotype).popAveRosePlot = averageMVLrosePlot;
+        data.populationData(iGenotype).burstsMVL = populationBurstsMVL;
+        data.populationData(iGenotype).burstsPreferredDir = populationBurstsDir;
+        data.populationData(iGenotype).singlesMVL = populationSinglesMVL;
+        data.populationData(iGenotype).singlesPreferredDir = populationSinglesDir;
     end
+    
+    
+    
     
     %% Step 2: Save
     saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 

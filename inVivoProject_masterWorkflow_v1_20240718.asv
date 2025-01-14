@@ -202,7 +202,7 @@ clear;clc;tic;
 display(['Estimated time to finish is ', datestr(datetime('now')+hours(1.5), 'HH:MM:SS')]); 
 
 % Inputs: 
-fileNameBase += 'inFieldSpkTimes';
+fileNameBase = 'inFieldSpkTimes';
 folderMessage = 'Select directory with data to analyze'; 
 filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
@@ -212,11 +212,12 @@ inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
 
 % Settings: 
 inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
-inFieldSpkTimesSettings.theta.fieldsToAnalyze = 'all fields'; 
+inFieldSpkTimesSettings.theta.fieldsToAnalyze = 'best field'; 
 inFieldSpkTimesSettings.theta.numBins = 24;
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
+getThetaPlots
 
 %% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;

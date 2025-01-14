@@ -217,6 +217,9 @@ inFieldSpkTimesSettings.theta.numBins = 24;
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
+%%
+thetaData = data; close all;
+getThetaPlots_v1_20241216(thetaData); 
 
 %% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
