@@ -36,7 +36,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1%:n;
+                for iCluster = 1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -238,23 +238,9 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
             end
         end
         
-        % Get the average MVL represented as a rose plot across the population
-        binnedPhases = -pi+pi/12 : pi/12 : pi;
-        binIndices = discretize(deg2rad(populationDir), binnedPhases);
-
-        %[counts, binIndices] = histcounts(deg2rad(populationDir), binnedPhases); 
-        averageMVLrosePlot = NaN(1, length(binnedPhases)); 
-        for iBins = 1:length(binIndices);
-            check1 = averageMVLrosePlot(binIndices(iBins))
-            check2 = populationMVL(iBins)
-            averageMVLrosePlot(binIndices(iBins)) = nanmean([averageMVLrosePlot(binIndices(iBins)), populationMVL(iBins)]);
-            display(['finished ', num2str(iBins), ' bin of ', num2str(length(binIndices))])
-        end
-        
         % Save the population data
         data.populationData(iGenotype).MVL = populationMVL;
         data.populationData(iGenotype).preferredDirection = populationDir;
-        data.populationData(iGenotype).popAveRosePlot = averageMVLrosePlot;
         data.populationData(iGenotype).burstsMVL = populationBurstsMVL;
         data.populationData(iGenotype).burstsPreferredDir = populationBurstsDir;
         data.populationData(iGenotype).singlesMVL = populationSinglesMVL;
