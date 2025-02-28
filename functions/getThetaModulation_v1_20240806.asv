@@ -21,7 +21,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the theta phases
     directoryPath = ''; tetrode = NaN; 
-    for iGenotype = 1:length(fieldnames(data.cellData));
+    for iGenotype = 2%:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationMVL = []; populationDir = []; populationHistogram = [];
@@ -30,13 +30,13 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1:length(FRdata); 
+        for iAnimal = 8%:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 1%:n;
+                for iCluster = 17%1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -52,8 +52,9 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                             % been loaded, skip it
                         elseif strcmp(directoryPath, newDirectoryPath) == 0 || tetrode ~= newTetrode;
                             directoryPath = newDirectoryPath; 
-                            tetrode = newTetrode; 
-                            csc_file = [directoryPath, '\CSC', tetrode, '.ncs'];
+                            %tetrode = newTetrode; 
+                            tetrode = 
+                            csc_file = [directoryPath, '\CSC', tetrode, '.ncs']
                             csc_data = readCSC(csc_file); 
                             csc_timepoints_lowSampling = csc_data.ts/1000; 
                             csc_samples = csc_data.samp; csc_samples = csc_samples(1:16:end); 
@@ -69,7 +70,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                         end
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
-                        for iDir = 1:length(directions);
+                        for iDir = 2%:length(directions);
                             outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'theta');
                             spikesByDirection = outputData.spikesByDirection; 
                             inFieldBursts = outputData.inFieldBursts;
@@ -79,7 +80,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                             numFieldsToAnalyze = whichField(settings.theta.fieldsToAnalyze, spikesByDirection);
                             allSpikes_allTrials = []; allBursts_allTrials = []; allSingles_allTrials = []; 
                             allTrialPhases = {}; allTrialPhases_bursts = {}; allTrialPhases_singles = {}; 
-                            for iField = 1:numFieldsToAnalyze;
+                            for iField = 1%:numFieldsToAnalyze;
                                 for iTrial = 1:length(spikesByDirection{iField});
                                     spikesByTrial = spikesByDirection{iField}{iTrial};
                                     burstsByTrial = inFieldBursts{iField}{iTrial};
@@ -153,6 +154,21 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                                     % Get the theta locking for all spikes for that field
                                     thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allTrials, thetaBand);
+                                     
+                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                    %%%%%%%%%%%%  TEMP %%%%%%%%%%%%%%
+                                    close all; figure(1); 
+                                    subplot(2,1,1); hold on; 
+                                    lfp_external = thetaData_allTrials.lfp;
+                                    signal_filtered_external = thetaData_allTrials.signal_filtered;
+                                    tSp_external = thetaData_allTrials.tSp; 
+                                    plot(dataForPhaseLocking_allTrials.LFPtimes, lfp_external, 'k')
+                                    plot(dataForPhaseLocking_allTrials.LFPtimes, signal_filtered_external, 'b'); 
+                                    scatter(tSp_external, 0.5*ones(1, length(tSp_external)), '.r');
+                                    subplot(2,1,2); 
+                                    scatter(tSp_external, thetaData_allTrials.allPhs, '.r');
+                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
@@ -238,23 +254,17 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
             end
         end
         
-        
-        
         % Save the population data
         data.populationData(iGenotype).MVL = populationMVL;
         data.populationData(iGenotype).preferredDirection = populationDir;
-        data.populationData(iGenotype).popAveRosePlot = averageMVLrosePlot;
         data.populationData(iGenotype).burstsMVL = populationBurstsMVL;
         data.populationData(iGenotype).burstsPreferredDir = populationBurstsDir;
         data.populationData(iGenotype).singlesMVL = populationSinglesMVL;
         data.populationData(iGenotype).singlesPreferredDir = populationSinglesDir;
     end
     
-    
-    
-    
     %% Step 2: Save
-    saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 
+    %saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -295,7 +305,18 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         outputData.allPhs = deg2rad(thetaPhs(match_time));
         outputData.mvl = circ_r(deg2rad(thetaPhs(match_time)));
         outputData.dir = rad2deg(circ_mean(deg2rad(thetaPhs(match_time))));
-        [outputData.p, outputData.z] = circ_rtest(deg2rad(thetaPhs(match_time)));
+        if isempty(deg2rad(thetaPhs(match_time))) == 0;
+            [outputData.p, outputData.z] = circ_rtest(deg2rad(thetaPhs(match_time)));
+        else
+            outputData.p = NaN;
+            outputData.z = NaN;
+        end
+        
+        % Temp output data for plotting 
+        outputData.lfp = lfp;
+        outputData.signal_filtered = signal_filtered;
+        outputData.tSp = tSp; 
+        
     end
 
     function numField = whichField(fieldsToAnalyze, spikes)  

@@ -1,7 +1,7 @@
-function plotPhasePrecession_v1_20240827(data, settings)
-    % Generates plots related to phase precession analysis
+function controlPhasePrecession_v1_20250228(data, settings)
+    % Performs control analyses related to phase precession analysis 
     % Written by Anja Payne
-    % Last Modified: 10/22/2024
+    % Last Modified: 02/28/2025
 
     % Inputs:
     %   1) data: the matlab structure where the in-field theta phases

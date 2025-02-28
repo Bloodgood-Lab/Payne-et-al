@@ -208,18 +208,17 @@ filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
-inFieldSpkTimes = data; inFieldSpkTimesSettings = settings;
+inFieldSpkTimes = data; thetaSettings = settings;
 
 % Settings: 
-inFieldSpkTimesSettings.theta.frequencyBand = [4,12]; 
-inFieldSpkTimesSettings.theta.fieldsToAnalyze = 'best field'; 
-inFieldSpkTimesSettings.theta.numBins = 24;
+thetaSettings.theta.frequencyBand = [4,12]; 
+thetaSettings.theta.fieldsToAnalyze = 'best field'; 
+thetaSettings.theta.numBins = 24;
+thetaSettings.plot = 'no'; 
 
 % Outputs: 
-thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, inFieldSpkTimesSettings, processedDataFolder); toc
-%%
-thetaData = data; close all;
-getThetaPlots_v1_20241216(thetaData); 
+thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, thetaSettings, processedDataFolder); toc
+getThetaPlots_v1_20241216(thetaData, thetaSettings); 
 
 %% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
@@ -251,8 +250,13 @@ thetaSettings.phasePrecession.timeRange = 3*125; % Over what range of time shoul
 % Outputs: 
 [phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
 %%
-clc;
-check = plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
+plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
+%%
+controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
+
+
+
+
 
 %% Step 14B: Control analyses related to the phase precession
 clear;clc;close all; tic;
