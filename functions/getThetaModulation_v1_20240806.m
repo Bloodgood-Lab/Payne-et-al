@@ -30,7 +30,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 8%:length(FRdata); 
+        for iAnimal = 1%:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
@@ -45,7 +45,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                         display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
                         newDirectoryPath = FRdata{iAnimal}(iCluster).metaData.directory{1};
                         clusterFileName = FRdata{iAnimal}(iCluster).metaData.fileName{1};
-                        newTetrode = clusterFileName(14)
+                        newTetrode = clusterFileName(14);
                         if strcmp(directoryPath, newDirectoryPath) == 1 && tetrode == newTetrode;
                             % If the directory and tetrode are the
                             % same, the CSC for this data has already
@@ -53,20 +53,48 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                         elseif strcmp(directoryPath, newDirectoryPath) == 0 || tetrode ~= newTetrode;
                             directoryPath = newDirectoryPath; 
                             tetrode = newTetrode; 
-                            %tetrode = '
-                            csc_file = [directoryPath, '\CSC', tetrode, '.ncs']
+                            csc_file = [directoryPath, '\CSC', tetrode, '.ncs'];
                             csc_data = readCSC(csc_file); 
                             csc_timepoints_lowSampling = csc_data.ts/1000; 
                             csc_samples = csc_data.samp; csc_samples = csc_samples(1:16:end); 
                             csc_timepoints_raw = linspace(min(csc_timepoints_lowSampling), max(csc_timepoints_lowSampling), length(csc_samples)); 
                             csc_timepoints = csc_timepoints_raw - min(csc_timepoints_raw); 
                             csc_sampFreq = csc_data.sampFreq(1)/16; 
-                            % Define these as inputs for the theta
-                            % modulation function and clear variables
+                            
+                            % Get the theta-filtered LFP
+                            dataForFilteredLFP.LFPsamples = csc_samples; 
+                            dataForFilteredLFP.LFPtimes = round(csc_timepoints); 
+                            dataForFilteredLFP.samplingFreq = csc_sampFreq;
+                            thetaBand = settings.theta.frequencyBand; 
+                            filteredLFP = getFilteredLFP(dataForFilteredLFP, thetaBand);
+                            clear dataForFilteredLFP
+                            
+                            % Save the LFP data and store the 'pointer' to
+                            % that location in the data structure
+                            saveFolder = [processedDataPath, '\thetaLFPs'];
+                            if ~exist(saveFolder, 'dir')
+                                % Create the folder if it does not exist
+                                mkdir(saveFolder);
+                            end
+                            thetaLFP.LFPsamples = csc_samples;
+                            thetaLFP.LFPtimes = round(csc_timepoints); 
+                            thetaLFP.filteredLFP = filteredLFP;
+                            thetaLFP.samplingFreq = csc_sampFreq;
+                            saveFolderName = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cell', num2str(iCluster)]; 
+                            %[~, saveFolderName, ~] = fileparts(directoryPath)
+                            thetaSaveFile = [saveFolder, '\', saveFolderName, '_thetaLFPdata'];
+                            save(thetaSaveFile, 'thetaLFP'); 
+                            data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.LFP = thetaSaveFile;
+                            clear thetaLFP
+                            
+                            % Define inputs for the theta modulation
+                            % function and clear variables
                             dataForPhaseLocking.LFPsamples = csc_samples;
                             dataForPhaseLocking.LFPtimes = round(csc_timepoints);
                             dataForPhaseLocking.samplingFreq = csc_sampFreq; 
+                            dataForPhaseLocking.filteredLFP = filteredLFP; 
                             clear csc_data csc_timepoints_lowSampling csc_timepoints_raw csc_samples csc_timepoints
+                            
                         end
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
@@ -134,13 +162,13 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                                 % Save the outputs for all spikes, bursts, and singles
                                 if strcmp(directions(iDir), 'cw') == 1;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.cw = allTrialPhases;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsPhases.cw = allTrialPhases_bursts;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesPhases.cw = allTrialPhases_singles;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.phases.cw = allTrialPhases;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.phases.cw = allTrialPhases_bursts;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.phases.cw = allTrialPhases_singles;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.phases.ccw = allTrialPhases;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsPhases.ccw = allTrialPhases_bursts;
-                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesPhases.ccw = allTrialPhases_singles;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.phases.ccw = allTrialPhases;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.phases.ccw = allTrialPhases_bursts;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.phases.ccw = allTrialPhases_singles;
                                 end
                             
                                 % Get the all-trials theta modulation
@@ -150,33 +178,19 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                                     dataForPhaseLocking_allTrials.LFPsamples = dataForPhaseLocking.LFPsamples;
                                     dataForPhaseLocking_allTrials.LFPtimes = dataForPhaseLocking.LFPtimes;
                                     dataForPhaseLocking_allTrials.samplingFreq = dataForPhaseLocking.samplingFreq; 
+                                    dataForPhaseLocking_allTrials.filteredLFP = dataForPhaseLocking.filteredLFP;
                                     thetaBand = settings.theta.frequencyBand; 
 
                                     % Get the theta locking for all spikes for that field
                                     thetaData_allTrials = getPhaseLocking(dataForPhaseLocking_allTrials, thetaBand);
-                                     
-                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                    %%%%%%%%%%%%  TEMP %%%%%%%%%%%%%%
-                                    close all; figure(1); 
-                                    subplot(2,1,1); hold on; 
-                                    lfp_external = thetaData_allTrials.lfp;
-                                    signal_filtered_external = thetaData_allTrials.signal_filtered;
-                                    tSp_external = thetaData_allTrials.tSp; 
-                                    plot(dataForPhaseLocking_allTrials.LFPtimes, lfp_external, 'k')
-                                    plot(dataForPhaseLocking_allTrials.LFPtimes, signal_filtered_external, 'b'); 
-                                    scatter(tSp_external, 0.5*ones(1, length(tSp_external)), '.r');
-                                    subplot(2,1,2); 
-                                    scatter(tSp_external, thetaData_allTrials.allPhs, '.r');
-                                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.mvl.cw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.cw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.mvl.cw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.dir.cw = thetaData_allTrials.dir;
                                     elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.mvl.ccw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.dir.ccw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.mvl.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.allSpikes.dir.ccw = thetaData_allTrials.dir;
                                     end
 
                                     % Save the data for the population
@@ -202,11 +216,11 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsMVL.cw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsDir.cw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.MVL.cw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.dir.cw = thetaData_allTrials.dir;
                                     elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsMVL.ccw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.burstsDir.ccw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.MVL.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.bursts.dir.ccw = thetaData_allTrials.dir;
                                     end
 
                                     % Save the data for the population
@@ -232,11 +246,11 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
 
                                     % Save the data by field
                                     if strcmp(directions(iDir), 'cw') == 1;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesMVL.cw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesDir.cw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.MVL.cw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.dir.cw = thetaData_allTrials.dir;
                                     elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesMVL.ccw = thetaData_allTrials.mvl;
-                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singlesDir.ccw = thetaData_allTrials.dir;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.MVL.ccw = thetaData_allTrials.mvl;
+                                        data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).theta.singles.dir.ccw = thetaData_allTrials.dir;
                                     end
 
                                     % Save the data for the population
@@ -270,6 +284,31 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
     %%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
+    function filteredLFP = getFilteredLFP(inputData, band)
+        % Gets the filtered LFP
+        % Code modified from Sunandha Srikanth in S. Leutgeb lab
+        % Inputs: 
+        %   1) inputData.LFPsamples: LFP samples
+        %   2) inputData.LFPtimes: LFP timestamps
+        %   3) inputData.samplingFreq: sampling frequency of LFP
+        %   4) band: the frequency band to use for extracting the
+        %      theta-filtered LFP
+        % Outputs:
+        %   1) filteredLFP: the LFP filtered in the theta band
+
+        % Define inputs
+        lfp = inputData.LFPsamples; 
+        lfp_ts = inputData.LFPtimes; 
+        Fs = inputData.samplingFreq;
+        
+        Wn_theta = [band(1)/(Fs/2) band(2)/(Fs/2)]; % normalized by the nyquist frequency
+        [btheta, atheta] = butter(3,Wn_theta);
+        signal_filtered = filtfilt(btheta, atheta, lfp);
+        thetaPhs = rad2deg(angle(hilbert(signal_filtered)));
+
+        filteredLFP = signal_filtered;
+    end
+    
     function outputData = getPhaseLocking(inputData, band)
         % Gets the theta phase of firing for each spike
         % Code from Sunandha Srikanth in S. Leutgeb lab
@@ -277,8 +316,9 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         %   1) inputData.spikeTimes: spike times
         %   2) inputData.LFPsamples: LFP samples
         %   3) inputData.LFPtimes: LFP timestamps
-        %   4) inputData.samplingFreq: sampling frequency of LFP
-        %   5) band: the frequency band to use for extracting the
+        %   4) inputData.filteredLFP: theta-filtered LFP
+        %   5) inputData.samplingFreq: sampling frequency of LFP
+        %   6) band: the frequency band to use for extracting the
         %      theta-filtered LFP
         % Output: 
         %   1) outputData.allPhs: the phase for each spike
@@ -294,14 +334,11 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         lfp = inputData.LFPsamples; 
         lfp_ts = inputData.LFPtimes; 
         Fs = inputData.samplingFreq;
+        signal_filtered = inputData.filteredLFP; 
         
-        Wn_theta = [band(1)/(Fs/2) band(2)/(Fs/2)]; % normalized by the nyquist frequency
-        [btheta, atheta] = butter(3,Wn_theta);
-        signal_filtered = filtfilt(btheta, atheta, lfp);
+        % Get theta phases
         thetaPhs = rad2deg(angle(hilbert(signal_filtered)));
-
         [match_time_spikes, match_time, ~] = intersect(lfp_ts, tSp);
-
         outputData.allPhs = deg2rad(thetaPhs(match_time));
         outputData.mvl = circ_r(deg2rad(thetaPhs(match_time)));
         outputData.dir = rad2deg(circ_mean(deg2rad(thetaPhs(match_time))));
@@ -311,11 +348,6 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
             outputData.p = NaN;
             outputData.z = NaN;
         end
-        
-        % Temp output data for plotting 
-        outputData.lfp = lfp;
-        outputData.signal_filtered = signal_filtered;
-        outputData.tSp = tSp; 
         
     end
 

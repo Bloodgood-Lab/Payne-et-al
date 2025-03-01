@@ -1,0 +1,572 @@
+function controlTheta_v1_20250228(data, settings)
+    % Performs control analyses related to phase precession analysis 
+    % Written by Anja Payne
+    % Last Modified: 02/28/2025
+
+    % Inputs:
+    %   1) data: the matlab structure where the generated theta data is
+    %      saved
+    %   2) settings: the settings file where the settings for the theta 
+    %      modulation are saved
+
+    % Outputs:
+    %   1) additional analysis used to support the main theta modulation
+    %      analysis
+    
+    % Steps/Controls: 
+    %   1) Confirming that the power of the theta band is the same in WT
+    %      and KO LFPs
+    
+    %% Control Analysis 1: LFP Power
+    % This analysis was completed by Chiaki Santiago using the FOOOF
+    % technique from the Voytek lab, please reach out to her for questions
+    
+    %% Control Analysis 2: 
+    
+    
+    
+end   
+         
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function selectedPlots = getFiguresToPlot()
+   % Define the list of available plots
+    plotOptions = {'spikes with slopes - plotted by trial - saved by cell',...
+        'p-values of slope fits - plotted and saved by cell',...
+        'p-values of slope fits - plotted and saved for all data',...
+        'shuffles - plotted by trial AND by cell - saved by cell'...
+        'shuffles - plotted and saved for all data using median slopes',...
+        'R2 - plotted and saved for the mean of the population'}; 
+    
+    % Display a dialog box to select the plots
+    selectedPlots = listdlg('ListString', plotOptions, ...
+    	'SelectionMode', 'multiple', ...
+    	'PromptString', 'Select the plots you want to generate:', ...
+    	'ListSize', [300, 100]);
+end
+
+function figureSettings = getFigureFolders(mainFolder)
+
+    % For the spikes and slopes plots
+    figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
+    figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
+
+    % For the p-value plots
+    figureSettings.fileNameBase.pValues{1} = 'phasePrecession_pValues_byCell';
+    figureSettings.fileNameBase.pValues{2} = 'phasePrecession_pValues_population';
+    figureSettings.filePath.pValues{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues{1}, '', mainFolder);
+    figureSettings.filePath.pValues{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.pValues{2}, '', mainFolder);
+    
+    % For the shuffles plots
+    figureSettings.fileNameBase.shuffles{1} = 'phasePrecession_shuffledPhases_allTrials';
+    figureSettings.fileNameBase.shuffles{2} = 'phasePrecession_shuffledPositions_allTrials';
+    figureSettings.fileNameBase.shuffles{3} = 'phasePrecession_shuffledPhases';
+    figureSettings.fileNameBase.shuffles{4} = 'phasePrecession_shuffledPositions';
+    figureSettings.filePath.shuffles{1} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{1}, '', mainFolder);
+    figureSettings.filePath.shuffles{2} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{2}, '', mainFolder);
+    figureSettings.filePath.shuffles{3} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{3}, '', mainFolder);
+    figureSettings.filePath.shuffles{4} = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.shuffles{4}, '', mainFolder);
+end
+
+function plotSpikesAndSlopes(inputData, settings)
+    % Ask the user to select the folder to save figures into
+    spkPhs = inputData.spkPhsForPlot; spkPos = inputData.spkPosForPlot; binnedSpkPos = inputData.binnedSpkPos; 
+    slopeMedian = inputData.slopeMedian; allSlopes = inputData.allSlopes; 
+    offsets = inputData.offsets; rSquared = inputData.rSquared;
+
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(spkPhs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        close all; 
+        % Set the values for the subplots
+        [subplotNumbRows, allLinePlotRange, histoPlotRange] = determineSubplotLocation(length(spkPhs{iField}));
+
+        % Loop through all the trials
+        allPlotSlopes = []; allYoffsets = []; maxX = []; 
+        for iTrial = 1:length(spkPhs{iField});
+            figures.allTrialsFig = figure(1); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
+            if iTrial == 1; clf(figures.allTrialsFig); else hold on; end;
+
+            % Determine subplot to plot onto
+            if iTrial <= 10; iScatterSub = iTrial; 
+            elseif iTrial > 10 && iTrial <= 20; iScatterSub = iTrial+3; 
+            elseif iTrial > 20 && iTrial <= 30; iScatterSub = iTrial+6;
+            elseif iTrial > 30; iScatterSub = iTrial+9; 
+            end
+
+            % Plot scatter subplot
+            subplot(subplotNumbRows, 13, iScatterSub); hold on;
+            scatter(spkPos{iField}{iTrial}, spkPhs{iField}{iTrial}, 200, '.k');
+            set(gca, 'FontSize', 12);
+            title(num2str(iTrial));
+            ylim([0, 2*pi]);
+
+            % If there are enough spatial bins
+            if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold;                                             continue;
+                continue;
+            else
+                % If there were spikes in-field that trial
+                if length(spkPhs{iField}{iTrial}) >= settings.phasePrecession.spikeThreshold; 
+                    % Get the fit values
+                    plotSlope = allSlopes{iField}(iTrial);
+                    yOffset = offsets{iField}(iTrial);
+                    allPlotSlopes = [allPlotSlopes, plotSlope]; 
+                    allYoffsets = [allYoffsets, yOffset]; 
+                    maxX = nanmax([maxX, nanmax(spkPos{iField}{iTrial})]);
+
+                    % Plot that trial's scatter plot
+                    xPlot = [0:max(spkPos{iField}{iTrial})-min(spkPos{iField}{iTrial})];
+                    if strcmp(settings.phasePrecession.circularity, 'shift') == 1 ...
+                            || strcmp(settings.phasePrecession.circularity, 'none') == 1;
+                        yPlot = (xPlot*plotSlope) + yOffset;
+                        plot(xPlot, yPlot, 'r'); 
+                    elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                        if strcmp(settings.phasePrecession.fit, 'linear') == 1;
+                            yPlot1 = (xPlot*(plotSlope) + yOffset) - pi;
+                            yPlot2 = (xPlot*(plotSlope) + yOffset) + pi;
+                        elseif strcmp(settings.phasePrecession.fit, 'circular') == 1;
+                            yPlot1 = (xPlot*(plotSlope) + yOffset) + pi;
+                            yPlot2 = (xPlot*(plotSlope) + yOffset) + 3*pi;
+                        end
+                        plot(xPlot, yPlot1, 'r');
+                        plot(xPlot, yPlot2, 'r'); 
+                    end
+                    if length(xPlot)>1; xlim([min(xPlot), max(xPlot)]); end
+                    ylim([0, 2*pi]); 
+
+                    % Plot the overlay of all slopes
+                    subplot(subplotNumbRows, 13, allLinePlotRange); hold on;
+                    if strcmp(settings.phasePrecession.circularity, 'shift') == 1;
+                        plot(xPlot, yPlot, 'k');
+                    elseif strcmp(settings.phasePrecession.circularity, 'doubling') == 1;
+                        plot(xPlot, yPlot1, 'k'); 
+                    end
+                end
+            end
+        end   
+        % Clean up the scatter plots
+        cleanUpPlot(settings, slopeMedian(iField), nanmean(allSlopes{iField}), nanmean(rSquared{iField}));
+
+        % Clean up the slope overlay plot and
+        % plot the average slope
+        if ~isnan(slopeMedian(iField)) && ~isnan(nanmean(allSlopes{iField}));
+            inputData.subplotNumbRows = subplotNumbRows;
+            inputData.allLinePlotRange = allLinePlotRange;
+            inputData.maxX = maxX; inputData.allPlotSlopes = allPlotSlopes; 
+            inputData.yOffset = allYoffsets; 
+            inputData.median = slopeMedian(iField);
+            inputData.mean = nanmean(allSlopes{iField});
+            cleanUpAndPlotOverlay(inputData);
+        end
+
+        % Plot a histogram of all slopes
+        plotHistogram(subplotNumbRows, histoPlotRange, allSlopes{iField}, slopeMedian(iField));
+
+        % Save the figure
+        figureSettings.filePath = inputData.figureSettings.filePath.spikesAndSlopes;
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.spikesAndSlopes;
+        figureSettings.fileTypes = {'fig', 'tiff'};
+        saveFigure_v1_20240902(figures.allTrialsFig, figureSettings)
+    end
+end
+
+function [numRows, linePlotRange, histoRange] = determineSubplotLocation(dataLength)
+    numRows = ceil(dataLength/10);
+    if dataLength <= 10;
+        linePlotRange = [12, 13];
+    elseif dataLength > 10 && dataLength <= 20;
+        linePlotRange = [12, 13];
+        histoRange = [25, 26]; 
+    elseif dataLength > 20 && dataLength <= 30;
+        linePlotRange = [12, 26]; 
+        histoRange = [38, 39]; 
+    elseif dataLength > 30
+        linePlotRange = [12, 26]; 
+        histoRange = [38, 52]; 
+    end
+end
+
+function cleanUpPlot(settings, slopeMedian, slopeMean, rSquared)
+    han = axes('Position', [0.125 0.125 0.8 0.8], 'Visible', 'off');
+    han.YLabel.Visible = 'on';
+    ylabel(han, 'Theta Phase (degrees)', 'FontSize', 20);
+    han = axes('Position', [0.065 0.10 0.9 0.9], 'Visible', 'off');
+    han.XLabel.Visible = 'on';
+    xlabel(han, 'Linear Position', 'FontSize', 20);
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
+    annotation('textbox', [0.75, 0.98, 0.2, 0.03], 'String', ...
+        ['Median Slope: ', num2str(slopeMedian)], 'FitBoxToText', 'on', ...
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
+    annotation('textbox', [0.87, 0.98, 0.2, 0.03], 'String', ...
+        ['Mean Slope: ', num2str(slopeMean)], 'FitBoxToText', 'on', ...
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
+    annotation('textbox', [0.75, 0.95, 0.2, 0.03], 'String', ...
+        ['R-squared: ', num2str(rSquared)], 'FitBoxToText', 'on', ...
+        'BackgroundColor', 'none', 'EdgeColor', 'none', 'FontSize', 12);
+    set(gcf, 'PaperUnits', 'Inches', 'PaperPositionMode', 'auto');
+end
+
+function cleanUpAndPlotOverlay(inputData)
+    subplot(inputData.subplotNumbRows, 13, inputData.allLinePlotRange); hold on;
+    xAverageLine = 0:inputData.maxX;
+    inputData.allPlotSlopes(isinf(inputData.allPlotSlopes)==1) = NaN;
+    inputData.yOffset(isinf(inputData.yOffset)==1) = NaN;
+    yMedianLine = xAverageLine*inputData.median + nanmean(inputData.yOffset);
+    yMeanLine = xAverageLine*inputData.mean + nanmean(inputData.yOffset);
+    medianLine = plot(xAverageLine, yMedianLine, '-r', 'LineWidth', 2);
+    meanLine = plot(xAverageLine, yMeanLine, '--b', 'LineWidth', 2);
+    %legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
+    legend('boxoff');
+    ylim([0, 2*pi]); 
+    ylabel('Theta Phase (degrees)');
+    xlabel('Linear Position');  
+    set(gca,'FontSize', 12);
+end
+
+function plotHistogram(numRows, plotRange, slopes, medianSlope)
+    subplot(numRows, 13, plotRange); hold on;
+    slopeHist = histogram(slopes, 20, 'Normalization', 'probability');
+    maxValue = max(slopeHist.Values);
+    medianLine = plot([medianSlope, medianSlope], [0, maxValue], '-r', 'LineWidth', 2); 
+    meanLine = plot([nanmean(slopes), nanmean(slopes)], [0, maxValue], '--b', 'LineWidth', 2); 
+    legend([medianLine, meanLine], {'Median', 'Mean'}, 'Location', 'northwest');
+    legend('boxoff');
+    ylabel('Number of Trials');
+    xlabel('Phase Precession Slopes');  
+    set(gca,'FontSize', 12); 
+end
+
+function plotPvalues_perCell(inputData, settings)
+    pValues = inputData.pValues; 
+    
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(pValues);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+
+        % Plot the pValues across all fields for one cell
+        close all; figure(1); hold on; 
+        pValuesPerCell = histogram(inputData.pValues{iField}, [0:0.05:1]);
+        maxValue = max(pValuesPerCell.Values);
+        plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+        ylabel('Number of Trials');
+        xlabel('pValue');  
+        set(gca,'FontSize', 12); 
+        xlim([0,1]);
+        annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
+        
+        % Save the figure
+        figureSettings.filePath = inputData.figureSettings.filePath.pValues{1};
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{1};
+        figureSettings.fileTypes = {'tiff'};
+        saveFigure_v1_20240902(pValuesPerCell, figureSettings)
+    end
+end
+
+function plotPvalues_population(inputData, settings)
+    % Plot the pValues across all fields for all cells
+    figure(2); hold on; pValuesAllFields = histogram(inputData.p_allTrials, [0:0.05:1], 'Normalization', 'probability');
+    maxValue = max(pValuesAllFields.Values);
+    plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+    ylabel('Number of Trials');
+    xlabel('pValue');  
+    title('All p-value across all cells'); 
+    set(gca,'FontSize', 12); 
+    xlim([0,1]);
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues{2};
+    figureSettings.name = 'allFieldsCombined';
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{2};
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllFields, figureSettings)
+    
+    % Plot the median pValues for all cells
+    figure(3); hold on; pValuesAllCells = histogram(inputData.p_allCells, [0:0.05:1], 'Normalization', 'probability');
+    maxValue = max(pValuesAllCells.Values);
+    plot([0.05, 0.05], [0, maxValue], '-r', 'LineWidth', 2); 
+    ylabel('Number of Trials');
+    xlabel('pValue');  
+    title('Median p-value for each cell');
+    set(gca,'FontSize', 12); 
+    xlim([0,1]);
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+        ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+        'EdgeColor', 'none');
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.pValues{2};
+    figureSettings.name = ['medianOfEachCell'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.pValues{2};
+    figureSettings.fileTypes = {'tiff'};
+    saveFigure_v1_20240902(pValuesAllCells, figureSettings)
+    
+end
+
+function outputData = calculateShuffles(inputData, settings)
+    phs = inputData.spkPhsForPlot; pos = inputData.spkPosForPlot; 
+    numShuffles = inputData.numShuffles; 
+    
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(phs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        for iTrial = 1:length(phs{iField}); 
+            % If there are no phases, skip that trial
+            if isempty(phs{iField}{iTrial}) == 1; 
+                outputData.shPhsSlopes{iField}{iTrial} = NaN(1,numShuffles); 
+                outputData.shPosSlopes{iField}{iTrial} = NaN(1,numShuffles); 
+            else
+                for iShuff = 1:numShuffles; 
+                    % Shuffle the phases by mixing up the order
+                    randomOrder = randperm(length(phs{iField}{iTrial}));
+                    shuffledPhases = phs{iField}{iTrial}(randomOrder); 
+                    % Now rerun phase precession
+                    phasePrecessionInputData.spkPhs = shuffledPhases; 
+                    phasePrecessionInputData.spkPos = pos{iField}{iTrial}; 
+                    [cir, lin, circFit] = thetaPrecess(phasePrecessionInputData.spkPhs, phasePrecessionInputData.spkPos, settings.phasePrecession.slopeRange); 
+                    if strcmp(settings.phasePrecession.fit, 'circularSlope') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = cir.Alpha; 
+                    elseif strcmp(settings.phasePrecession.fit, 'linearFit') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = lin.Alpha;
+                    elseif strcmp(settings.phasePrecession.fit, 'circularFit') == 1;
+                        outputData.shPhsSlopes{iField}{iTrial}(iShuff) = circFit.Alpha;
+                    end
+
+                    % Shuffle the positions by mixing up the order
+                    randomOrder = randperm(length(pos{iField}{iTrial}));
+                    shuffledPositions = pos{iField}{iTrial}(randomOrder); 
+                    % Now rerun phase precession
+                    phasePrecessionInputData.spkPhs = phs{iField}{iTrial}; 
+                    phasePrecessionInputData.spkPos = shuffledPositions; 
+                    [cir, lin, circFit] = thetaPrecess(phasePrecessionInputData.spkPhs, phasePrecessionInputData.spkPos, settings.phasePrecession.slopeRange); 
+                    if strcmp(settings.phasePrecession.fit, 'circularSlope') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = cir.Alpha; 
+                    elseif strcmp(settings.phasePrecession.fit, 'linearFit') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = lin.Alpha;
+                    elseif strcmp(settings.phasePrecession.fit, 'circularFit') == 1;
+                        outputData.shPosSlopes{iField}{iTrial}(iShuff) = circFit.Alpha;
+                    end
+                end
+            end
+            outputData.shPhsAveSlope{iField}(iTrial) = nanmean(outputData.shPhsSlopes{iField}{iTrial}); 
+            outputData.shPosAveSlope{iField}(iTrial) = nanmean(outputData.shPosSlopes{iField}{iTrial}); 
+        end
+        outputData.shPhsFieldAverage(iField) = nanmedian(outputData.shPhsAveSlope{iField});
+        outputData.shPosFieldAverage(iField) = nanmedian(outputData.shPosAveSlope{iField});
+    end
+end
+
+function plotShuffles_perTrial(inputData, settings)
+    sh1 = inputData.shPhs; sh2 = inputData.shPos;
+    realSlopes = inputData.realSlopes;
+    
+    % Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(sh1);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        close all; 
+        % Set the values for the subplots
+        subplotNumbRows = ceil(length(sh1{iField})/10);
+        
+        % Loop through all the trials
+        for iTrial = 1:length(sh1{iField});
+            
+            % Plot the shuffled positions
+            shuffledPhases = figure(1); set(shuffledPhases, 'Position', [100, 200, 1800, 800]);
+            set(shuffledPhases, 'PaperPositionMode', 'auto');
+            if iTrial == 1; clf(shuffledPhases); else hold on; end;
+            % Plot scatter subplot
+            if sum(~isnan(sh1{iField}{iTrial})) == 0;
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            else
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                tempHist = histogram(sh1{iField}{iTrial}, 10); 
+                maxValue = max(tempHist.Values); 
+                plot([realSlopes{iField}(iTrial), realSlopes{iField}(iTrial)], [0, maxValue], '-r', 'LineWidth', 2); 
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            end
+            
+            % Plot the shuffled positions
+            shuffledPositions = figure(2); set(shuffledPositions, 'Position', [100, 200, 1800, 800]);
+            set(shuffledPositions, 'PaperPositionMode', 'auto');
+            if iTrial == 1; clf(shuffledPositions); else hold on; end;
+            % Plot scatter subplot
+            if sum(~isnan(sh1{iField}{iTrial})) == 0;
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            else
+                subplot(subplotNumbRows, 10, iTrial); hold on;
+                tempHist = histogram(sh2{iField}{iTrial}, 10); 
+                maxValue = max(tempHist.Values); 
+                plot([realSlopes{iField}(iTrial), realSlopes{iField}(iTrial)], [0, maxValue], '-r', 'LineWidth', 2); 
+                set(gca, 'FontSize', 12);
+                title(num2str(iTrial));
+            end
+        end
+        % Save the figures
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+        % Shuffled phases figure
+        figure(1); annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{1};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{1};
+        saveFigure_v1_20240902(shuffledPhases, figureSettings);
+        % Shuffled positions figure
+        figure(2); annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{2};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{2};
+        saveFigure_v1_20240902(shuffledPositions, figureSettings)
+    end
+end
+
+function plotShuffles_perCell(inputData, settings)
+% Loop through fields
+    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+        numFieldsToAnalyze = length(inputData.shPhs);
+    elseif strcmp(settings.phasePrecession.fieldsToAnalyze, 'best field') == 1;
+        numFieldsToAnalyze = 1;
+    end
+    for iField = 1:numFieldsToAnalyze;
+        close all; 
+        figureSettings.name = [inputData.genotype, '_Animal', num2str(inputData.animal), '_Cluster', ...
+            num2str(inputData.cell), '_', inputData.dir, '_Field', num2str(iField)];
+        figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+
+        % Plot the histogram of shuffled phases with a line denoting the slope median
+        figure(1); hold on; shuffledPhases = histogram(inputData.shPhs{iField}, 10);
+        maxValue = max(shuffledPhases.Values);
+        plot([inputData.realSlopes(iField), inputData.realSlopes(iField)], [0, maxValue], '-r', 'LineWidth', 2); 
+        ylabel('Probability');
+        xlabel('Slopes');  
+        title('Slopes of Shuffled Data for All Trials of a Given Cell; Shuffled Phases'); 
+        set(gca,'FontSize', 12); 
+        % Save the figure for the shuffled phases
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
+        saveFigure_v1_20240902(shuffledPhases, figureSettings)
+        
+        % Plot the histogram of shuffled positions with a line denoting the slope median
+        figure(2); hold on; shuffledPositions = histogram(inputData.shPos{iField}, 10);
+        maxValue = max(shuffledPositions.Values);
+        plot([inputData.realSlopes(iField), inputData.realSlopes(iField)], [0, maxValue], '-r', 'LineWidth', 2); 
+        ylabel('Probability');
+        xlabel('Slopes'); 
+        title('Slopes of Shuffled Data for All Trials of a Given Cell; Shuffled Position'); 
+        set(gca,'FontSize', 12); 
+        % Save the figure for the shuffled phases
+        figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
+        figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{4};
+        saveFigure_v1_20240902(shuffledPositions, figureSettings)
+    end
+end
+                    
+function plotShuffles_population(inputData, settings)
+    figureSettings.name = ['populationShuffleComparison'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+
+    % Plot the median shuffled phases for all cells
+    close all; phaseShuffleFigure = figure(1); hold on; 
+    phaseShuffle = histogram(inputData.shPhs, [-1.5:0.025:1.5], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-1.5:0.025:1.5], 'Normalization', 'probability');
+    maxValue = max([phaseShuffle.Values, phaseRealData.Values]);
+    ylabel('Probability');
+    xlabel('Median Slope'); 
+    title('Median Slope for Shuffled Data; Shuffled by Phase');
+    legend('Shuffled Data', 'Real Data'); 
+    set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
+    saveFigure_v1_20240902(phaseShuffleFigure, figureSettings)
+    
+    % Plot the median shuffled positions for all cells
+    close all; posShuffleFigure = figure(1); hold on; 
+    %positionShuffle = histogram(inputData.shPos, [-4:0.1:4], 'Normalization', 'probability');
+    phaseRealData = histogram(inputData.realSlopes, [-1.5:0.025:0.5], 'Normalization', 'probability');
+    maxValue = max([phaseRealData.Values]); %max([positionShuffle.Values, phaseRealData.Values]);
+    ylabel('Probability');
+    xlabel('Median Slope');  
+    title('Median Slope for Shuffled Data; Shuffled by Position'); 
+    %legend('Shuffled Data', 'Real Data'); 
+    set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+    % Save the figure
+    figureSettings.filePath = inputData.figureSettings.filePath.shuffles{4};
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{4};
+    saveFigure_v1_20240902(posShuffleFigure, figureSettings)
+    
+    figure;
+    cdfplot(inputData.realSlopes); 
+end
+
+function plotR2_population(inputData, settings)
+    figureSettings.name = ['populationR2'];
+    figureSettings.appendedFolder.binary = 'yes'; 
+        figureSettings.fileTypes = {'tiff'};
+
+    % Plot the median shuffled phases for all cells
+    close all; R2figure = figure(1); hold on; 
+    r2_histogram = histogram(inputData.r2, [0:0.025:1], 'Normalization', 'probability');
+    maxValue = max(r2_histogram.Values);
+    ylabel('Probability');
+    xlabel('Average R^2 per Field'); 
+    title('R^2 Population');
+    set(gca,'FontSize', 12); 
+    annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+            ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+            'EdgeColor', 'none');
+    % Save the figure
+    %{
+    figureSettings.filePath = inputData.figureSettings.filePath.shuffles{3};
+    figureSettings.appendedFolder.name = inputData.figureSettings.fileNameBase.shuffles{3};
+    saveFigure_v1_20240902(R2figure, figureSettings)
+    %}
+    
+end
+                    

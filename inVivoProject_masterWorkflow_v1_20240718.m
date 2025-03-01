@@ -214,11 +214,20 @@ inFieldSpkTimes = data; thetaSettings = settings;
 thetaSettings.theta.frequencyBand = [4,12]; 
 thetaSettings.theta.fieldsToAnalyze = 'best field'; 
 thetaSettings.theta.numBins = 24;
-thetaSettings.plot = 'no'; 
+thetaSettings.plot.display = 'yes'; 
+thetaSettings.plot.genotypes = 2; 
+thetaSettings.plot.animals = 1; 
+thetaSettings.plot.cells = 7; 
+thetaSettings.plot.direction = 1; 
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, thetaSettings, processedDataFolder); toc
+%%
+controlTheta_v1_20250228(thetaData, thetaSettings); 
+%%
+clc;
 getThetaPlots_v1_20241216(thetaData, thetaSettings); 
+
 
 %% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
