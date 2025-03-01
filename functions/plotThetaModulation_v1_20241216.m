@@ -21,12 +21,15 @@ function data = getThetaPlots_v1_20241216(data, settings)
     
     %   1) Plot figure 1: the population scatter plot
     
+    
+    
     % Get the folders to save plots into
     mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
     figureSettings = getFigureFolders(mainFolder); 
-
-    
     close all; 
+    
+    %% Figure 1: LFP with spikes
+
     if strcmp(settings.plot.display, 'yes') == 1; 
         
         % Have the user select which plots they want to generate
@@ -146,12 +149,15 @@ function data = getThetaPlots_v1_20241216(data, settings)
                 end
             end
         end
-            
-        if ismember(2, listOfFigures) == 1; 
+          
+        
+        
+        
+        if ismember(3, listOfFigures) == 1; 
 
             %% Step 1: Get the population scatter plot
-            preferred_phase_WT_rad = deg2rad(data.populationData(1).preferredDirection); % Random phases for WT (0 to 2*pi)
-            preferred_phase_KO_rad = deg2rad(data.populationData(2).preferredDirection); % Random phases for KO (0 to 2*pi)
+            preferred_phase_WT_rad = deg2rad(data.populationData(1).preferredDirection); 
+            preferred_phase_KO_rad = deg2rad(data.populationData(2).preferredDirection); 
             mean_vector_length_WT = data.populationData(1).MVL  ;
             mean_vector_length_KO = data.populationData(2).MVL  ;
 
