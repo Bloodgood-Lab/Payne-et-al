@@ -242,7 +242,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
         %% Figure 3: Rose plot scatter plot for all neurons
         
         if ismember(3, listOfFigures) == 1; 
-            figureSettings.filePath = figureSettings.filePath.populationRose;
+            figureSettings.filePath = figureSettings.filePath.population;
             for iGenotype = 1:length(fieldnames(data.cellData));
                 genotypes = fieldnames(data.cellData); 
 
@@ -266,11 +266,79 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                 
                 % Save the figure
                 figureSettings.name = [genotypes{iGenotype}];
-                figureSettings.appendedFolder.binary = 'yes'; 
-                figureSettings.appendedFolder.name = figureSettings.fileNameBase.populationRose;
+                figureSettings.appendedFolder.binary = 'no'; 
+                figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
                 figureSettings.fileTypes = {'fig', 'tiff'};
                 saveFigure_v1_20240902(figures.populationRose, figureSettings);
             end
+        end
+        
+        %% Figure 4: Preferred Phase
+        
+        if ismember(4, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.population;
+            
+            % Assign the preferredPhase to WT and KO
+            preferredPhase_WT = deg2rad(data.populationData(1).preferredDirection); 
+            preferredPhase_KO = deg2rad(data.populationData(2).preferredDirection); 
+
+            % Convert angles to Cartesian coordinates
+            x_WT = cos(preferredPhase_WT);
+            y_WT = sin(preferredPhase_WT);
+            x_KO = 0.75.*cos(preferredPhase_KO); % Scaled down to nest inside WT
+            y_KO = 0.75.*sin(preferredPhase_KO); % Scaled down to nest inside WT
+
+            % Scatter plot
+            figures.populationPrefPhase = figure(5); clf; hold on;
+            scatter(x_WT, y_WT, 50, 'ok'); 
+            scatter(x_KO, y_KO, 50, 'og'); 
+
+            % Add the unit circle for reference
+            theta = linspace(0, 2*pi, 100);
+            plot(cos(theta), sin(theta), 'k-'); % Unit circle in dashed black
+            axis equal; % Equal scaling for both axes
+
+            % Add the mean +/- SEM as larger, filled circles
+            WTmean = rad2deg(circ_mean(deg2rad(preferredPhase_WT'))); % Use circular stats toolbox since this is circular data
+            KOmean = rad2deg(circ_mean(deg2rad(preferredPhase_KO'))); % Use circular stats toolbox since this is circular data
+            WT_SEM = rad2deg(circ_std(deg2rad(preferredPhase_WT')) / sqrt(length(preferredPhase_WT)));
+            KO_SEM = rad2deg(circ_std(deg2rad(preferredPhase_KO')) / sqrt(length(preferredPhase_KO)));
+
+            WTstats = [WTmean-WT_SEM, WTmean, WTmean+WT_SEM];
+            KOstats = [KOmean-KO_SEM, KOmean, KOmean+KO_SEM];
+            xStats_WT = cos(WTstats); yStats_WT = sin(WTstats);
+            xStats_KO = 0.75.*cos(KOstats); yStats_KO = 0.75.*sin(KOstats);
+            
+            scatter(xStats_WT, yStats_WT, 200, 'filled', 'k'); 
+            scatter(xStats_KO, yStats_KO, 200, 'filled', 'g'); 
+
+            % Display statistical significance
+            % First, test for uniformity
+            [pUnif_WT,~] = circ_rtest(preferredPhase_WT')
+            [pUnif_KO,~] = circ_rtest(preferredPhase_KO') 
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not uniform, possibility it fits von Mises but check visually'); 
+            end
+            % Second, check that the concentration parameters are the same
+            k_WT = 1 / circ_std(deg2rad(preferredPhase_WT')); 
+            k_KO = 1 / circ_std(deg2rad(preferredPhase_KO'));  
+            display('Check that the concentration parameters are similar'); 
+            display(['Concentration parameter k for WT: ', num2str(k_WT)]);
+            display(['Concentration parameter k for KO: ', num2str(k_KO)]);
+            % If data passes assumptions, test for significance
+            [p,~] = circ_wwtest(deg2rad(preferredPhase_WT'), deg2rad(preferredPhase_KO'));
+            pValueDisplay = ['P-value is ', num2str(p), ' using circ wwtest'];
+            display(pValueDisplay);
+            display('Note that circ_wwtest assumes von Mises distribution and similar concentration parameters'); 
+            
+            % Save the figure
+            figureSettings.name = 'PreferredPhase_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+            saveFigure_v1_20240902(figures.populationPrefPhase, figureSettings);
         end
    
         
@@ -296,8 +364,8 @@ function figureSettings = getFigureFolders(mainFolder)
     figureSettings.filePath.individualRose = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.individualRose, '', mainFolder);
 
     % For the population rose plots
-    figureSettings.fileNameBase.populationRose = 'thetaRosePlots_population';
-    figureSettings.filePath.populationRose = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.populationRose, '', mainFolder);
+    figureSettings.fileNameBase.population = 'theta_populationPlots';
+    figureSettings.filePath.population = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.population, '', mainFolder);
 
 end
 
@@ -305,7 +373,8 @@ function selectedPlots = getFiguresToPlot()
    % Define the list of available plots
     plotOptions = {'LFP with theta-filtered LFP and spikes', ...
         'rose plots of spiking for each cell', ...
-        'rose plot scatter plot of preferred phase vs. MVL for all cells'}; 
+        'rose plot scatter plot of preferred phase vs. MVL for all cells', ...
+        'preferred phase for WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...

@@ -45,6 +45,11 @@ function saveFigure_v1_20240902(fig, settings)
         
     elseif strcmp(settings.appendedFolder.binary, 'no') == 1;
         
+        if ~exist(settings.filePath{1}, 'dir')
+            % Create the folder if it does not exist
+            mkdir(settings.filePath{1});
+        end
+        
         % Create the subfolder with the version and today's data
         saveVersion = str2double(settings.filePath{2}) + 1;                                        
         saveVersion = sprintf('%02d', saveVersion);
@@ -52,7 +57,7 @@ function saveFigure_v1_20240902(fig, settings)
         % Get the file name and save
         saveFile = settings.name; 
         for iFileType = 1:length(settings.fileTypes)
-            saveas(fig, [settings.filePath{1}, '\_v', saveVersion, '_', date, '\', saveFile], settings.fileTypes{iFileType});
+            saveas(fig, [settings.filePath{1}, '\', saveFile, '_v', saveVersion, '_', date], settings.fileTypes{iFileType});
         end
     end
     
