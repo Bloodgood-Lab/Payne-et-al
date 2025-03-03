@@ -1,4 +1,4 @@
-function data = getThetaPlots_v1_20241216(data, settings)
+function data = plotThetaModulation_v1_20241216(data, settings)
     % Generates plots associated with theta modulation
     % Written by Anja Payne
     % Last Modified: 02/28/2025
@@ -11,6 +11,8 @@ function data = getThetaPlots_v1_20241216(data, settings)
     
     % Outputs:
     %   1) figure 1: the LFP, theta-filtered LFP, and spikes
+    %   2) figure 2: the rose plots showing phase preference of all spikes
+    %      plotted for each individual neuron
     
     %   1) figure 1: a scatter plot on a rose diagram showing the MVL and
     %      preferred direction for all WT and KO cells
@@ -130,8 +132,6 @@ function data = getThetaPlots_v1_20241216(data, settings)
 
                                         % Save the figure
                                         figureSettings.filePath = figureSettings.filePath.LFP;
-                                        genotypes{iGenotype}
-                                        directions(iDir)
                                         figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
                                             num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)];
                                         figureSettings.appendedFolder.binary = 'yes'; 
@@ -239,39 +239,45 @@ function data = getThetaPlots_v1_20241216(data, settings)
             end
         end
         
+        %% Figure 3: Rose plot scatter plot for all neurons
         
+        if ismember(3, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.populationRose;
+            for iGenotype = 1:length(fieldnames(data.cellData));
+                genotypes = fieldnames(data.cellData); 
+
+                % Plot scatter plot for all cells in population
+                preferred_phase = deg2rad(data.populationData(iGenotype).preferredDirection); 
+                mean_vector_length = data.populationData(iGenotype).MVL;
+
+                if iGenotype == 1; 
+                    figures.populationRose = figure(3); clf;
+                    pointAppearance = 'ko';
+                elseif iGenotype == 2; 
+                    figures.populationRose = figure(4); clf; 
+                    pointAppearance = 'go'; 
+                end;
+                polar(0, 0.8, 'w.'); % Forces the axis by placing a white dot
+                hold on;        
+                for i = 1:length(preferred_phase)
+                    % Use polar function to plot each point
+                    polar(preferred_phase(i), mean_vector_length(i), pointAppearance);
+                end
+                
+                % Save the figure
+                figureSettings.name = [genotypes{iGenotype}];
+                figureSettings.appendedFolder.binary = 'yes'; 
+                figureSettings.appendedFolder.name = figureSettings.fileNameBase.populationRose;
+                figureSettings.fileTypes = {'fig', 'tiff'};
+                saveFigure_v1_20240902(figures.populationRose, figureSettings);
+            end
+        end
+   
         
     end
         
         
-        %{
-        if ismember(3, listOfFigures) == 1; 
-
-            %% Step 1: Get the population scatter plot
-            preferred_phase_WT_rad = deg2rad(data.populationData(1).preferredDirection); 
-            preferred_phase_KO_rad = deg2rad(data.populationData(2).preferredDirection); 
-            mean_vector_length_WT = data.populationData(1).MVL  ;
-            mean_vector_length_KO = data.populationData(2).MVL  ;
-
-            figure;
-            % Plot WT data
-            polar(0, 0.8, 'ko');
-            hold on;
-            for i = 1:length(preferred_phase_WT_rad)
-                % Use polar function to plot each point for WT
-                polar(preferred_phase_WT_rad(i), mean_vector_length_WT(i), 'ko');
-            end
-
-            % Plot KO data
-            figure;
-            polar(0, 0.8, 'ko');
-            hold on;
-            for i = 1:length(preferred_phase_KO_rad)
-                % Use polar function to plot each point for KO
-                polar(preferred_phase_KO_rad(i), mean_vector_length_KO(i), 'go');
-            end
-        end
-    %}
+      
 end
     
     
@@ -289,13 +295,17 @@ function figureSettings = getFigureFolders(mainFolder)
     figureSettings.fileNameBase.individualRose = 'thetaRosePlots_individualCells';
     figureSettings.filePath.individualRose = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.individualRose, '', mainFolder);
 
+    % For the population rose plots
+    figureSettings.fileNameBase.populationRose = 'thetaRosePlots_population';
+    figureSettings.filePath.populationRose = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.populationRose, '', mainFolder);
+
 end
 
 function selectedPlots = getFiguresToPlot()
    % Define the list of available plots
     plotOptions = {'LFP with theta-filtered LFP and spikes', ...
         'rose plots of spiking for each cell', ...
-        'preferred phase vs. MVL plotted as vectors on rose plot'}; 
+        'rose plot scatter plot of preferred phase vs. MVL for all cells'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
