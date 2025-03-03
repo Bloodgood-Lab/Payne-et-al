@@ -222,13 +222,20 @@ function data = getThetaPlots_v1_20241216(data, settings)
                                         set(figures.individualRose, 'Position', [100, 200, 500, 500]);
                                        
                                         % Save the figure
-                                        figureSettings.filePath = figureSettings.filePath.individualRose;
+                                        %{
+                                        figureSettings.filePath = figureSettings.filePath.LFP;
+                                        genotypes{iGenotype}
+                                        directions(iDir)
                                         figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
                                             num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)];
                                         figureSettings.appendedFolder.binary = 'yes'; 
-                                        figureSettings.appendedFolder.name = figureSettings.fileNameBase.individualRose;
+                                        figureSettings.appendedFolder.name = figureSettings.fileNameBase.LFP;
                                         figureSettings.fileTypes = {'fig', 'tiff'};
-                                        saveFigure_v1_20240902(figures.individualRose, figureSettings)
+                                        
+                                        saveFigure_v1_20240902(figures.LFP, figureSettings)
+                                        %}
+
+
 
                                     end
                                 end
@@ -284,10 +291,6 @@ function figureSettings = getFigureFolders(mainFolder)
     % For the LFP with spikes
     figureSettings.fileNameBase.LFP = 'thetaLFPwithSpikes';
     figureSettings.filePath.LFP = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.LFP, '', mainFolder);
-    
-    % For the individual rose plots
-    figureSettings.fileNameBase.individualRose = 'thetaRosePlots_individualCells';
-    figureSettings.filePath.individualRose = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.individualRose, '', mainFolder);
 
 end
 

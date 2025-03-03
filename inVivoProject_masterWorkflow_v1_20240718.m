@@ -226,7 +226,7 @@ thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, thetaSettings, proce
 controlTheta_v1_20250228(thetaData, thetaSettings); 
 %%
 clc;
-getThetaPlots_v1_20241216(thetaData, thetaSettings); 
+plotThetaModulation_v1_20241216(thetaData, thetaSettings); 
 
 
 %% Step 14: Get the phase precession (takes ~8 min)

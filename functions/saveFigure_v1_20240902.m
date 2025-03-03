@@ -23,7 +23,6 @@ function saveFigure_v1_20240902(fig, settings)
 
         % Get the file name and save
         saveFile = settings.name; 
-        [subFolder, '\', saveFile]
         for iFileType = 1:length(settings.fileTypes)
             saveas(fig, [subFolder, '\', saveFile], settings.fileTypes{iFileType});
         end
