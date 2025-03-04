@@ -26,7 +26,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
     
     
     % Get the folders to save plots into
-    mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
+    mainFolder = uigetdir('C:\', 'Please select the folder you would like theta plots saved into.');
     figureSettings = getFigureFolders(mainFolder); 
     close all; 
     
@@ -390,6 +390,152 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.populationMVLcdf, figureSettings);
         end
    
+        %% Figure 6: MVL across normalized field
+        if ismember(6, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.population;
+            
+            for iGenotype = 1:length(fieldnames(data.cellData));
+                normalizedMVL = []; normalizedMVL_firstHalf = []; normalizedMVL_secondHalf = []; 
+
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+
+                for iAnimal = 1:length(FRdata);
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        [~,n] = size(FRdata{iAnimal});
+                        for iCluster = 1:n;
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
+                                for iDir = 1:length(directions);
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+
+                                    % Get variables to plot
+                                    allPhases = FRdata{iAnimal}(iCluster).theta.phases.(directions{iDir}); 
+                                    bins = FRdata{iAnimal}(iCluster).inField.inFieldBinnedSpkPos.(directions{iDir}); 
+                                    rateMap = FRdata{iAnimal}(iCluster).rateMaps.trialAverageMap.(directions{iDir}); 
+                                    barcode = FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original.(directions{iDir}); 
+
+                                    % Loop through fields
+                                    if strcmp(settings.theta.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+
+                                    for iField = 1:numField;
+                                        % Normalize the rate map (so it goes from 0 to 1 in
+                                        % X and Y)
+                                        rateMap = rateMap(barcode == iField); 
+                                        rateMap = rateMap/nanmax(rateMap); 
+                                        
+                                        % Go through all the trials and sort the spikes
+                                        % into bins
+                                        byBinPhases = cell(1,67); 
+                                        if length(allPhases{iField}) > 28;
+                                            for iTrial = 1:length(allPhases{iField});
+                                                for iSpikes = 1:length(allPhases{iField}{iTrial});
+                                                    byBinPhases{bins{iField}{iTrial}(iSpikes)} = [byBinPhases{bins{iField}{iTrial}(iSpikes)}; allPhases{iField}{iTrial}(iSpikes)];
+                                                end
+                                            end
+                                        end
+                                        
+                                        % Go through all the bins and get the theta
+                                        % modulation
+                                        mvlByBin = NaN(1,67); 
+                                        for iBin = 1:length(byBinPhases)
+                                            if isempty(byBinPhases{iBin}) == 0; 
+                                                if length(byBinPhases{iBin}) ~= 1; 
+                                                    mvlByBin(iBin) = circ_r(byBinPhases{iBin});
+                                                end
+                                            end
+                                        end
+                                        mvlByBinInField = mvlByBin(barcode == iField);
+                                        [~, peakIndex] = nanmax(rateMap);
+                                        firstHalf_mvl = mvlByBinInField(1:peakIndex);
+                                        secondHalf_mvl = mvlByBinInField(peakIndex:end);
+                                        
+                                        % Interpolate all MVL values so they go from 0
+                                        % to 67
+                                        if length(mvlByBinInField) > 1 && length(firstHalf_mvl) > 1 && length(secondHalf_mvl) > 1; 
+                                            newX_queryPoints = linspace(1, length(mvlByBinInField), 50);  
+                                            newX = interp1([1:length(mvlByBinInField)], mvlByBinInField, newX_queryPoints);
+                                            normalizedMVL = [normalizedMVL; newX]; 
+
+                                            newX_queryPoints = linspace(1, length(firstHalf_mvl), 50); 
+                                            newX_firstHalf = interp1([1:length(firstHalf_mvl)], firstHalf_mvl, newX_queryPoints);
+                                            normalizedMVL_firstHalf = [normalizedMVL_firstHalf; newX_firstHalf];
+
+                                            newX_queryPoints = linspace(1, length(secondHalf_mvl), 50); 
+                                            newX_secondHalf = interp1([1:length(secondHalf_mvl)], secondHalf_mvl, newX_queryPoints);
+                                            normalizedMVL_secondHalf = [normalizedMVL_secondHalf; newX_secondHalf]; 
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                normalizedMVL_byGenotype{iGenotype} = normalizedMVL;
+                normalizedMVL_centeredAtPeak_byGenotype{iGenotype} = [normalizedMVL_firstHalf, normalizedMVL_secondHalf];
+                
+            end
+            
+            WTmean = nanmean(normalizedMVL_centeredAtPeak_byGenotype{1});
+            WTsem = nanstd(normalizedMVL_centeredAtPeak_byGenotype{1})/sqrt(length(normalizedMVL_centeredAtPeak_byGenotype{1}));
+            KOmean = nanmean(normalizedMVL_centeredAtPeak_byGenotype{2});
+            KOsem = nanstd(normalizedMVL_centeredAtPeak_byGenotype{2})/sqrt(length(normalizedMVL_centeredAtPeak_byGenotype{2}));
+
+            figures.MVLvsLocation = figure(7); clf; subplot(4,1,1:3); hold on; 
+            plot([1/100:1/100:1], nanmean(normalizedMVL_centeredAtPeak_byGenotype{1}), 'k', 'LineWidth', 2); 
+            plot([1/100:1/100:1], nanmean(normalizedMVL_centeredAtPeak_byGenotype{2}), 'Color', [0, 0.5, 0], 'LineWidth', 2);
+
+            % Get SEM for WT
+            x = [1/100:1/100:1];
+            curve1 = WTmean + WTsem;
+            curve2 = WTmean - WTsem;
+            x2 = [x, fliplr(x)];
+            inBetween = [curve1, fliplr(curve2)];
+            fill(x2, inBetween, 'k', 'FaceAlpha', 0.3);
+
+            % Get SEM for KO
+            curve1 = KOmean + KOsem;
+            curve2 = KOmean - KOsem;
+            x2 = [x, fliplr(x)];
+            inBetween = [curve1, fliplr(curve2)];
+            fill(x2, inBetween, 'g', 'FaceAlpha', 0.3);
+            xlim([0,1]);
+            ylabel('Mean Vector Length');
+            set(gca, 'FontSize', 14); 
+            
+            pValue = [];
+            for i = 1:100; 
+                WT = normalizedMVL_centeredAtPeak_byGenotype{1}(:,i); 
+                KO = normalizedMVL_centeredAtPeak_byGenotype{2}(:,i); 
+                [~, pValue(i)] = kstest2(WT, KO);
+            end
+            subplot(4,1,4);
+            semilogy([1/100:1/100:1], pValue, 'r'); hold on; plot([1/100, 1], [0.05, 0.05], '--r');
+            xlim([0,1]);
+            ylabel('P-value'); xlabel('Normalized Field Location'); 
+            set(gca, 'FontSize', 14); 
+            
+            % Save the figure
+            figureSettings.name = 'MVLvsLocation_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.MVLvsLocation, figureSettings);
+        end
         
     end
 end
@@ -421,7 +567,8 @@ function selectedPlots = getFiguresToPlot()
         'rose plots of spiking for each cell', ...
         'rose plot scatter plot of preferred phase vs. MVL for all cells', ...
         'preferred phase for WT and KO populations'...
-        'CDF of mean vector length for WT and KO populations'}; 
+        'CDF of mean vector length for WT and KO populations', ...
+        'MVL across normalized field'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
