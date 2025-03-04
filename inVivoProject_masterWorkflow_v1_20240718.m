@@ -228,7 +228,6 @@ controlTheta_v1_20250228(thetaData, thetaSettings);
 clc;
 plotThetaModulation_v1_20241216(thetaData, thetaSettings); 
 
-
 %% Step 14: Get the phase precession (takes ~8 min)
 clear;clc;close all; tic;
 

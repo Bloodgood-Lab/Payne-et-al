@@ -290,12 +290,8 @@ function data = plotThetaModulation_v1_20241216(data, settings)
 
             % Scatter plot
             figures.populationPrefPhase = figure(5); clf; hold on;
-            scatter(x_WT, y_WT, 50, 'ok'); 
-            scatter(x_KO, y_KO, 50, 'og'); 
-
-            % Add the unit circle for reference
-            theta = linspace(0, 2*pi, 100);
-            plot(cos(theta), sin(theta), 'k-'); % Unit circle in dashed black
+            scatter(x_WT, y_WT, 50, 'Marker', 'o', 'MarkerEdgeColor', [0.5, 0.5, 0.5], 'MarkerFaceColor', [0.5, 0.5, 0.5]); 
+            scatter(x_KO, y_KO, 50, 'Marker', 'o', 'MarkerEdgeColor', [0.0, 0.5, 0.0], 'MarkerFaceColor', [0.0, 0.5, 0.0]); 
             axis equal; % Equal scaling for both axes
 
             % Add the mean +/- SEM as larger, filled circles
@@ -309,8 +305,8 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             xStats_WT = cos(WTstats); yStats_WT = sin(WTstats);
             xStats_KO = 0.75.*cos(KOstats); yStats_KO = 0.75.*sin(KOstats);
             
-            scatter(xStats_WT, yStats_WT, 200, 'filled', 'k'); 
-            scatter(xStats_KO, yStats_KO, 200, 'filled', 'g'); 
+            scatter(xStats_WT, yStats_WT, 1500, 'Marker', '.', 'MarkerEdgeColor', [0.2, 0.2, 0.2], 'MarkerFaceColor', [0.2, 0.2, 0.2]); 
+            scatter(xStats_KO, yStats_KO, 1500, 'Marker', '.', 'MarkerEdgeColor', [0.0, 0.2, 0.0], 'MarkerFaceColor', [0.0, 0.2, 0.0]); 
 
             % Display statistical significance
             % First, test for uniformity
@@ -340,12 +336,62 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
             saveFigure_v1_20240902(figures.populationPrefPhase, figureSettings);
         end
+        
+        %% Figure 5: CDF of mean vector length
+        
+        if ismember(5, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.population;
+            
+            % Assign the preferredPhase to WT and KO
+            MVL_WT = data.populationData(1).MVL; 
+            MVL_KO = data.populationData(2).MVL; 
+
+            % Plot
+            figures.populationMVLcdf = figure(6); clf; hold on;
+            plt_WT = cdfplot(MVL_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(MVL_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(MVL_WT); 
+            KOmean = nanmean(MVL_KO);
+            WT_SEM = nanstd(MVL_WT)/sqrt(length(MVL_WT)); 
+            KO_SEM = nanstd(MVL_KO)/sqrt(length(MVL_KO)); 
+            WT_y = interp1(sort(MVL_WT), linspace(0, 1, length(MVL_WT)), WTmean, 'linear', 'extrap');
+            KO_y = interp1(sort(MVL_KO), linspace(0, 1, length(MVL_KO)), KOmean, 'linear', 'extrap');
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(MVL_WT)
+            [h, pUnif_KO] = adtest(MVL_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(MVL_WT, MVL_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.name = 'MVL_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMVLcdf, figureSettings);
+        end
    
         
     end
-        
-        
-      
 end
     
     
@@ -374,7 +420,8 @@ function selectedPlots = getFiguresToPlot()
     plotOptions = {'LFP with theta-filtered LFP and spikes', ...
         'rose plots of spiking for each cell', ...
         'rose plot scatter plot of preferred phase vs. MVL for all cells', ...
-        'preferred phase for WT and KO populations'}; 
+        'preferred phase for WT and KO populations'...
+        'CDF of mean vector length for WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
