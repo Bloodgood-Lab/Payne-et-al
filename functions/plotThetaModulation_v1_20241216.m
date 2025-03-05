@@ -626,6 +626,104 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             figureSettings.fileTypes = {'fig', 'tiff'};
             saveFigure_v1_20240902(figures.populationSpkNumbersCDF, figureSettings);
         end
+        
+        %% Figure 8: CDF of mean vector length for bursts and singles
+        
+        if ismember(8, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.population;
+            
+            % Assign the preferredPhase to WT and KO
+            MVL_WT_bursts = data.populationData(1).burstsMVL; 
+            MVL_KO_bursts = data.populationData(2).burstsMVL; 
+            MVL_WT_singles = data.populationData(1).singlesMVL; 
+            MVL_KO_singles = data.populationData(2).singlesMVL; 
+
+            % Plot bursts
+            figures.populationMVLcdfBursts = figure(9); clf; hold on;
+            plt_WT = cdfplot(MVL_WT_bursts); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(MVL_KO_bursts); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(MVL_WT_bursts); 
+            KOmean = nanmean(MVL_KO_bursts);
+            WT_SEM = nanstd(MVL_WT_bursts)/sqrt(length(MVL_WT_bursts)); 
+            KO_SEM = nanstd(MVL_KO_bursts)/sqrt(length(MVL_KO_bursts)); 
+            WT_y = interp1(sort(MVL_WT_bursts), linspace(0, 1, length(MVL_WT_bursts)), WTmean, 'linear', 'extrap');
+            KO_y = interp1(sort(MVL_KO_bursts), linspace(0, 1, length(MVL_KO_bursts)), KOmean, 'linear', 'extrap');
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(MVL_WT_bursts)
+            [h, pUnif_KO] = adtest(MVL_KO_bursts)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(MVL_WT_bursts, MVL_KO_bursts);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.name = 'MVLbursts_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMVLcdfBursts, figureSettings);
+            
+            % Plot singles
+            figures.populationMVLcdfSingles = figure(10); clf; hold on;
+            plt_WT = cdfplot(MVL_WT_singles); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(MVL_KO_singles); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(MVL_WT_singles); 
+            KOmean = nanmean(MVL_KO_singles);
+            WT_SEM = nanstd(MVL_WT_singles)/sqrt(length(MVL_WT_singles)); 
+            KO_SEM = nanstd(MVL_KO_singles)/sqrt(length(MVL_KO_singles)); 
+            WT_y = interp1(sort(MVL_WT_singles), linspace(0, 1, length(MVL_WT_singles)), WTmean, 'linear', 'extrap');
+            KO_y = interp1(sort(MVL_KO_singles), linspace(0, 1, length(MVL_KO_singles)), KOmean, 'linear', 'extrap');
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(MVL_WT_singles)
+            [h, pUnif_KO] = adtest(MVL_KO_singles)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(MVL_WT_singles, MVL_KO_singles);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.name = 'MVLsingles_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMVLcdfSingles, figureSettings);
+        end
     end
 end
     
@@ -658,7 +756,8 @@ function selectedPlots = getFiguresToPlot()
         'preferred phase for WT and KO populations'...
         'CDF of mean vector length for WT and KO populations', ...
         'MVL across normalized field'...
-        'CDF of number of spikes for WT and KO populations'}; 
+        'CDF of number of spikes for WT and KO populations', ...
+        'CDF of MVL for bursts and singles'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
