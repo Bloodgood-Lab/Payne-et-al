@@ -537,6 +537,95 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.MVLvsLocation, figureSettings);
         end
         
+        %% Figure 7: CDF of spike number
+        if ismember(7, listOfFigures) == 1; 
+            figureSettings.filePath = figureSettings.filePath.population;
+            
+            for iGenotype = 1:length(fieldnames(data.cellData));
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+                spikeNumbers = []; 
+
+                for iAnimal = 1:length(FRdata);
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        [~,n] = size(FRdata{iAnimal});
+                        for iCluster = 1:n;
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
+                                for iDir = 1:length(directions);
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                                    allSpikes_allTrials = []; 
+                                    
+                                    % Loop through fields
+                                    if strcmp(settings.theta.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+
+                                    for iField = 1:numField;
+                                        % Get variables to plot
+                                        spikesByDirection = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.(directions{iDir}){iField}; 
+                                        
+                                        for iTrial = 1:length(spikesByDirection); 
+                                           allSpikes_allTrials = [allSpikes_allTrials; spikesByDirection{iTrial}];  
+                                        end
+                                        spikeNumbers = [spikeNumbers, sum(~isnan(allSpikes_allTrials))];
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                all_spikeNumbers{iGenotype} = spikeNumbers; 
+            end
+            
+            % Plot and save for all spikes
+            figures.populationSpkNumbersCDF = figure(8); clf; hold on;
+            plt_WT = cdfplot(all_spikeNumbers{1}); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(all_spikeNumbers{2}); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Number of In-Field Spikes'); 
+            set(gca, 'FontSize', 14); 
+            WTmean = nanmean(all_spikeNumbers{1}); 
+            KOmean = nanmean(all_spikeNumbers{2});
+            WT_SEM = nanstd(all_spikeNumbers{1})/sqrt(length(all_spikeNumbers{1})); 
+            KO_SEM = nanstd(all_spikeNumbers{2})/sqrt(length(all_spikeNumbers{2}));
+            [f, x] = ecdf(all_spikeNumbers{1});
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(all_spikeNumbers{2});
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx); 
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+            [h, pUnif_WT] = adtest(all_spikeNumbers{1})
+            [h, pUnif_KO] = adtest(all_spikeNumbers{2})
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            [~, p] = kstest2(all_spikeNumbers{1}, all_spikeNumbers{2});
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.5, 0.15, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+            % Save the figure
+            figureSettings.name = 'NumberOfSpikes_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationSpkNumbersCDF, figureSettings);
+        end
     end
 end
     
@@ -568,7 +657,8 @@ function selectedPlots = getFiguresToPlot()
         'rose plot scatter plot of preferred phase vs. MVL for all cells', ...
         'preferred phase for WT and KO populations'...
         'CDF of mean vector length for WT and KO populations', ...
-        'MVL across normalized field'}; 
+        'MVL across normalized field'...
+        'CDF of number of spikes for WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
