@@ -21,7 +21,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
     data.cellData = data; data = rmfield(data, 'WT'); data = rmfield(data, 'KO');
     %% Step 1: Get the theta phases
     directoryPath = ''; tetrode = NaN; 
-    for iGenotype = 2%:length(fieldnames(data.cellData));
+    for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
         populationMVL = []; populationDir = []; populationHistogram = [];
@@ -30,13 +30,13 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
-        for iAnimal = 1%:length(FRdata); 
+        for iAnimal = 1:length(FRdata); 
             % Skip if empty
             if isempty(FRdata{iAnimal}) == 1; 
                 continue
             else
                 [~,n] = size(FRdata{iAnimal});
-                for iCluster = 7%1:n;
+                for iCluster = 1:n;
                     % Skip if empty
                     if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
                         display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
@@ -98,7 +98,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                         end
 
                         directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
-                        for iDir = 1%:length(directions);
+                        for iDir = 1:length(directions);
                             outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'theta');
                             spikesByDirection = outputData.spikesByDirection; 
                             inFieldBursts = outputData.inFieldBursts;
@@ -108,7 +108,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
                             numFieldsToAnalyze = whichField(settings.theta.fieldsToAnalyze, spikesByDirection);
                             allSpikes_allTrials = []; allBursts_allTrials = []; allSingles_allTrials = []; 
                             allTrialPhases = {}; allTrialPhases_bursts = {}; allTrialPhases_singles = {}; 
-                            for iField = 1%:numFieldsToAnalyze;
+                            for iField = 1:numFieldsToAnalyze;
                                 for iTrial = 1:length(spikesByDirection{iField});
                                     spikesByTrial = spikesByDirection{iField}{iTrial};
                                     burstsByTrial = inFieldBursts{iField}{iTrial};
@@ -278,7 +278,7 @@ function data = getThetaModulation_v1_20240806(data, settings, processedDataPath
     end
     
     %% Step 2: Save
-    %saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 
+    saveFile_v1_20240718(processedDataPath, data, settings, 'theta') 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%

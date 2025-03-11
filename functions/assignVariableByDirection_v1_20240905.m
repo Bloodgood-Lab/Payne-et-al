@@ -20,9 +20,6 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'getInField') == 1;
             outputData.barcode = inputData.spatialMetrics.barcode.original.cw;
-            %outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.cw;
-            %outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.cw;
-            %outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.cw;
             outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkPos.cw;
             outputData.spkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.unbinnedSpkPos.cw;
             outputData.spkTimes = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkTimes.cw;
@@ -36,7 +33,7 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
-            outputData.spkPhs = inputData.theta.phases.cw; 
+            outputData.spkPhs = inputData.theta.allSpikes.phases.cw; 
             outputData.spkPos = inputData.inField.inFieldSpkPos.cw; 
             outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.cw; 
         end
@@ -61,9 +58,6 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'getInField') == 1;
             outputData.barcode = inputData.spatialMetrics.barcode.original.ccw;
-            %outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.allVelocities.binnedSpkPos.ccw;
-            %outputData.spkPosForInField = inputData.binnedSpikesByTrial.allVelocities.unbinnedSpkPos.ccw;
-            %outputData.spkTimes = inputData.binnedSpikesByTrial.allVelocities.binnedSpkTimes.ccw;
             outputData.binnedSpkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkPos.ccw;
             outputData.spkPosForInField = inputData.binnedSpikesByTrial.highVelocityData.unbinnedSpkPos.ccw;
             outputData.spkTimes = inputData.binnedSpikesByTrial.highVelocityData.binnedSpkTimes.ccw;
@@ -77,7 +71,7 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'phasePrecession') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.ccw; 
-            outputData.spkPhs = inputData.theta.phases.ccw; 
+            outputData.spkPhs = inputData.theta.allSpikes.phases.ccw; 
             outputData.spkPos = inputData.inField.inFieldSpkPos.ccw; 
             outputData.binnedSpkPos = inputData.inField.inFieldBinnedSpkPos.ccw;
         end

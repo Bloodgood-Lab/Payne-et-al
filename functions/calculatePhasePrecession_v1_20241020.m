@@ -19,11 +19,11 @@ function outputData = calculatePhasePrecession_v1_20241020(inputData, settings)
         phasesToShiftBy = [0:180/36:360];
         correlation = [];
         for iShift = 1:length(phasesToShiftBy);
-            testShiftedPhs = circshift(spkPhsDegrees, phasesToShiftBy(iShift));
+            testShiftedPhs = circshift(spkPhsDegrees, [phasesToShiftBy(iShift),0]);
             R = corrcoef(inputData.spkPos, testShiftedPhs); correlation(iShift) = R(2);
         end
         [~, maxInd] = min(correlation);
-        shiftedPhs = circshift(spkPhsDegrees, phasesToShiftBy(maxInd));
+        shiftedPhs = circshift(spkPhsDegrees, [phasesToShiftBy(maxInd),0]);
         outputData.spkPhs = deg2rad(shiftedPhs) + pi;
         outputData.spkPos = inputData.spkPos; 
     elseif strcmp(settings.phasePrecession.circularity, 'double') == 1;

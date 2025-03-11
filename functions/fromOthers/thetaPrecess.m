@@ -7,7 +7,7 @@ function [Circ,lin,circFit]=thetaPrecess(SpkPhase,SpkPosition,SlopeRange)
         [Circ.Coeff,Circ.pValue] = CircularCoeff(SpkPhase,SpkPosition,Circ.Alpha,Circ.Phi0);
         [r,p] =corrcoef(SpkPosition,SpkPhase);
         lin.r = r(1,2); lin.p = p(1,2);
-        [P,S] = polyfit(SpkPosition,SpkPhase,1);  %matlab default function
+        [P,S] = polyfit(SpkPosition,SpkPhase',1);  %matlab default function
         lin.Alpha = P(1); circFit.Alpha = P(1); 
         lin.Phi0 = P(2); circFit.Phi0 = P(2); 
         [circFit.rho, circFit.p] = circ_corrcl(SpkPhase, SpkPosition);

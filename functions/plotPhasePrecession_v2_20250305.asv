@@ -1,0 +1,179 @@
+function plotPhasePrecession_v2_20250305(data, settings)
+    % Generates plots related to phase precession analysis
+    % Written by Anja Payne
+    % Last Modified: 10/22/2024
+
+    % Inputs:
+    %   1) data: the matlab structure where the in-field theta phases
+    %      by-trial are saved
+    %   2) settings: the settings file where the settings for the phase
+    %      precession calculations are saved
+
+    % Outputs:
+    %   figure 1: the LFP, theta-filtered LFP, and spikes
+    %   figure 2: the rose plots showing phase preference of all spikes
+    %     
+    
+    % Steps/Figures:
+    %   0) Get the folder the user wants to save plots into and ask them to
+    %      select the figures they want to generate
+    %   1) Plot the LFP with spikes for either all data or the animal/cell
+    %      the user specified in the settings
+    
+    % Get the folders to save plots into
+    mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
+    figureSettings = getFigureFolders(mainFolder); 
+    close all;
+    
+    if strcmp(settings.phasePrecession.plot.display, 'yes') == 1;
+        % Have the user select which plots they want to generate
+        listOfFigures = getFiguresToPlot();
+    
+        %% Step 1: LFP with spikes and theta phase
+        if ismember(1, listOfFigures) == 1; 
+            % Get list of genotypes to plot over
+            if strcmp(settings.phasePrecession.plot.genotypes, 'all') == 1; 
+                genotypeList = 1:length(fieldnames(data.cellData));
+            else
+                genotypeList = settings.phasePrecession.plot.genotypes; 
+            end
+            for iGenotype = genotypeList;
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+                
+                % Get animals to plot over
+                if strcmp(settings.phasePrecession.plot.animals, 'all') == 1; 
+                    animalList = 1:length(FRdata); 
+                else
+                    animalList = settings.phasePrecession.plot.animals; 
+                end
+                
+                for iAnimal = animalList; 
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        
+                        % Get cells to plot over
+                        if strcmp(settings.phasePrecession.plot.cells, 'all') == 1; 
+                            [~,n] = size(FRdata{iAnimal});
+                            cellList = 1:n; 
+                        else
+                            cellList = settings.phasePrecession.plot.cells; 
+                        end
+                        
+                        for iCluster = cellList; 
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                
+                                % Get directions to plot over
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
+                                if strcmp(settings.theta.plot.direction, 'all') == 1; 
+                                    directionList = 1:length(directions); 
+                                else
+                                    directionList = settings.theta.plot.direction; 
+                                end
+                                
+                                for iDir = directionList;
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                                    
+                                    % Loop through fields
+                                    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+                                    
+                                    for iField = 1:numField;
+                                    
+                                        % Load LFP data
+                                        load(FRdata{iAnimal}(iCluster).theta.LFP); 
+
+                                        % Get the variables for plotting
+                                        lfp_times = thetaLFP.LFPtimes;
+                                        lfp = thetaLFP.LFPsamples;
+                                        signal_filtered = thetaLFP.filteredLFP;
+                                        if strcmp(directions(iDir), 'cw') == 1; 
+                                            allTrials_spkTimes = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw{iField}; 
+                                            allTrials_spkPhases = FRdata{iAnimal}(iCluster).theta.phases.cw{iField}; 
+                                            tSp = []; spkPhs = []; 
+                                            for i = 1:length(allTrials_spkTimes); 
+                                                tSp = [tSp; allTrials_spkTimes{i}]; 
+                                                spkPhs = [spkPhs, allTrials_spkPhases{i}]; 
+                                            end
+                                        elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                            allTrials_spkTimes = FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.ccw{1}; 
+                                            allTrials_spkPhases = FRdata{iAnimal}(iCluster).theta.phases.cw{iField}; 
+                                            tSp = []; 
+                                            for i = 1:length(allTrials_spkTimes); 
+                                                tSp = [tSp; allTrials_spkTimes{i}]; 
+                                            end
+                                        end
+
+                                        % Plot!
+                                        figures.LFP = figure(1); clf; 
+                                        subplot(2,1,1); hold on;
+                                        plot(lfp_times/1000, lfp, 'k')
+                                        plot(lfp_times/1000, signal_filtered, 'b'); 
+                                        scatter(tSp/1000, 0.5*ones(1, length(tSp)), 200, '.r');
+                                        xlabel('Time (sec)'); 
+                                        ylabel('Arbitrary Units'); 
+                                        set(gca, 'FontSize', 12); 
+                                        set(figures.LFP, 'Position', [100, 200, 1800, 800]);
+                                        subplot(2,1,2); 
+                                        scatter(tSp, thetaData_allTrials.allPhs, '.r');
+
+                                        % Save the figure
+                                        figureSettings.filePath = figureSettings.filePath.LFP;
+                                        figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...
+                                            num2str(iCluster), '_', directions{iDir}, '_Field', num2str(iField)];
+                                        figureSettings.appendedFolder.binary = 'yes'; 
+                                        figureSettings.appendedFolder.name = figureSettings.fileNameBase.LFP;
+                                        figureSettings.fileTypes = {'fig', 'tiff'};
+                                        saveFigure_v1_20240902(figures.LFP, figureSettings)
+                                
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+    
+    end
+    
+end   
+         
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper Functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function selectedPlots = getFiguresToPlot()
+   % Define the list of available plots
+    plotOptions = {'LFP with spikes and theta phase',...
+        'R2 - plotted and saved for the mean of the population'}; 
+    
+    % Display a dialog box to select the plots
+    selectedPlots = listdlg('ListString', plotOptions, ...
+    	'SelectionMode', 'multiple', ...
+    	'PromptString', 'Select the plots you want to generate:', ...
+    	'ListSize', [300, 100]);
+end
+
+function figureSettings = getFigureFolders(mainFolder)
+
+    % For the spikes and slopes plots
+    figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
+    figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
+
+end
+
+
+                    

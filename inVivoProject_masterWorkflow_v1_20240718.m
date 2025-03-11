@@ -213,19 +213,16 @@ inFieldSpkTimes = data; thetaSettings = settings;
 % Settings: 
 thetaSettings.theta.frequencyBand = [4,12]; 
 thetaSettings.theta.fieldsToAnalyze = 'best field'; 
-thetaSettings.theta.numBins = 24;
-thetaSettings.plot.display = 'yes'; 
-thetaSettings.plot.genotypes = 2; 
-thetaSettings.plot.animals = 1; 
-thetaSettings.plot.cells = 7; 
-thetaSettings.plot.direction = 1; 
+thetaSettings.theta.numBins = 24; % Number of bins for rose plots
+thetaSettings.theta.plot.display = 'no'; % Do you want to generate plots?
+thetaSettings.theta.plot.genotypes = 2; % If plotting, for what genotype? Could be 'all'
+thetaSettings.theta.plot.animals = 1; % If plotting, for what animals? Could be 'all'
+thetaSettings.theta.plot.cells = 7; % If plotting, for what cells? Could be 'all'
+thetaSettings.theta.plot.direction = 1; % If plotting, for what direction? Could be 'all'
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, thetaSettings, processedDataFolder); toc
-%%
-controlTheta_v1_20250228(thetaData, thetaSettings); 
-%%
-clc;
+%controlsForTheta_v1_20250228(thetaData, thetaSettings); % Nothing in here
 plotThetaModulation_v1_20241216(thetaData, thetaSettings); 
 
 %% Step 14: Get the phase precession (takes ~8 min)
@@ -238,54 +235,38 @@ filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
-thetaData = data; thetaSettings = settings;
+thetaData = data; phasePrecessionSettings = settings;
 
 % Settings: 
-thetaSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
-thetaSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
-thetaSettings.phasePrecession.slopeRange = [-4:0.125:4]; % range of slopes to try to fit 
-thetaSettings.phasePrecession.significanceThreshold = 0.05; % maximum acceptable significance level of line fit
-thetaSettings.phasePrecession.trialThreshold = 3; % minimum number of trials
-thetaSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
-thetaSettings.phasePrecession.fieldsToAnalyze = 'best field'; % Could also be 'best field'
-thetaSettings.phasePrecession.positionType = 'unbinned';
-thetaSettings.phasePrecession.plot = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
-thetaSettings.phasePrecession.normalized = 'no'; % Is the field normalized?
-thetaSettings.phasePrecession.circularity = 'shift'; % How is circularity accounted for? Could also be set to 'shift'
-thetaSettings.phasePrecession.fit = 'linearFit'; % Using a linear or circular fit?
-thetaSettings.phasePrecession.timeRange = 3*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
+phasePrecessionSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
+phasePrecessionSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
+phasePrecessionSettings.phasePrecession.slopeRange = [-4:0.125:4]; % range of slopes to try to fit 
+phasePrecessionSettings.phasePrecession.significanceThreshold = 0.05; % maximum acceptable significance level of line fit
+phasePrecessionSettings.phasePrecession.trialThreshold = 3; % minimum number of trials
+phasePrecessionSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
+phasePrecessionSettings.phasePrecession.fieldsToAnalyze = 'best field'; % Could also be 'best field'
+phasePrecessionSettings.phasePrecession.positionType = 'unbinned';
+phasePrecessionSettings.phasePrecession.normalized = 'no'; % Is the field normalized?
+phasePrecessionSettings.phasePrecession.circularity = 'shift'; % How is circularity accounted for? Could also be set to 'shift'
+phasePrecessionSettings.phasePrecession.fit = 'linearFit'; % Using a linear or circular fit?
+phasePrecessionSettings.phasePrecession.timeRange = 3*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
+phasePrecessionSettings.phasePrecession.plot.display = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
+phasePrecessionSettings.phasePrecession.plot.genotypes = 1; % If plotting, for what genotype? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.animals = 1; % If plotting, for what animals? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.cells = 2; % If plotting, for what cells? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.direction = 'all'; % If plotting, for what direction? Could be 'all'
 
 % Outputs: 
-[phasePrecessionData, phasePrecessionSettings] = getPhasePrecession_v1_20240806(thetaData, thetaSettings, processedDataFolder); toc 
+phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, phasePrecessionSettings, processedDataFolder); toc 
+%controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
 %%
-plotPhasePrecession_v1_20240827(phasePrecessionData, phasePrecessionSettings); 
-%%
-controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
+clc;
+plotPhasePrecession_v2_20250305(phasePrecessionData, phasePrecessionSettings); 
 
 
 
 
 
-%% Step 14B: Control analyses related to the phase precession
-clear;clc;close all; tic;
-
-% Inputs: 
-fileNameBase = 'phasePrecession';
-folderMessage = 'Select directory with data to analyze'; 
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
-loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
-load([filePath{1}, '\', loadFileName]);
-[processedDataFolder, ~, ~] = fileparts(filePath{1});
-phasePrecessionData = data; phasePrecessionSettings = settings;
-
-
-% Settings: 
-
-
-% Outputs: 
-[data, settings] = getPhasePrecessionWithChangingFieldSize_v1_20240924(phasePrecessionData, phasePrecessionSettings, processedDataFolder)
-
-%%
 
 
 

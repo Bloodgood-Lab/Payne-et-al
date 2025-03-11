@@ -10,38 +10,60 @@ function data = plotThetaModulation_v1_20241216(data, settings)
     %      stored
     
     % Outputs:
-    %   1) figure 1: the LFP, theta-filtered LFP, and spikes
-    %   2) figure 2: the rose plots showing phase preference of all spikes
-    %      plotted for each individual neuron
+    %   figure 1: the LFP, theta-filtered LFP, and spikes
+    %   figure 2: the rose plots showing phase preference of all spikes
+    %       plotted for each individual neuron
+    %   figure 3: scatter plot on a rose plot showing the preferred phase
+    %       and theta modulation of each neuron, for WT
+    %   figure 4: scatter plot on a rose plot showing the preferred phase
+    %       and theta modulation of each neuron, for KO
+    %   figure 5: the preferred phase for KO and WT populations, displayed
+    %       as a scatter plot around two concentric unit circles, with
+    %       stats
+    %   figure 6: the CDF of the mean vector length with stats for WT and
+    %       KO
+    %   figure 7: the MVL across the normalized field for WT and KO
+    %       populations with a subplot of the p-values across the spatial
+    %       bins
+    %   figure 8: the CDF of the in-field spike numbers with stats for WT
+    %       and KO populations
+    %   figure 9: the CDF of the MVL for the bursts and singles, with
+    %       stats, for the WT and KO populations
     
-    %   1) figure 1: a scatter plot on a rose diagram showing the MVL and
-    %      preferred direction for all WT and KO cells
-
     % Steps/Figures:
-    %   1) For indicated animals/cells, get the LFP, theta-filtered LFP,
-    %      and spikes in one plot. In another, plot the spike phases. 
+    %   0) Get the folder the user wants to save plots into and ask them to
+    %      select the figures they want to generate
+    %   1) Plot the LFP with spikes for either all data or the animal/cell
+    %      the user specified in the settings
+    %   2) Plot the phase of the spikes for each cell as a rose plot
+    %      histogram 
+    %   3) Plot the scatter plot rose plots for WT and KO populations
+    %   4) Plot the preferred phase for WT and KO populations
+    %   5) Plot the CDF of the mean vector length for WT and KO populations
+    %   6) Plot the mean +/- SEM MVL across the normalized field for WT and
+    %      KO populations
+    %   7) Plot the CDF of the in-field spike numbers for WT and KO
+    %   8) Plot the CDF of the MVL for the bursts and singles for WT and KO
+    %      populations
     
-    %   1) Plot figure 1: the population scatter plot
-    
-    
-    
-    % Get the folders to save plots into
-    mainFolder = uigetdir('C:\', 'Please select the folder you would like theta plots saved into.');
-    figureSettings = getFigureFolders(mainFolder); 
+   
     close all; 
     
-    if strcmp(settings.plot.display, 'yes') == 1; 
+    if strcmp(settings.theta.plot.display, 'yes') == 1; 
+        % Get the folders to save plots into
+        mainFolder = uigetdir('C:\', 'Please select the folder you would like theta plots saved into.');
+        figureSettings = getFigureFolders(mainFolder); 
         
         % Have the user select which plots they want to generate
         listOfFigures = getFiguresToPlot();
         
-        %% Figure 1: LFP with spikes
+        %% Step 1: LFP with spikes
         if ismember(1, listOfFigures) == 1; 
             % Get list of genotypes to plot over
-            if strcmp(settings.plot.genotypes, 'all') == 1; 
+            if strcmp(settings.theta.plot.genotypes, 'all') == 1; 
                 genotypeList = 1:length(fieldnames(data.cellData));
             else
-                genotypeList = settings.plot.genotypes; 
+                genotypeList = settings.theta.plot.genotypes; 
             end
             for iGenotype = genotypeList;
                 genotypes = fieldnames(data.cellData); 
@@ -49,10 +71,10 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                 FRdata = genotypeData.highFiring;
                 
                 % Get animals to plot over
-                if strcmp(settings.plot.animals, 'all') == 1; 
+                if strcmp(settings.theta.plot.animals, 'all') == 1; 
                     animalList = 1:length(FRdata); 
                 else
-                    animalList = settings.plot.animals; 
+                    animalList = settings.theta.plot.animals; 
                 end
                 
                 for iAnimal = animalList; 
@@ -62,11 +84,11 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                     else
                         
                         % Get cells to plot over
-                        if strcmp(settings.plot.cells, 'all') == 1; 
+                        if strcmp(settings.theta.plot.cells, 'all') == 1; 
                             [~,n] = size(FRdata{iAnimal});
                             cellList = 1:n; 
                         else
-                            cellList = settings.plot.cells; 
+                            cellList = settings.theta.plot.cells; 
                         end
                         
                         for iCluster = cellList; 
@@ -78,10 +100,10 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                                 
                                 % Get directions to plot over
                                 directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
-                                if strcmp(settings.plot.direction, 'all') == 1; 
+                                if strcmp(settings.theta.plot.direction, 'all') == 1; 
                                     directionList = 1:length(directions); 
                                 else
-                                    directionList = settings.plot.direction; 
+                                    directionList = settings.theta.plot.direction; 
                                 end
                                 
                                 for iDir = directionList;
@@ -148,14 +170,14 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             end
         end
         
-        %% Figure 2: Individual rose plots
+        %% Step 2: Individual rose plots
 
         if ismember(2, listOfFigures) == 1; 
             % Get list of genotypes to plot over
-            if strcmp(settings.plot.genotypes, 'all') == 1; 
+            if strcmp(settings.theta.plot.genotypes, 'all') == 1; 
                 genotypeList = 1:length(fieldnames(data.cellData));
             else
-                genotypeList = settings.plot.genotypes; 
+                genotypeList = settings.theta.plot.genotypes; 
             end
             for iGenotype = genotypeList;
                 genotypes = fieldnames(data.cellData); 
@@ -163,10 +185,10 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                 FRdata = genotypeData.highFiring;
 
                 % Get animals to plot over
-                if strcmp(settings.plot.animals, 'all') == 1; 
+                if strcmp(settings.theta.plot.animals, 'all') == 1; 
                     animalList = 1:length(FRdata); 
                 else
-                    animalList = settings.plot.animals; 
+                    animalList = settings.theta.plot.animals; 
                 end
 
                 for iAnimal = animalList; 
@@ -176,11 +198,11 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                     else
 
                         % Get cells to plot over
-                        if strcmp(settings.plot.cells, 'all') == 1; 
+                        if strcmp(settings.theta.plot.cells, 'all') == 1; 
                             [~,n] = size(FRdata{iAnimal});
                             cellList = 1:n; 
                         else
-                            cellList = settings.plot.cells; 
+                            cellList = settings.theta.plot.cells; 
                         end
 
                         for iCluster = cellList; 
@@ -192,10 +214,10 @@ function data = plotThetaModulation_v1_20241216(data, settings)
 
                                 % Get directions to plot over
                                 directions = fieldnames(FRdata{iAnimal}(iCluster).spatialMetrics.barcode.original);
-                                if strcmp(settings.plot.direction, 'all') == 1; 
+                                if strcmp(settings.theta.plot.direction, 'all') == 1; 
                                     directionList = 1:length(directions); 
                                 else
-                                    directionList = settings.plot.direction; 
+                                    directionList = settings.theta.plot.direction; 
                                 end
 
                                 for iDir = directionList;
@@ -239,7 +261,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             end
         end
         
-        %% Figure 3: Rose plot scatter plot for all neurons
+        %% Step 3: Rose plot scatter plot for all neurons
         
         if ismember(3, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
@@ -273,7 +295,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             end
         end
         
-        %% Figure 4: Preferred Phase
+        %% Step 4: Preferred Phase
         
         if ismember(4, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
@@ -337,7 +359,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.populationPrefPhase, figureSettings);
         end
         
-        %% Figure 5: CDF of mean vector length
+        %% Step 5: CDF of mean vector length
         
         if ismember(5, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
@@ -390,7 +412,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.populationMVLcdf, figureSettings);
         end
    
-        %% Figure 6: MVL across normalized field
+        %% Step 6: MVL across normalized field
         if ismember(6, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
             
@@ -537,7 +559,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.MVLvsLocation, figureSettings);
         end
         
-        %% Figure 7: CDF of spike number
+        %% Step 7: CDF of spike number
         if ismember(7, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
             
@@ -627,7 +649,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             saveFigure_v1_20240902(figures.populationSpkNumbersCDF, figureSettings);
         end
         
-        %% Figure 8: CDF of mean vector length for bursts and singles
+        %% Step 8: CDF of mean vector length for bursts and singles
         
         if ismember(8, listOfFigures) == 1; 
             figureSettings.filePath = figureSettings.filePath.population;
@@ -724,6 +746,7 @@ function data = plotThetaModulation_v1_20241216(data, settings)
             figureSettings.fileTypes = {'fig', 'tiff'};
             saveFigure_v1_20240902(figures.populationMVLcdfSingles, figureSettings);
         end
+        
     end
 end
     
