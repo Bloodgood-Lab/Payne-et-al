@@ -251,9 +251,9 @@ phasePrecessionSettings.phasePrecession.circularity = 'shift'; % How is circular
 phasePrecessionSettings.phasePrecession.fit = 'linearFit'; % Using a linear or circular fit?
 phasePrecessionSettings.phasePrecession.timeRange = 3*125; % Over what range of time should spikes occur? 625 msec = 5 theta cycles
 phasePrecessionSettings.phasePrecession.plot.display = 'yes'; % Determines which plots will be generated; 'yes' plots all while 'relationshipsOnly' only plots population data
-phasePrecessionSettings.phasePrecession.plot.genotypes = 1; % If plotting, for what genotype? Could be 'all'
-phasePrecessionSettings.phasePrecession.plot.animals = 1; % If plotting, for what animals? Could be 'all'
-phasePrecessionSettings.phasePrecession.plot.cells = 2; % If plotting, for what cells? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.genotypes = 'all'; % If plotting, for what genotype? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.animals = 'all'; % If plotting, for what animals? Could be 'all'
+phasePrecessionSettings.phasePrecession.plot.cells = 'all'; % If plotting, for what cells? Could be 'all'
 phasePrecessionSettings.phasePrecession.plot.direction = 'all'; % If plotting, for what direction? Could be 'all'
 
 % Outputs: 

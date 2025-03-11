@@ -91,8 +91,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             inputData.spkPhs = spkPhs{iField}{iTrial}; 
                                             inputData.spkPos = spkPosInput{iField}{iTrial};
                                             
-                                            inputData.spkPhs
-                                            inputData.spkPos
                                             outputData = calculatePhasePrecession_v1_20241020(inputData, settings); 
                                             
                                             spkPhsInput{iField}{iTrial} = outputData.spkPhs; 

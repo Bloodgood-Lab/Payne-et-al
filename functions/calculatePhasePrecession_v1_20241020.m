@@ -15,16 +15,17 @@ function outputData = calculatePhasePrecession_v1_20241020(inputData, settings)
         % To account for circularity in the data, find the phase
         % shift that accounts for the best correlation between
         % position and spike theta phases
+        warning('off', 'all'); % Turn off warnings temporarily
         spkPhsDegrees = rad2deg(inputData.spkPhs);
         phasesToShiftBy = [0:180/36:360];
         correlation = [];
         for iShift = 1:length(phasesToShiftBy);
-            testShiftedPhs = circshift(spkPhsDegrees, [phasesToShiftBy(iShift),0]);
+            testShiftedPhs = circshift(spkPhsDegrees', phasesToShiftBy(iShift));
             R = corrcoef(inputData.spkPos, testShiftedPhs); correlation(iShift) = R(2);
         end
         [~, maxInd] = min(correlation);
-        shiftedPhs = circshift(spkPhsDegrees, [phasesToShiftBy(maxInd),0]);
-        outputData.spkPhs = deg2rad(shiftedPhs) + pi;
+        shiftedPhs = circshift(spkPhsDegrees', phasesToShiftBy(maxInd));
+        outputData.spkPhs = deg2rad(shiftedPhs) + pi; outputData.spkPhs = outputData.spkPhs'; 
         outputData.spkPos = inputData.spkPos; 
     elseif strcmp(settings.phasePrecession.circularity, 'double') == 1;
         outputData.spkPhs = [inputData.spkPhs+pi; inputData.spkPhs+3*pi];
