@@ -56,6 +56,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             % Loop through fields
                             numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
                             slopeMedian = []; rSquared = []; rSquaredAllTrials = {}; slope = {}; spkPhsInput = {}; spkPosInput = {};
+                            trialSlope = {}; trialOffset = {}; trialR2 = {}; trialPvalue = {}; 
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
                                 allTrialsPosition = []; allTrialsPhases = [];

@@ -149,9 +149,6 @@ function data = plotThetaModulation_v1_20241216(data, settings)
                                         set(gca, 'FontSize', 12); 
                                         set(figures.LFP, 'Position', [100, 200, 1800, 800]);
 
-                                        %subplot(2,1,2); 
-                                        %scatter(tSp_external, thetaData_allTrials.allPhs, '.r');
-
                                         % Save the figure
                                         figureSettings.filePath = figureSettings.filePath.LFP;
                                         figureSettings.name = [genotypes{iGenotype}, '_Animal', num2str(iAnimal), '_Cluster', ...

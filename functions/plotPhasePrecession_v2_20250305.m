@@ -25,7 +25,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
     if strcmp(settings.phasePrecession.plot.display, 'yes') == 1;
         % Get the folders to save plots into
         mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
-        figureSettings = getFigureFolders(mainFolder); 
+        figureSettings = getFigureFolders(mainFolder) 
     
         % Have the user select which plots they want to generate
         listOfFigures = getFiguresToPlot();
@@ -237,10 +237,6 @@ function plotPhasePrecession_v2_20250305(data, settings)
             KOmean = nanmean(medianSlopes_KO);
             WT_SEM = nanstd(medianSlopes_WT)/sqrt(length(medianSlopes_WT)); 
             KO_SEM = nanstd(medianSlopes_KO)/sqrt(length(medianSlopes_KO)); 
-            %medianSlopes_WT_noNaN = medianSlopes_WT; medianSlopes_WT_noNaN(isnan(medianSlopes_WT_noNaN)) = []; 
-            %medianSlopes_KO_noNaN = medianSlopes_KO; medianSlopes_KO_noNaN(isnan(medianSlopes_KO_noNaN)) = []; 
-            %WT_y = interp1(sort(medianSlopes_WT_noNaN), linspace(0, 1, length(medianSlopes_WT_noNaN)), WTmean, 'linear', 'extrap');
-            %KO_y = interp1(sort(medianSlopes_KO_noNaN), linspace(0, 1, length(medianSlopes_KO_noNaN)), KOmean, 'linear', 'extrap');
             [f, x] = ecdf(medianSlopes_WT);
             [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
             [f, x] = ecdf(medianSlopes_KO);
@@ -272,8 +268,123 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figureSettings.fileTypes = {'fig', 'tiff'};
             saveFigure_v1_20240902(figures.populationMedianSlopeCDF, figureSettings);
         end
+        
+        %% Step 4: Get scatter plots of the median field size and the median field slope
+        if ismember(4, listOfFigures) == 1; 
+            % Get list of genotypes to plot over
+            if strcmp(settings.phasePrecession.plot.genotypes, 'all') == 1; 
+                genotypeList = 1:length(fieldnames(data.cellData));
+            else
+                genotypeList = settings.phasePrecession.plot.genotypes; 
+            end
+            for iGenotype = genotypeList;
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+                
+                medianSlope = []; medianSize = []; count = 1; 
+                
+                % Get animals to plot over
+                if strcmp(settings.phasePrecession.plot.animals, 'all') == 1; 
+                    animalList = 1:length(FRdata); 
+                else
+                    animalList = settings.phasePrecession.plot.animals; 
+                end
+                
+                for iAnimal = animalList; 
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        
+                        % Get cells to plot over
+                        if strcmp(settings.phasePrecession.plot.cells, 'all') == 1; 
+                            [~,n] = size(FRdata{iAnimal});
+                            cellList = 1:n; 
+                        else
+                            cellList = settings.phasePrecession.plot.cells; 
+                        end
+                        
+                        for iCluster = cellList; 
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                
+                                % Get directions to plot over
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes);
+                                if strcmp(settings.phasePrecession.plot.direction, 'all') == 1; 
+                                    directionList = 1:length(directions); 
+                                else
+                                    directionList = settings.phasePrecession.plot.direction; 
+                                end
+                                
+                                for iDir = directionList;
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                                    
+                                    % Loop through fields
+                                    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+                                    
+                                    for iField = 1:numField;
+                                      
+                                        % Get the necessary variables
+                                        if strcmp(directions(iDir), 'cw') == 1; 
+                                            medianOfSlopes = FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.cw; 
+                                            allSlopes = FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.cw{iField}; 
+                                            allPos = FRdata{iAnimal}(iCluster).phasePrecession.posInput.cw{iField}; 
+                                        elseif strcmp(directions(iDir), 'ccw') == 1; 
+                                            medianOfSlopes = FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.ccw; 
+                                            allSlopes = FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.ccw{iField}; 
+                                            allPos = FRdata{iAnimal}(iCluster).phasePrecession.posInput.ccw{iField}; 
+                                        end
+                                        
+                                        % Get the median slope (closest
+                                        % value to the median) and matching
+                                        % field size for that trial
+                                        [~, idx] = nanmin(abs(allSlopes - medianOfSlopes));
+                                        medianSlope(count) = allSlopes(idx);
+                                        if isnan(medianSlope(count)) == 0;
+                                            medianSize(count) = nanmax(allPos{idx}) - nanmin(allPos{idx});
+                                        else
+                                            medianSize(count) = NaN; 
+                                            medianSlope(count) = NaN;
+                                        end
+                                        count = count + 1; 
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                if iGenotype == 1; 
+                    figures.populationSlopeVsSize = figure(4); clf;
+                    colorAppearance = [0.5 0.5 0.5];
+                    figureSettings.name = 'sizeVsSlope_WT';
+                    figureSettings.filePath = figureSettings.filePath.population;
+                    figureSettings.appendedFolder.binary = 'no'; 
+                    figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+                    figureSettings.fileTypes = {'fig', 'tiff'};
+                elseif iGenotype == 2; 
+                    figures.populationSlopeVsSize = figure(5); clf; 
+                    colorAppearance = [0.0 0.5 0.0]; 
+                    figureSettings.name = 'sizeVsSlope_KO';
+                end;
+                scatter(medianSize, rad2deg(medianSlope), 75, colorAppearance, 'filled'); 
+                xlabel('Median Place Field Size (cm)'); 
+                ylabel('Median Slope (degrees/cm)');
+                set(gca, 'FontSize', 14); 
+                
+                % Save the figure
+                saveFigure_v1_20240902(figures.populationSlopeVsSize, figureSettings);
+            end
+        end
+        
     end
-    
 end   
          
     
@@ -285,7 +396,8 @@ function selectedPlots = getFiguresToPlot()
    % Define the list of available plots
     plotOptions = {'LFP with spikes and theta phase',...
         'spikes with slopes and histogram of slopes',...
-        'CDF of median slopes for WT and KO populations'}; 
+        'CDF of median slopes for WT and KO populations',...
+        'scatter plots of median slope vs median field size'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
@@ -304,7 +416,7 @@ function figureSettings = getFigureFolders(mainFolder)
     figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
     figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
 
-    % For the population CDF median slope
+    % For the population plots
     figureSettings.fileNameBase.population = 'phasePrecession_populationPlots';
     figureSettings.filePath.population = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.population, '', mainFolder);
 
@@ -490,5 +602,54 @@ function plotHistogram(numRows, plotRange, slopes, medianSlope)
     set(gca,'FontSize', 12); 
 end
 
+function [barcode, PFSize, PFNumber] = getPlaceFields(map, thresholds)
+    % Identifies the bins that are in-field
+    % Inputs: 
+    %   1) map: the collapsed map to be analyzed
+    %   2) settings: the settings file which should contain lowThresh: the
+    %      lower threshold for what is considered a place field and
+    %      highThresh: the maximum firing rate that the field should
+    %      contain
+    % Output: 
+    %   1) barcode: the barcode that tells you which bins belong to each
+    %      field
+    %   2) PFSize: the size of place fields
+    %   3) PFNumber: the number of place fields
+    % Steps: 
+    %   1) Find the bins above the low threshold 
+    %   2) Only include place fields if the max is above the high threshold
+    %   3) Re-number the fields so that they are ordered by firing rate 
+    %      (i.e. field 1 has the highest FR, then field 2, etc.)
+    %   4) Get the number of place fields 
 
+    %% Step 1: Find the bins above the low threshold 
+    low_threshold = thresholds(1) * nanmax(map(:)); 
+    barcode = bwlabel(map > low_threshold);
+
+    %% Step 2: Only include fields where the max is above the high thresh
+    high_threshold = thresholds(2) * nanmax(map(:));
+    tempSize = []; FR = []; count = 1; 
+    for i = 1:max(max(barcode)); 
+        if max(map(barcode == i)) >= high_threshold;
+            tempSize(count) = 4*length(find(barcode == i)); % Multiply by 4 since bin size is 4 cm.
+            FR(count) = 16000 * nanmax(map(barcode == i)); % Get the max firing rate so that the fields can be ordered by FR
+            barcode(barcode == i) = count; 
+            count = count + 1;
+        elseif max(map(barcode == i)) < high_threshold;  
+            barcode(barcode == i) = 0; 
+        end;
+    end
+
+    %% Step 3: Reorder the fields in order of firing rate
+    [~, sortedInd] = sort(FR, 'descend'); % Get the order of the fields from highest FR to lowest
+    barcode = 10*barcode; % Need this to be a larger value so that you can reorganize and reset values starting at 1
+    PFSize = []; 
+    for iField = 1:length(sortedInd); 
+        barcode(barcode == 10*sortedInd(iField)) = iField;
+        PFSize(iField) = tempSize(sortedInd(iField));
+    end
+
+    %% Step 4: Get the number of place fields
+    PFNumber = length(PFSize);
+end
                     
