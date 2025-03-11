@@ -216,7 +216,62 @@ function plotPhasePrecession_v2_20250305(data, settings)
             end
         end
         
-        %% Step 3: 
+        %% Step 3: Plot the CDF of the median slopes
+        % Assign the preferredPhase to WT and KO
+        if ismember(3, listOfFigures) == 1; 
+            medianSlopes_WT = data.populationData(1).phasePrecessionSlopes; 
+            medianSlopes_KO = data.populationData(2).phasePrecessionSlopes; 
+
+            % Plot
+            figures.populationMedianSlopeCDF = figure(3); clf; hold on;
+            plt_WT = cdfplot(medianSlopes_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(medianSlopes_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(medianSlopes_WT); 
+            KOmean = nanmean(medianSlopes_KO);
+            WT_SEM = nanstd(medianSlopes_WT)/sqrt(length(medianSlopes_WT)); 
+            KO_SEM = nanstd(medianSlopes_KO)/sqrt(length(medianSlopes_KO)); 
+            %medianSlopes_WT_noNaN = medianSlopes_WT; medianSlopes_WT_noNaN(isnan(medianSlopes_WT_noNaN)) = []; 
+            %medianSlopes_KO_noNaN = medianSlopes_KO; medianSlopes_KO_noNaN(isnan(medianSlopes_KO_noNaN)) = []; 
+            %WT_y = interp1(sort(medianSlopes_WT_noNaN), linspace(0, 1, length(medianSlopes_WT_noNaN)), WTmean, 'linear', 'extrap');
+            %KO_y = interp1(sort(medianSlopes_KO_noNaN), linspace(0, 1, length(medianSlopes_KO_noNaN)), KOmean, 'linear', 'extrap');
+            [f, x] = ecdf(medianSlopes_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(medianSlopes_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(medianSlopes_WT)
+            [h, pUnif_KO] = adtest(medianSlopes_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(medianSlopes_WT, medianSlopes_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'MedianSlopes_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMedianSlopeCDF, figureSettings);
+        end
     end
     
 end   
@@ -229,7 +284,8 @@ end
 function selectedPlots = getFiguresToPlot()
    % Define the list of available plots
     plotOptions = {'LFP with spikes and theta phase',...
-        'spikes with slopes and histogram of slopes'}; 
+        'spikes with slopes and histogram of slopes',...
+        'CDF of median slopes for WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
@@ -247,6 +303,10 @@ function figureSettings = getFigureFolders(mainFolder)
     % For the spikes and slopes plots
     figureSettings.fileNameBase.spikesAndSlopes = 'phasePrecession_spikesAndSlopes';
     figureSettings.filePath.spikesAndSlopes = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.spikesAndSlopes, '', mainFolder);
+
+    % For the population CDF median slope
+    figureSettings.fileNameBase.population = 'phasePrecession_populationPlots';
+    figureSettings.filePath.population = getMostRecentFilePath_v1_20240723(figureSettings.fileNameBase.population, '', mainFolder);
 
 end
 
@@ -270,7 +330,7 @@ function plotSpikesAndSlopes(inputData, settings)
         % Loop through all the trials
         allPlotSlopes = []; allYoffsets = []; maxX = []; 
         for iTrial = 1:length(spkPhs{iField});
-            figures.allTrialsFig = figure(1); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
+            figures.allTrialsFig = figure(2); set(figures.allTrialsFig, 'Position', [100, 200, 1800, 800]);
             if iTrial == 1; clf(figures.allTrialsFig); else hold on; end;
 
             % Determine subplot to plot onto
