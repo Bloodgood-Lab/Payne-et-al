@@ -258,7 +258,8 @@ phasePrecessionSettings.phasePrecession.plot.direction = 'all'; % If plotting, f
 
 % Outputs: 
 phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, phasePrecessionSettings, processedDataFolder); toc 
-%controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
+%%
+controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
 %%
 clc;
 plotPhasePrecession_v2_20250305(phasePrecessionData, phasePrecessionSettings); 

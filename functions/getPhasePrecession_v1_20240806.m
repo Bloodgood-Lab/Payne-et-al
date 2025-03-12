@@ -26,7 +26,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
-        populationSlopes = []; rSquaredPopulation = [];
+        populationSlopes = []; populationMedianSizes = []; 
+        rSquaredPopulation = [];
         populationAllTrialSlopes = []; populationAllTrialOffsets = []; 
         
         % Run analysis for high-firing cells only
@@ -55,7 +56,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             
                             % Loop through fields
                             numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
-                            slopeMedian = []; rSquared = []; rSquaredAllTrials = {}; slope = {}; spkPhsInput = {}; spkPosInput = {};
+                            slopeMedian = []; sizeMedian = []; rSquared = []; rSquaredAllTrials = {}; 
+                            slope = {}; spkPhsInput = {}; spkPosInput = {};
                             trialSlope = {}; trialOffset = {}; trialR2 = {}; trialPvalue = {}; 
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
@@ -123,10 +125,13 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                 % If there are enough trials with slopes calculated, get the median of all slopes
                                 if sum(~isnan(trialSlope{iField})) >= settings.phasePrecession.trialThreshold; 
                                     slopeMedian(iField) = nanmedian(trialSlope{iField});
+                                    [~, idx] = nanmin(abs(trialSlope{iField} - slopeMedian(iField)));
+                                    sizeMedian(iField) = nanmax(spkPosInput{iField}{idx})-nanmin(spkPosInput{iField}{idx});
                                     rSquared(iField) = nanmean(trialR2{iField});
                                 else 
                                     slopeMedian(iField) = NaN; 
                                     rSquared(iField) = NaN;
+                                    sizeMedian(iField) = NaN; 
                                 end
                                 
                                 % Assign output data
@@ -138,6 +143,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.rSquared.cw = trialR2;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.pValues.cw = trialPvalue;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.cw = slopeMedian;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSize.cw = sizeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.meanR2.cw = rSquared;
                                 elseif strcmp(directions(iDir), 'ccw') == 1; 
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.phsInput.ccw = spkPhsInput;
@@ -147,6 +153,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.rSquared.ccw = trialR2;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.pValues.ccw = trialPvalue;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSlope.ccw = slopeMedian;
+                                    data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.medianSize.ccw = sizeMedian;
                                     data.cellData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).phasePrecession.meanR2.ccw = rSquared;
                                 end
                                 
@@ -160,6 +167,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             rSquaredPopulation = [rSquaredPopulation, rSquared]; 
                             populationAllTrialSlopes = [populationAllTrialSlopes, allTrialsSlopes]; 
                             populationAllTrialOffsets = [populationAllTrialOffsets, allTrialsOffsets]; 
+                            populationMedianSizes = [populationMedianSizes, sizeMedian]; 
                         end
                     end
                 end
@@ -169,6 +177,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         data.populationData(iGenotype).phasePrecessionRSquared = rSquaredPopulation;
         data.populationData(iGenotype).phasePrecessionAllTrialSlopes = populationAllTrialSlopes;
         data.populationData(iGenotype).phasePrecessionAllTrialOffsets = populationAllTrialOffsets;
+        data.populationData(iGenotype).phasePrecessionMedianFieldSizes = populationMedianSizes;
     end
     
     %% Step 2: Save
