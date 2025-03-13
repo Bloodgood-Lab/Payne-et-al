@@ -278,96 +278,8 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 4: Get scatter plots of the median field size and the median field slope
         if ismember(4, listOfFigures) == 1; 
-            % Get list of genotypes to plot over
-            if strcmp(settings.phasePrecession.plot.genotypes, 'all') == 1; 
-                genotypeList = 1:length(fieldnames(data.cellData));
-            else
-                genotypeList = settings.phasePrecession.plot.genotypes; 
-            end
-            for iGenotype = genotypeList;
-                genotypes = fieldnames(data.cellData); 
-                genotypeData = data.cellData.(genotypes{iGenotype}); 
-                FRdata = genotypeData.highFiring;
+            for iGenotype = 1:length(fieldnames(data.cellData));
                 
-                medianSlope = []; medianSize = []; count = 1; 
-                
-                % Get animals to plot over
-                if strcmp(settings.phasePrecession.plot.animals, 'all') == 1; 
-                    animalList = 1:length(FRdata); 
-                else
-                    animalList = settings.phasePrecession.plot.animals; 
-                end
-                
-                for iAnimal = animalList; 
-                    % Skip if empty
-                    if isempty(FRdata{iAnimal}) == 1; 
-                        continue
-                    else
-                        
-                        % Get cells to plot over
-                        if strcmp(settings.phasePrecession.plot.cells, 'all') == 1; 
-                            [~,n] = size(FRdata{iAnimal});
-                            cellList = 1:n; 
-                        else
-                            cellList = settings.phasePrecession.plot.cells; 
-                        end
-                        
-                        for iCluster = cellList; 
-                            % Skip if empty
-                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
-                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
-                                continue
-                            else
-                                
-                                % Get directions to plot over
-                                directions = fieldnames(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes);
-                                if strcmp(settings.phasePrecession.plot.direction, 'all') == 1; 
-                                    directionList = 1:length(directions); 
-                                else
-                                    directionList = settings.phasePrecession.plot.direction; 
-                                end
-                                
-                                for iDir = directionList;
-                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-                                    
-                                    % Loop through fields
-                                    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
-                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.cw); 
-                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
-                                        numField = 1; 
-                                    end
-                                    
-                                    for iField = 1:numField;
-                                      
-                                        % Get the necessary variables
-                                        if strcmp(directions(iDir), 'cw') == 1; 
-                                            medianOfSlopes = FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.cw; 
-                                            allSlopes = FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.cw{iField}; 
-                                            allPos = FRdata{iAnimal}(iCluster).phasePrecession.posInput.cw{iField}; 
-                                        elseif strcmp(directions(iDir), 'ccw') == 1; 
-                                            medianOfSlopes = FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.ccw; 
-                                            allSlopes = FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.ccw{iField}; 
-                                            allPos = FRdata{iAnimal}(iCluster).phasePrecession.posInput.ccw{iField}; 
-                                        end
-                                        
-                                        % Get the median slope (closest
-                                        % value to the median) and matching
-                                        % field size for that trial
-                                        [~, idx] = nanmin(abs(allSlopes - medianOfSlopes));
-                                        medianSlope(count) = allSlopes(idx);
-                                        if isnan(medianSlope(count)) == 0;
-                                            medianSize(count) = nanmax(allPos{idx}) - nanmin(allPos{idx});
-                                        else
-                                            medianSize(count) = NaN; 
-                                            medianSlope(count) = NaN;
-                                        end
-                                        count = count + 1; 
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
                 if iGenotype == 1; 
                     figures.populationSlopeVsSize = figure(4); clf;
                     colorAppearance = [0.5 0.5 0.5];
@@ -381,14 +293,18 @@ function plotPhasePrecession_v2_20250305(data, settings)
                     colorAppearance = [0.0 0.5 0.0]; 
                     figureSettings.name = 'sizeVsSlope_KO';
                 end;
-                scatter(medianSize, rad2deg(medianSlope), 75, colorAppearance, 'filled'); 
-                xlabel('Median Place Field Size (cm)'); 
-                ylabel('Median Slope (degrees/cm)');
-                set(gca, 'FontSize', 14); 
-                
-                % Save the figure
-                saveFigure_v1_20240902(figures.populationSlopeVsSize, figureSettings);
+            
+            medianSize = data.populationData(iGenotype).phasePrecessionMedianFieldSizes;
+            medianSlope = data.populationData(iGenotype).phasePrecessionSlopes; 
+            scatter(medianSize, rad2deg(medianSlope), 75, colorAppearance, 'filled'); 
+            xlabel('Median Place Field Size (cm)'); 
+            ylabel('Median Slope (degrees/cm)');
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            saveFigure_v1_20240902(figures.populationSlopeVsSize, figureSettings);
             end
+
         end
         
         %% Step 5: Compare the median field size
