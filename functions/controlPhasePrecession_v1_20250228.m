@@ -14,11 +14,15 @@ function controlPhasePrecession_v1_20250228(data, settings)
     %     
     
     % Steps/Figures:
-    %   1) Match the distributions of the place field sizes then compare 
+    %   2) Match the distributions of the place field sizes then compare 
     %      the slopes
     
     
-    %% Step 1: Match the distributions of the place field sizes then compare the slopes
+    %% Step 2: Compare the median slope and 
+    
+    
+    
+    %% Step 2: Match the distributions of the place field sizes then compare the slopes
     
     
     

@@ -19,6 +19,13 @@ function plotPhasePrecession_v2_20250305(data, settings)
     %      select the figures they want to generate
     %   1) Plot the LFP with spikes and theta phases for either all data or
     %      the animal/cell the user specified in the settings
+    %   2) Plot the spikes with slopes for each trial as well as the
+    %      histogram of the slopes
+    %   3) Plot the CDF of the median slopes
+    %   4) Get the scatter plots of the median field size and the median
+    %      field slope
+    %   5) Compare the size of the place fields associated with the trial 
+    %      with the median slope 
     
     close all;
     
@@ -384,6 +391,116 @@ function plotPhasePrecession_v2_20250305(data, settings)
             end
         end
         
+        %% Step 5: Compare the median field size
+        if ismember(5, listOfFigures) == 1; 
+            medianSizes_WT = data.populationData(1).phasePrecessionMedianFieldSizes; 
+            medianSizes_KO = data.populationData(2).phasePrecessionMedianFieldSizes; 
+
+            % Plot
+            figures.populationMedianFieldSizeeCDF = figure(6); clf; hold on;
+            plt_WT = cdfplot(medianSizes_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(medianSizes_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(medianSizes_WT); 
+            KOmean = nanmean(medianSizes_KO);
+            WT_SEM = nanstd(medianSizes_WT)/sqrt(length(medianSizes_WT)); 
+            KO_SEM = nanstd(medianSizes_KO)/sqrt(length(medianSizes_KO)); 
+            [f, x] = ecdf(medianSizes_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(medianSizes_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(medianSizes_WT)
+            [h, pUnif_KO] = adtest(medianSizes_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(medianSizes_WT, medianSizes_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'MedianFieldSize_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMedianFieldSizeeCDF, figureSettings);
+        end
+        
+        %% Step 6: Compare the average field size
+        if ismember(6, listOfFigures) == 1; 
+            % Get the average field size in a list
+            % But we'll also need to figure out which cells were included
+            % And actually this should be done by field
+            
+            
+            
+            medianSizes_WT = data.populationData(1).phasePrecessionMedianFieldSizes; 
+            medianSizes_KO = data.populationData(2).phasePrecessionMedianFieldSizes; 
+
+            % Plot
+            figures.populationMedianFieldSizeeCDF = figure(6); clf; hold on;
+            plt_WT = cdfplot(medianSizes_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(medianSizes_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(medianSizes_WT); 
+            KOmean = nanmean(medianSizes_KO);
+            WT_SEM = nanstd(medianSizes_WT)/sqrt(length(medianSizes_WT)); 
+            KO_SEM = nanstd(medianSizes_KO)/sqrt(length(medianSizes_KO)); 
+            [f, x] = ecdf(medianSizes_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(medianSizes_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(medianSizes_WT)
+            [h, pUnif_KO] = adtest(medianSizes_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(medianSizes_WT, medianSizes_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'MedianFieldSize_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMedianFieldSizeeCDF, figureSettings);
+        end
+        
     end
 end   
          
@@ -397,7 +514,9 @@ function selectedPlots = getFiguresToPlot()
     plotOptions = {'LFP with spikes and theta phase',...
         'spikes with slopes and histogram of slopes',...
         'CDF of median slopes for WT and KO populations',...
-        'scatter plots of median slope vs median field size'}; 
+        'scatter plots of median slope vs median field size',...
+        'CDF of median field size compared between WT and KO populations',...
+        'CDF of the average field size compared between WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
