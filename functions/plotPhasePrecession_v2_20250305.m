@@ -32,7 +32,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
     if strcmp(settings.phasePrecession.plot.display, 'yes') == 1;
         % Get the folders to save plots into
         mainFolder = uigetdir('C:\', 'Please select the folder you would like phase precession plots saved into.');
-        figureSettings = getFigureFolders(mainFolder) 
+        figureSettings = getFigureFolders(mainFolder);
     
         % Have the user select which plots they want to generate
         listOfFigures = getFiguresToPlot();
@@ -361,23 +361,17 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 6: Compare the average field size
         if ismember(6, listOfFigures) == 1; 
-            % Get the average field size in a list
-            % But we'll also need to figure out which cells were included
-            % And actually this should be done by field
-            
-            
-            
             medianSizes_WT = data.populationData(1).phasePrecessionMedianFieldSizes; 
             medianSizes_KO = data.populationData(2).phasePrecessionMedianFieldSizes; 
 
             % Plot
-            figures.populationMedianFieldSizeeCDF = figure(6); clf; hold on;
+            figures.populationMedianFieldSizeeCDF = figure(7); clf; hold on;
             plt_WT = cdfplot(medianSizes_WT); 
             set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
             plt_KO = cdfplot(medianSizes_KO); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('MVL'); 
+            xlabel('Median Field Size (cm)'); 
             set(gca, 'FontSize', 14); 
 
             % Add the mean +/- SEM 
@@ -417,6 +411,70 @@ function plotPhasePrecession_v2_20250305(data, settings)
             saveFigure_v1_20240902(figures.populationMedianFieldSizeeCDF, figureSettings);
         end
         
+        %% Step 7: Compare the average field size
+        if ismember(7, listOfFigures) == 1; 
+            averageSizes_WT = data.populationData(1).phasePrecession.averageFieldSizes; 
+            averageSizes_KO = data.populationData(2).phasePrecession.averageFieldSizes; 
+            slopes_WT = data.populationData(1).phasePrecessionSlopes; 
+            slopes_KO = data.populationData(2).phasePrecessionSlopes; 
+            if length(averageSizes_WT) ~= length(slopes_WT)
+                display('Error, unequal number of fields in WT slope and field arrays'); 
+            elseif length(averageSizes_KO) ~= length(slopes_KO)
+                display('Error, unequal number of fields in KO slope and field arrays'); 
+            else
+                averageSizes_WT(isnan(slopes_WT)) = [];
+                averageSizes_KO(isnan(slopes_KO)) = [];
+            end
+            length(averageSizes_WT)
+            length(averageSizes_KO)
+            
+            % Plot
+            figures.populationAverageFieldSizeeCDF = figure(8); clf; hold on;
+            plt_WT = cdfplot(averageSizes_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(averageSizes_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Trial-Averaged Field Size (cm)'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(averageSizes_WT); 
+            KOmean = nanmean(averageSizes_KO);
+            WT_SEM = nanstd(averageSizes_WT)/sqrt(length(averageSizes_WT)); 
+            KO_SEM = nanstd(averageSizes_KO)/sqrt(length(averageSizes_KO)); 
+            [f, x] = ecdf(averageSizes_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(averageSizes_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(averageSizes_WT)
+            [h, pUnif_KO] = adtest(averageSizes_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(averageSizes_WT, averageSizes_KO);
+            pValueDisplay = ['p=', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.60, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'TrialAveragedFieldSize_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationAverageFieldSizeeCDF, figureSettings);
+        end
+        
     end
 end   
          
@@ -432,7 +490,8 @@ function selectedPlots = getFiguresToPlot()
         'CDF of median slopes for WT and KO populations',...
         'scatter plots of median slope vs median field size',...
         'CDF of median field size compared between WT and KO populations',...
-        'CDF of the average field size compared between WT and KO populations'}; 
+        'CDF of the average field size compared between WT and KO populations',...
+        'CDF of the trial-averaged field size compared between WT and KO populations'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
