@@ -128,8 +128,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
     end
     
     figure; cdfplot(p_slope); 
-    figure; cdfplot(p_size); 
-    plot(p_size)
+    figure; cdfplot(p_si
 end
     
     %% Step 2: Match the distributions of the place field sizes then compare the slopes
@@ -206,7 +205,10 @@ end
     figure; histogram(p_slope, [0:0.05:1])
     figure; histogram(p_size, [0:0.05:1])
 
+    %}
+    
+    
+    
+    
     
 end
-%}
-
