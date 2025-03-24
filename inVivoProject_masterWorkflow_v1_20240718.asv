@@ -285,7 +285,6 @@ phase_slopes_ko = slopes_ko(validIdx);
 % Does log transform create linear relationship? 
 figure;
 scatter(log(field_sizes_wt), phase_slopes_wt)
-scatter(log(field_sizes_ko), phase_slopes_ko, 'g')
 % It looks fairly linear
 
 % Log-transformed regression
@@ -302,7 +301,6 @@ disp(mdl)
 % The genotype is not significant suggesting that genotype does not play an
 % important role in the slope
 
-%%
 % Same log-transformed regression but looking for an interaction between
 % gentoype and size
 mdl = fitlm(tbl, 'Slope ~ LogFieldSize * Genotype');
@@ -315,7 +313,6 @@ disp(mdl)
 theta_wt = phasePrecessionData.populationData(1).MVL; 
 theta_ko = phasePrecessionData.populationData(2).MVL; 
 figure; scatter(theta_wt, slopes_wt); hold on; scatter(theta_ko, slopes_ko); 
-xlabel('theta'); ylabel('slopes');
 % It doesn't look like there's a relationship
 
 % Is field size related to theta
@@ -331,13 +328,6 @@ tbl = table(phase_slopes', log_FieldSize', theta', Genotype', ...
     'VariableNames', {'Slope', 'LogFieldSize', 'ThetaModulation', 'Genotype'});
 mdl = fitlm(tbl, 'Slope ~ LogFieldSize + ThetaModulation + Genotype');
 disp(mdl)
-%{
-tbl = table(phase_slopes', theta', Genotype', ...
-    'VariableNames', {'Slope', 'ThetaModulation', 'Genotype'});
-mdl = fitlm(tbl, 'Slope ~ ThetaModulation + Genotype');
-disp(mdl)
-%}
-
 %%
 % Now I'm curious about bursting
 % Is bursting related to theta modulation? 
@@ -368,26 +358,8 @@ for iGenotype = 1:length(genotypes);
         burstIndex_ko = burstIndex; 
     end
 end
-figure; scatter(burstIndex_wt, theta_wt); hold on; scatter(burstIndex_ko, theta_ko);
-xlabel('Bursting'); ylabel('Theta');  
+scatter(burstIndex_wt, theta_wt); hold on; scatter(burstIndex_ko, theta_ko);
 
 % Is bursting related to phase precession? 
-figure; scatter(burstIndex_wt, slopes_wt); hold on; scatter(burstIndex_ko, slopes_ko);
-xlabel('Bursting'); ylabel('Slopes');  
+scatter(burstIndex_wt, theta_wt); hold on; scatter(burstIndex_ko, theta_ko);
 
-% A big ole linear regression model
-validIdx = ~isnan(fieldSizes_wt) & ~isnan(slopes_wt);
-bursting_wt_noNaN = burstIndex_wt(validIdx);
-validIdx = ~isnan(fieldSizes_ko) & ~isnan(slopes_ko);
-bursting_ko_noNaN = burstIndex_ko(validIdx);
-bursting = [bursting_wt_noNaN, bursting_ko_noNaN];
-tbl = table(phase_slopes', log_FieldSize', theta', bursting', Genotype', ...
-    'VariableNames', {'Slope', 'LogFieldSize', 'ThetaModulation', 'Bursting', 'Genotype'});
-mdl = fitlm(tbl, 'Slope ~ Bursting + LogFieldSize + ThetaModulation + Genotype');
-disp(mdl)
-
-% Is bursting related to theta modulation in a model? 
-tbl = table(theta', bursting', Genotype', ...
-    'VariableNames', {'ThetaModulation', 'Bursting', 'Genotype'});
-mdl = fitlm(tbl, 'ThetaModulation ~ Bursting + Genotype');
-disp(mdl)

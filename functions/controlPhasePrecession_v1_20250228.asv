@@ -62,7 +62,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
                 end
             end
         end
-        data.populationData(iGenotype).phasePrecession.averageFieldSizes = allFieldSizes;
+        data.populationData(iGenotype).phasePrecessionControl.averageFieldSizes = allFieldSizes;
     end
     
     %% Step 2: Match the distributions of the place field sizes then compare the slopes
@@ -83,7 +83,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
     rng('shuffle');
 
     % Initialize variables
-    numIterations = 100;
+    numIterations = 10;
     maxN = length(sizeHistogramValues);
     edgeValues = [0:4:max(sortedSizes{1})];
 
@@ -93,8 +93,8 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
 
     % Loop through random iterations
     for iRandomIteration = 1:numIterations
-        DSsize = [];
-        DSslope = [];
+        DSsize_WT = []; DSsize_KO = []; 
+        DSslope_WT = []; DSslope_KO = []; 
 
         % Loop through each bin
         for iHistBin = 1:maxN-1
@@ -105,110 +105,136 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
             % Downsample WT if there are more WT values than KO
             if length(WTindex) > length(KOindex)
                 randomWTindex = randperm(length(WTindex), length(KOindex));
-                DSsize = [DSsize, sortedSizes{1}(WTindex(randomWTindex))];
-                DSslope = [DSslope, sortedSlopes{1}(WTindex(randomWTindex))];
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex(randomWTindex))];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex(randomWTindex))];
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex)];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex)];
             % Downsample KO if there are more KO values than WT
             elseif length(KOindex) > length(WTindex)
                 randomKOindex = randperm(length(KOindex), length(WTindex));
-                DSsize = [DSsize, sortedSizes{2}(KOindex(randomKOindex))];
-                DSslope = [DSslope, sortedSlopes{2}(KOindex(randomKOindex))];
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex(randomKOindex))];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex(randomKOindex))];
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex)];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex)];
             % If the sizes are equal, just append all values
             else
-                DSsize = [DSsize, sortedSizes{1}(WTindex)];
-                DSslope = [DSslope, sortedSlopes{1}(WTindex)];
-                DSsize = [DSsize, sortedSizes{2}(KOindex)];
-                DSslope = [DSslope, sortedSlopes{2}(KOindex)];
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex)];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex)];
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex)];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex)];
             end
         end
 
         % Perform KS test for slopes and sizes
-        [~, p_slope(iRandomIteration)] = kstest2(DSslope, sortedSlopes{2});
-        [~, p_size(iRandomIteration)] = kstest2(DSsize, sortedSizes{2});
+        [~, p_slope(iRandomIteration)] = kstest2(DSslope_WT, DSslope_KO);
+        [~, p_size(iRandomIteration)] = kstest2(DSsize_WT, DSsize_KO);
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%% Debugging
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        figure(1); hold on; 
+        plt_WT = cdfplot(DSslope_WT);
+        set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1); 
+        plt_KO = cdfplot(DSslope_KO); 
+        set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1); 
+        sum(~isnan(DSslope_WT))
+        sum(~isnan(DSslope_KO))
         
     end
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSizes = DSsize_WT;
+    data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSizes = DSsize_KO;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSlopes = DSslope_WT;
+    data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSlopes = DSslope_KO;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.sizePvalues = p_size;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.slopePvalues = p_slope;
     
-    figure; cdfplot(p_slope); 
-    figure; cdfplot(p_si
-end
+    %% Step 3: Match the distributions of the average place field sizes then compare the slopes
     
-    %% Step 2: Match the distributions of the place field sizes then compare the slopes
-    %{
-    figure; title('original WT slope vs original KO slope'); hold on;
-    histogram(data.populationData(1).phasePrecessionSlopes, [-1:0.05:0]); histogram(data.populationData(2).phasePrecessionSlopes, [-1:0.05:0]); 
     for iGenotype = 1:length(data.populationData)
-        % Sort sizes in ascending order - check
-        % Apply the same sorting to the slopes so the indices match for
-        % both - check
-        % Bin those up to make a histogram
-        % Go through each bin, if there are more WT sizes, discard and
-        % vice versa for KO. Discard the same index for the slope. 
         
         % Sort by size and apply the same sorting to the slope vector
-        [sortedSizes{iGenotype}, sortedSize_idx] = sort(data.populationData(iGenotype).phasePrecessionMedianFieldSizes);
+        [sortedSizes{iGenotype}, sortedSize_idx] = sort(data.populationData(iGenotype).phasePrecession.averageFieldSizes);
         sortedSlopes{iGenotype} = data.populationData(iGenotype).phasePrecessionSlopes(sortedSize_idx);
         
         % Bin the size vector up
         edgeValues = [0:4:max(sortedSizes{1})];
         [sizeHistogramValues(iGenotype, :), ~] = histcounts(sortedSizes{iGenotype}, edgeValues);
-        %sizeHistogramValues(iGenotype,:) = sizeHistogram.Values;
         
     end
     
-    % Go through each bin and match the numbers between WT and KO
+    % Set random seed for reproducibility
+    rng('shuffle');
+
+    % Initialize variables
+    numIterations = 10;
     maxN = length(sizeHistogramValues);
-    
-    for iRandomIteration = 1:100;
-        DSsize = []; 
-        DSslope = []; 
-        for iHistBin = 1:maxN-1;
-            % If there are more WT values, then randomly remove some until it
-            % matches the KO values. Use the same indices to remove the slopes. 
-            if sizeHistogramValues(1, iHistBin) >= sizeHistogramValues(2, iHistBin); 
-                OGindex = find(sortedSizes{1} >= edgeValues(iHistBin) & sortedSizes{1} < edgeValues(iHistBin+1));
-                randomIndex = randperm(length(OGindex), sizeHistogramValues(2,iHistBin));
-                DSsize = [DSsize, sortedSizes{1}(OGindex(randomIndex))];
-                DSslope = [DSslope, sortedSlopes{1}(OGindex(randomIndex))]
-            elseif sizeHistogramValues(2, iHistBin) > sizeHistogramValues(1, iHistBin); 
-                OGindex = find(sortedSizes{2} >= edgeValues(iHistBin) & sortedSizes{2} < edgeValues(iHistBin+1));
-                DSsize = [DSsize, sortedSizes{1}(OGindex)];
-                DSslope = [DSslope, sortedSlopes{1}(OGindex)]; 
-                KOindex = find(sortedSizes{2} >= edgeValues(iHistBin) & sortedSizes{2} < edgeValues(iHistBin+1));
-                valueDiff = sizeHistogramValues(2, iHistBin) - sizeHistogramValues(1, iHistBin);
-                if isempty(KOindex) == 0; 
-                    randomKOindex = randperm(length(KOindex), valueDiff);
-                    sortedSizes{2}(KOindex(randomKOindex)) = NaN; 
-                    sortedSlopes{2}(KOindex(randomKOindex)) = NaN; 
-                end
+    edgeValues = [0:4:max(sortedSizes{1})];
+
+    % Preallocate results
+    p_slope = zeros(numIterations, 1);
+    p_size = zeros(numIterations, 1);
+
+    % Loop through random iterations
+    for iRandomIteration = 1:numIterations
+        DSsize_WT = []; DSsize_KO = []; 
+        DSslope_WT = []; DSslope_KO = []; 
+
+        % Loop through each bin
+        for iHistBin = 1:maxN-1
+            % Find indices of values within the current bin
+            WTindex = find(sortedSizes{1} >= edgeValues(iHistBin) & sortedSizes{1} < edgeValues(iHistBin+1));
+            KOindex = find(sortedSizes{2} >= edgeValues(iHistBin) & sortedSizes{2} < edgeValues(iHistBin+1));
+
+            % Downsample WT if there are more WT values than KO
+            if length(WTindex) > length(KOindex)
+                randomWTindex = randperm(length(WTindex), length(KOindex));
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex(randomWTindex))];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex(randomWTindex))];
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex)];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex)];
+            % Downsample KO if there are more KO values than WT
+            elseif length(KOindex) > length(WTindex)
+                randomKOindex = randperm(length(KOindex), length(WTindex));
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex(randomKOindex))];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex(randomKOindex))];
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex)];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex)];
+            % If the sizes are equal, just append all values
+            else
+                DSsize_WT = [DSsize_WT, sortedSizes{1}(WTindex)];
+                DSslope_WT = [DSslope_WT, sortedSlopes{1}(WTindex)];
+                DSsize_KO = [DSsize_KO, sortedSizes{2}(KOindex)];
+                DSslope_KO = [DSslope_KO, sortedSlopes{2}(KOindex)];
             end
         end
-        DSslope
-        [~, p_slope(iRandomIteration)] = kstest2(DSslope, sortedSlopes{2});
-        [~, p_size(iRandomIteration)] = kstest2(DSsize, sortedSizes{2});
+
+        % Perform KS test for slopes and sizes
+        [~, p_slope(iRandomIteration)] = kstest2(DSslope_WT, DSslope_KO);
+        [~, p_size(iRandomIteration)] = kstest2(DSsize_WT, DSsize_KO);
         
-        % Save output for plotting one iteration
-        if iRandomIteration == 1;
-           figure; title('downsampled WT size vs downsampled KO size'); hold on; 
-           histogram(DSsize, edgeValues); histogram(sortedSizes{2}, edgeValues); 
-           figure; title('downsampled WT size vs original WT size'); hold on;
-           histogram(DSsize, edgeValues); histogram(sortedSizes{1}, edgeValues); 
-           figure; title('downsampled WT slope vs downsampled KO slope'); hold on; 
-           histogram(DSslope, [-1:0.05:0]); histogram(sortedSlopes{2}, [-1:0.05:0]); 
-           figure; title('downsampled WT slope vs original WT slope'); hold on;
-           histogram(DSslope, [-1:0.05:0]); histogram(sortedSlopes{1}, [-1:0.05:0]); 
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%% Debugging
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        figure(1); hold on; 
+        plt_WT = cdfplot(DSslope_WT);
+        set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1); 
+        plt_KO = cdfplot(DSslope_KO); 
+        set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1); 
+        sum(~isnan(DSslope_WT))
+        sum(~isnan(DSslope_KO))
         
     end
-    
-    data.populationData(1).phasePrecessionControl.sizeControl.medianField.pValue_slope = p_slope;
-    data.populationData(2).phasePrecessionControl.sizeControl.medianField.pValue_size = p_size;
-    
-    figure; histogram(p_slope, [0:0.05:1])
-    figure; histogram(p_size, [0:0.05:1])
-
-    %}
-    
-    
-    
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSizes = DSsize_WT;
+    data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSizes = DSsize_KO;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSlopes = DSslope_WT;
+    data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSlopes = DSslope_KO;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.sizePvalues = p_size;
+    data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.slopePvalues = p_slope;
     
     
 end
+    
+    
+

@@ -281,7 +281,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             for iGenotype = 1:length(fieldnames(data.cellData));
                 
                 if iGenotype == 1; 
-                    figures.populationSlopeVsSize = figure(4); hold on; %clf;
+                    figures.populationSlopeVsSize = figure(4); clf;
                     colorAppearance = [0.5 0.5 0.5];
                     figureSettings.name = 'sizeVsSlope_WT';
                     figureSettings.filePath = figureSettings.filePath.population;
@@ -289,14 +289,14 @@ function plotPhasePrecession_v2_20250305(data, settings)
                     figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
                     figureSettings.fileTypes = {'fig', 'tiff'};
                 elseif iGenotype == 2; 
-                    figures.populationSlopeVsSize = figure(4); %clf; 
+                    figures.populationSlopeVsSize = figure(5); clf; 
                     colorAppearance = [0.0 0.5 0.0]; 
                     figureSettings.name = 'sizeVsSlope_KO';
                 end;
             
             medianSize = data.populationData(iGenotype).phasePrecessionMedianFieldSizes;
             medianSlope = data.populationData(iGenotype).phasePrecessionSlopes; 
-            scatter(medianSize, rad2deg(medianSlope), 75, colorAppearance, 'filled'); hold on; 
+            scatter(medianSize, rad2deg(medianSlope), 75, colorAppearance, 'filled'); 
             xlabel('Median Place Field Size (cm)'); 
             ylabel('Median Slope (degrees/cm)');
             set(gca, 'FontSize', 14); 
@@ -506,7 +506,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             plt_KO = cdfplot(KOslopeDistribution); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('Downsampled Slopes (degrees/cm)'); 
+            xlabel('P-Values between Slopes (cm)'); 
             set(gca, 'FontSize', 14); 
             
             % Save the figure
@@ -521,7 +521,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             plt = cdfplot(slopePvalues); 
             set(plt, 'Color', [0 0 0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('P-Values between Slopes'); 
+            xlabel('P-Values between Slopes (cm)'); 
             set(gca, 'FontSize', 14); 
             
             % Save the figure
@@ -534,10 +534,8 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 8: Match the distributions of field size and compare slopes
         if ismember(9, listOfFigures) == 1; 
-            %WTsizeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
-            %KOsizeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
-            WTsizeDistribution = data.populationData(1).phasePrecessionMedianFieldSizes; 
-            KOsizeDistribution = data.populationData(2).phasePrecessionMedianFieldSizes;
+            WTsizeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
+            KOsizeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
             WTslopeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSlopes; 
             KOslopeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSlopes; 
             slopePvalues = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.slopePvalues;
@@ -546,7 +544,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figures.controlMeanSizeDistribution = figure(12); clf; hold on;
             histogram(WTsizeDistribution, [0:4:100], 'FaceColor', [0.5 0.5 0.5]); 
             histogram(KOsizeDistribution, [0:4:100], 'FaceColor', [0.0 0.5 0.0]); 
-            xlabel('Downsampled Mean Field Sizes'); 
+            xlabel('Downsampled Median Field Sizes'); 
             ylabel('Counts')
             set(gca, 'FontSize', 14); 
 
@@ -559,13 +557,13 @@ function plotPhasePrecession_v2_20250305(data, settings)
             saveFigure_v1_20240902(figures.controlMeanSizeDistribution, figureSettings);
             
             % Plot the distributions of the sizes
-            figures.controlMeanSizeSlopeDistribution = figure(13); clf; hold on;
+            figures.controlMeanSSlopeDistribution = figure(10); clf; hold on;
             plt_WT = cdfplot(WTslopeDistribution); 
             set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
             plt_KO = cdfplot(KOslopeDistribution); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('Downsampled Slopes (degrees/cm)'); 
+            xlabel('P-Values between Slopes (cm)'); 
             set(gca, 'FontSize', 14); 
             
             % Save the figure
@@ -573,14 +571,14 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figureSettings.appendedFolder.binary = 'no'; 
             figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
             figureSettings.fileTypes = {'fig', 'tiff'};
-            saveFigure_v1_20240902(figures.controlMeanSizeSlopeDistribution, figureSettings);
+            saveFigure_v1_20240902(figures.controlSlopeDistribution, figureSettings);
             
             % Plot the CDF of the pValues
-            figures.controlMeanSizeDistribution_pValues = figure(14); clf; hold on;
+            figures.controlDistribution_pValues = figure(11); clf; hold on;
             plt = cdfplot(slopePvalues); 
             set(plt, 'Color', [0 0 0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('P-Values between Slopes'); 
+            xlabel('P-Values between Slopes (cm)'); 
             set(gca, 'FontSize', 14); 
             
             % Save the figure
@@ -588,7 +586,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figureSettings.appendedFolder.binary = 'no'; 
             figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
             figureSettings.fileTypes = {'fig', 'tiff'};
-            saveFigure_v1_20240902(figures.controlMeanSizeDistribution_pValues, figureSettings);
+            saveFigure_v1_20240902(figures.controlDistribution_pValues, figureSettings);
         end
     end
 end   
