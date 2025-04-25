@@ -175,6 +175,7 @@ rateMapByFRSettings.rateMaps.smallerFieldModification = -2; % for use in phase p
 
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
+spatialMetrics = controlSpatialMetrics_v1_20250425(spatialMetrics, rateMapByFRSettings); 
     
 %% Step 10: Get the in-field spikes for each field (takes seconds)
 clear;clc;tic;
@@ -258,6 +259,7 @@ phasePrecessionSettings.phasePrecession.plot.direction = 'all'; % If plotting, f
 
 % Outputs: 
 phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, phasePrecessionSettings, processedDataFolder); toc 
+
 %%
 clc; close all; 
 phasePrecessionData = controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 

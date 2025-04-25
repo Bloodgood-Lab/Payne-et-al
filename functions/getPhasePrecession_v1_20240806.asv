@@ -211,12 +211,6 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         data.populationData(iGenotype).phasePrecessionAllTrialSlopes = populationAllTrialSlopes;
         data.populationData(iGenotype).phasePrecessionAllTrialOffsets = populationAllTrialOffsets;
         data.populationData(iGenotype).phasePrecessionMedianFieldSizes = populationMedianSizes;
-        data.populationData(iGenotype).phasePrecession.thresholds.spatialBin = population_thresh_spatialBin;
-        data.populationData(iGenotype).phasePrecession.thresholds.ISI = population_thresh_ISI;
-        data.populationData(iGenotype).phasePrecession.thresholds.timeRange = population_thresh_timeRange;
-        data.populationData(iGenotype).phasePrecession.thresholds.pValue = population_thresh_p;
-        data.populationData(iGenotype).phasePrecession.thresholds.trialNum = population_thresh_trialNum;
-        
     end
     
     %% Step 2: Save

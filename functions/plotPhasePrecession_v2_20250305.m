@@ -532,7 +532,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             saveFigure_v1_20240902(figures.controlMedianSizeDistribution_pValues, figureSettings);
         end
         
-        %% Step 8: Match the distributions of field size and compare slopes
+        %% Step 9: Match the distributions of field size and compare slopes
         if ismember(9, listOfFigures) == 1; 
             %WTsizeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
             %KOsizeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
@@ -590,6 +590,55 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figureSettings.fileTypes = {'fig', 'tiff'};
             saveFigure_v1_20240902(figures.controlMeanSizeDistribution_pValues, figureSettings);
         end
+        
+        %% Step 10: Visualize how many cells are excluded with each criteria
+        if ismember(10, listOfFigures) == 1; 
+            WT_percentSpatBin = sum(data.populationData(1).phasePrecession.thresholds.spatialBin)/length(data.populationData(1).phasePrecession.thresholds.spatialBin); 
+            KO_percentSpatBin = sum(data.populationData(2).phasePrecession.thresholds.spatialBin)/length(data.populationData(2).phasePrecession.thresholds.spatialBin); 
+            WT_percentISI = sum(data.populationData(1).phasePrecession.thresholds.ISI)/length(data.populationData(1).phasePrecession.thresholds.ISI); 
+            KO_percentISI = sum(data.populationData(2).phasePrecession.thresholds.ISI)/length(data.populationData(2).phasePrecession.thresholds.ISI); 
+            WT_percenttimeRange = sum(data.populationData(1).phasePrecession.thresholds.timeRange)/length(data.populationData(1).phasePrecession.thresholds.timeRange); 
+            KO_percenttimeRange = sum(data.populationData(2).phasePrecession.thresholds.timeRange)/length(data.populationData(2).phasePrecession.thresholds.timeRange); 
+            WT_percentP = sum(data.populationData(1).phasePrecession.thresholds.pValue)/length(data.populationData(1).phasePrecession.thresholds.pValue); 
+            KO_percentP = sum(data.populationData(2).phasePrecession.thresholds.pValue)/length(data.populationData(2).phasePrecession.thresholds.pValue); 
+            WT_trialNum = sum(data.populationData(1).phasePrecession.thresholds.trialNum)/length(data.populationData(1).phasePrecession.thresholds.trialNum); 
+            KO_trialNum = sum(data.populationData(2).phasePrecession.thresholds.trialNum)/length(data.populationData(2).phasePrecession.thresholds.trialNum); 
+            allData = 100.*[WT_percentSpatBin, KO_percentSpatBin, ...
+                WT_percentISI, KO_percentISI, ...
+                WT_percenttimeRange, KO_percenttimeRange, ...
+                WT_percentP, KO_percentP, ...
+                WT_trialNum, KO_trialNum]; 
+            
+            % Plot the distributions of the sizes
+            figures.exclusionCriteria = figure(15); clf; hold on;
+            x = 1:length(allData); 
+            for i = 1:length(allData); 
+                if mod(i,2) == 1;
+                    bar(x(i), allData(i), 'FaceColor', [0.5, 0.5, 0.5]); 
+                else
+                    bar(x(i), allData(i), 'FaceColor', [0.0, 0.5, 0.0]); 
+                end
+            end
+            %xlabel('Downsampled Mean Field Sizes'); 
+            ylabel('Percent of Cells Included')
+            set(gca, 'XTick', [])  % Hide default tick labels
+            text(1.5, -0.05*max(allData), 'spatialBin', 'HorizontalAlignment', 'center')
+            text(3.5, -0.05*max(allData), 'ISI', 'HorizontalAlignment', 'center')
+            text(5.5, -0.05*max(allData), 'timeRange', 'HorizontalAlignment', 'center')
+            text(7.5, -0.05*max(allData), 'p-Value', 'HorizontalAlignment', 'center')
+            text(9.5, -0.05*max(allData), 'trialNum', 'HorizontalAlignment', 'center')
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_ExclusionCriteria';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.exclusionCriteria, figureSettings);
+                  
+        end
+        
     end
 end   
          
@@ -608,7 +657,8 @@ function selectedPlots = getFiguresToPlot()
         'CDF of the average field size compared between WT and KO populations',...
         'CDF of the trial-averaged field size compared between WT and KO populations', ...
         'Control analysis: match the median size distributions between WT and KO', ...
-        'Control analysis: match the mean size distributions between WT and KO'}; 
+        'Control analysis: match the mean size distributions between WT and KO', ...
+        'Control analysis: visualize how many cells are excluded by criteria'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
