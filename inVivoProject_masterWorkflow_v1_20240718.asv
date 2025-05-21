@@ -114,6 +114,7 @@ highVelSpkTimes = data; highVelSpkTimesSettings = settings;
 
 % Settings: 
 
+
 % Outputs: 
 spikeTiming = getSpikeTimingData_v1_20241124(highVelSpkTimes, highVelSpkTimesSettings, processedDataFolder); toc
 
@@ -514,38 +515,17 @@ Genotype = [wt_genotype, ko_genotype];
 fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.MedianFieldSizes;
 fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.MedianFieldSizes;
 fieldSizes = [fieldSizes_wt,fieldSizes_ko]; 
-theta_wt = phasePrecessionData.populationData(1).MVL; 
-theta_ko = phasePrecessionData.populationData(2).MVL;
-theta = [theta_wt, theta_ko]; 
 
-validIdx = ~isnan(phase_slopes) & ~isnan(Genotype) & ~isnan(fieldSizes) & ~isnan(theta);
+
+
+validIdx = ~isnan(phase_slopes) & ~isnan(Genotype);
 phase_slopes = phase_slopes(validIdx); 
 Genotype = Genotype(validIdx); 
-log_FieldSize = log(fieldSizes(validIdx)); 
-theta = theta(validIdx); 
+
 
 tbl = table(phase_slopes', Genotype', log_FieldSize', theta', ...
-    'VariableNames', {'Slope', 'Genotype', 'FieldSize', 'Theta'});
-mdl = fitlm(tbl, 'Slope ~ Genotype + FieldSize + Theta');
+    'VariableNames', {'Slope', 'Theta', 'FieldSize', 'Genotype'});
+mdl = fitlm(tbl, 'Slope ~ Theta + FieldSize + Genotype');
 disp(mdl)
-
-% VIFs for full model
-mdl_fs = fitlm(tbl, 'FieldSize ~ Genotype + Theta');
-R2_fs = mdl_fs.Rsquared.Ordinary;
-vif_FieldSize = 1 / (1 - R2_fs)
-
-mdl_theta = fitlm(tbl, 'Theta ~ Genotype + FieldSize');
-R2_theta = mdl_theta.Rsquared.Ordinary;
-vif_Theta = 1 / (1 - R2_theta)
-
-mdl_geno = fitlm(tbl, 'Genotype ~ FieldSize + Theta');
-R2_geno = mdl_geno.Rsquared.Ordinary;
-vif_Genotype = 1 / (1 - R2_geno)
-
-%% Interaction Full Model
-tbl = table(phase_slopes', Genotype', log_FieldSize', theta', ...
-    'VariableNames', {'Slope', 'Genotype', 'FieldSize', 'ThetaMod'});
-
-mdl = fitlm(tbl, 'Slope ~ Genotype * FieldSize + Genotype * ThetaMod');
-disp(mdl)
-
+R2 = mdl.Rsquared.Ordinary;
+vif_fieldSize = 1 / (1 - R2)

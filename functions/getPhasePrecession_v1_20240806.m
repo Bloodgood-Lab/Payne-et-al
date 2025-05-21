@@ -26,7 +26,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
     for iGenotype = 1:length(fieldnames(data.cellData));
         genotypes = fieldnames(data.cellData); 
         genotypeData = data.cellData.(genotypes{iGenotype}); 
-        populationSlopes = []; populationMedianSizes = []; 
+        populationSlopes = []; populationMedianSizes = []; populationMeanSizes = [];
         population_thresh_spatialBin = []; population_thresh_spikeNum = []; 
         population_thresh_ISI = []; population_thresh_timeRange = []; 
         population_thresh_p = []; population_thresh_trialNum = []; 
@@ -60,11 +60,11 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             % Loop through fields
                             numFieldsToAnalyze = whichField(settings.phasePrecession.fieldsToAnalyze, spkPhs);
                             slopeMedian = []; sizeMedian = []; rSquared = []; rSquaredAllTrials = {}; 
-                            slope = {}; spkPhsInput = {}; spkPosInput = {};
+                            slope = {}; spkPhsInput = {}; spkPosInput = {}; fieldSize = {}; 
                             trialSlope = {}; trialOffset = {}; trialR2 = {}; trialPvalue = {}; 
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
-                                allTrialsPosition = []; allTrialsPhases = [];
+                                allTrialsPosition = []; allTrialsPhases = []; fieldSize{iField} = []; 
                                 for iTrial = 1:length(spkPhs{iField});
                                     % If there are enough spatial bins
                                     if nanmax(binnedSpkPos{iField}{iTrial})-nanmin(binnedSpkPos{iField}{iTrial}) < settings.phasePrecession.spatialBinThreshold; 
@@ -108,6 +108,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             
                                             spkPhsInput{iField}{iTrial} = outputData.spkPhs; 
                                             spkPosInput{iField}{iTrial} = outputData.spkPos; 
+                                            fieldSize{iField}(iTrial) = nanmax(outputData.spkPos) - nanmin(outputData.spkPos);
                                             trialSlope{iField}(iTrial) = outputData.trialSlope; 
                                             trialOffset{iField}(iTrial) = outputData.trialOffset; 
                                             trialR2{iField}(iTrial) = outputData.r2; 
@@ -115,6 +116,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             
                                             % If the slope is below the significance threshold, save the data
                                             if trialPvalue{iField}(iTrial) > settings.phasePrecession.significanceThreshold; 
+                                                fieldSize{iField}(iTrial) = NaN; 
                                                 trialSlope{iField}(iTrial) = NaN;
                                                 trialOffset{iField}(iTrial) = NaN; 
                                                 trialR2{iField}(iTrial) = NaN;
@@ -134,6 +136,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             trialOffset{iField}(iTrial) = NaN; 
                                             trialR2{iField}(iTrial) = NaN;
                                             trialPvalue{iField}(iTrial) = NaN;
+                                            fieldSize{iField}(iTrial) = NaN; 
                                             
                                             % Keep track of thresholds passed
                                             thresh_spikeNum = 1; 
@@ -147,7 +150,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                 if sum(~isnan(trialSlope{iField})) >= settings.phasePrecession.trialThreshold; 
                                     slopeMedian(iField) = nanmedian(trialSlope{iField});
                                     [~, idx] = nanmin(abs(trialSlope{iField} - slopeMedian(iField)));
-                                    sizeMedian(iField) = nanmax(spkPosInput{iField}{idx})-nanmin(spkPosInput{iField}{idx});
+                                    sizeMedian(iField) = nanmedian(fieldSize{iField})
+                                    sizeMean(iField) = nanmean(fieldSize{iField});
                                     rSquared(iField) = nanmean(trialR2{iField});
                                     
                                     % Keep track of thresholds passed
@@ -156,6 +160,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                     slopeMedian(iField) = NaN; 
                                     rSquared(iField) = NaN;
                                     sizeMedian(iField) = NaN; 
+                                    sizeMean(iField) = NaN; 
                                     
                                     % Keep track of thresholds passed
                                     thresh_trialNum = 0; 
@@ -195,6 +200,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             populationAllTrialSlopes = [populationAllTrialSlopes, allTrialsSlopes]; 
                             populationAllTrialOffsets = [populationAllTrialOffsets, allTrialsOffsets]; 
                             populationMedianSizes = [populationMedianSizes, sizeMedian]; 
+                            populationMeanSizes = [populationMeanSizes, sizeMean]; 
                             population_thresh_spatialBin = [population_thresh_spatialBin, thresh_spatialBin]; 
                             population_thresh_spikeNum = [population_thresh_spikeNum, thresh_spikeNum]; 
                             population_thresh_ISI = [population_thresh_ISI, thresh_ISI];
@@ -206,11 +212,12 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                 end
             end
         end
-        data.populationData(iGenotype).phasePrecessionSlopes = populationSlopes;
-        data.populationData(iGenotype).phasePrecessionRSquared = rSquaredPopulation;
-        data.populationData(iGenotype).phasePrecessionAllTrialSlopes = populationAllTrialSlopes;
-        data.populationData(iGenotype).phasePrecessionAllTrialOffsets = populationAllTrialOffsets;
-        data.populationData(iGenotype).phasePrecessionMedianFieldSizes = populationMedianSizes;
+        data.populationData(iGenotype).phasePrecession.Slopes = populationSlopes;
+        data.populationData(iGenotype).phasePrecession.RSquared = rSquaredPopulation;
+        data.populationData(iGenotype).phasePrecession.AllTrialSlopes = populationAllTrialSlopes;
+        data.populationData(iGenotype).phasePrecession.AllTrialOffsets = populationAllTrialOffsets;
+        data.populationData(iGenotype).phasePrecession.MedianFieldSizes = populationMedianSizes;
+        data.populationData(iGenotype).phasePrecession.MeanFieldSizes = populationMeanSizes;
         data.populationData(iGenotype).phasePrecession.thresholds.spatialBin = population_thresh_spatialBin;
         data.populationData(iGenotype).phasePrecession.thresholds.ISI = population_thresh_ISI;
         data.populationData(iGenotype).phasePrecession.thresholds.timeRange = population_thresh_timeRange;

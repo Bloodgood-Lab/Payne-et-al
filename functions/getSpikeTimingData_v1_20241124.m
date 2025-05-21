@@ -10,11 +10,12 @@ function data = getSpikeTimingData_v1_20241124(data, settings, processedDataPath
     %   1) data: the structure with bursting and single data saved
 
     % Steps:
-    %   1) Loop through genotypes, animals, and cells and extract the
-    %      bursts and singles
-    %   2) Ask the user if they want to save the newly generated data
+    %   1) Loop through genotypes, animals, and cells and get the mean and
+    %      max firing rates over time
+    %   2) Extract the bursts and singles
+    %   3) Ask the user if they want to save the newly generated data
     
-    %% Step 1: Extract bursts and singles
+    %%% Step 1: Get the mean and max firing rates over time
     for iGenotype = 1:length(fieldnames(data));
         genotypes = fieldnames(data); 
         genotypeData = data.(genotypes{iGenotype}); 
@@ -31,9 +32,14 @@ function data = getSpikeTimingData_v1_20241124(data, settings, processedDataPath
                         outputData = assignVariableByDirection_v1_20240905(genotypeData{iAnimal}(iCluster), directions(iDir), 'spikeTiming');
                         spkTimes = outputData.spkTimes;
 
+                        
+                        
+                        
                         singles = cell(1, length(spkTimes)); bursts = cell(1, length(spkTimes)); 
                         for iTrial = 1:length(spkTimes); 
                             if isempty(spkTimes{iTrial}) == 0 %if there are spikes
+                                
+                                %%% Step 2: Extract bursts and singles
                                 singles{iTrial} = NaN(1, length(spkTimes{iTrial}));  
                                 bursts{iTrial} = NaN(1, length(spkTimes{iTrial})); 
                                 if length(spkTimes{iTrial}) == 1 %if there's only one element it's a single

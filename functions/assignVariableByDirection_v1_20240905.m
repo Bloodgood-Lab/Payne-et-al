@@ -17,6 +17,8 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'spatialMetrics') == 1;
             outputData.map = inputData.rateMaps.trialAverageMap.cw;
+            outputData.fullMap = inputData.rateMaps.rateMap.cw; 
+            outputData.timeMap = inputData.rateMaps.timeMap.cw; 
         end
         if strcmp(analysisType, 'getInField') == 1;
             outputData.barcode = inputData.spatialMetrics.barcode.original.cw;
@@ -55,6 +57,8 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
         end
         if strcmp(analysisType, 'spatialMetrics') == 1;
             outputData.map = inputData.rateMaps.trialAverageMap.ccw;
+            outputData.fullMap = inputData.rateMaps.rateMap.ccw; 
+            outputData.timeMap = inputData.rateMaps.timeMap.ccw; 
         end
         if strcmp(analysisType, 'getInField') == 1;
             outputData.barcode = inputData.spatialMetrics.barcode.original.ccw;

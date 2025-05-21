@@ -224,7 +224,6 @@ function plotPhasePrecession_v2_20250305(data, settings)
         end
         
         %% Step 3: Plot the CDF of the median slopes
-        % Assign the preferredPhase to WT and KO
         if ismember(3, listOfFigures) == 1; 
             medianSlopes_WT = data.populationData(1).phasePrecessionSlopes; 
             medianSlopes_KO = data.populationData(2).phasePrecessionSlopes; 
@@ -477,11 +476,11 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 8: Match the distributions of field size and compare slopes
         if ismember(8, listOfFigures) == 1; 
-            WTsizeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSizes; 
-            KOsizeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSizes; 
-            WTslopeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.dsSlopes; 
-            KOslopeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMedian.dsSlopes; 
-            slopePvalues = data.populationData(1).phasePrecessionControl.matchDistribution.byMedian.slopePvalues;
+            WTsizeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMedian.dsSizes; 
+            KOsizeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMedian.dsSizes; 
+            WTslopeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMedian.dsSlopes; 
+            KOslopeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMedian.dsSlopes; 
+            slopePvalues = data.populationData(1).phasePrecession.control.matchDistribution.byMedian.slopePvalues;
             
             % Plot the distributions of the sizes
             figures.controlMedianSizeDistribution = figure(9); clf; hold on;
@@ -534,13 +533,13 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 9: Match the distributions of field size and compare slopes
         if ismember(9, listOfFigures) == 1; 
-            %WTsizeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
-            %KOsizeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSizes; 
+            %WTsizeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMean.dsSizes; 
+            %KOsizeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMean.dsSizes; 
             WTsizeDistribution = data.populationData(1).phasePrecessionMedianFieldSizes; 
             KOsizeDistribution = data.populationData(2).phasePrecessionMedianFieldSizes;
-            WTslopeDistribution = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.dsSlopes; 
-            KOslopeDistribution = data.populationData(2).phasePrecessionControl.matchDistribution.byMean.dsSlopes; 
-            slopePvalues = data.populationData(1).phasePrecessionControl.matchDistribution.byMean.slopePvalues;
+            WTslopeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMean.dsSlopes; 
+            KOslopeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMean.dsSlopes; 
+            slopePvalues = data.populationData(1).phasePrecession.control.matchDistribution.byMean.slopePvalues;
             
             % Plot the distributions of the sizes
             figures.controlMeanSizeDistribution = figure(12); clf; hold on;
@@ -639,6 +638,362 @@ function plotPhasePrecession_v2_20250305(data, settings)
                   
         end
         
+        %% Step 11: Report how many trials are included for each neuron
+        if ismember(11, listOfFigures) == 1; 
+            for iGenotype = 1:length(fieldnames(data.cellData));
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+                numTrials{iGenotype} = []; 
+                for iAnimal = 1:length(FRdata); 
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        [~,n] = size(FRdata{iAnimal});
+                        for iCluster = 1:n; 
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes);
+                                for iDir = 1:length(directions);
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                                    
+                                    % Loop through fields
+                                    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.(directions{iDir})); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+                                    
+                                    for iField = 1:numField;
+                                        % If the median slope is NaN, skip
+                                        if isnan(FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.(directions{iDir})); 
+                                            continue;
+                                        else
+                                            cellNumTrials = sum(~isnan(FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.(directions{iDir}){iField}));  
+                                            numTrials{iGenotype} = [numTrials{iGenotype}, cellNumTrials]; 
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            % Plot the distributions of the number of trials
+            figures.controlNumberTrials = figure(16); clf; hold on;
+            plt_WT = cdfplot(numTrials{1}); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(numTrials{2}); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Number of Trials Included to get Mean'); 
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_NumberOfTrials';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.controlNumberTrials, figureSettings);        
+        end
+        
+        %% Step 12: Show standard deviations of slopes across trials
+        if ismember(12, listOfFigures) == 1; 
+            for iGenotype = 1:length(fieldnames(data.cellData));
+                genotypes = fieldnames(data.cellData); 
+                genotypeData = data.cellData.(genotypes{iGenotype}); 
+                FRdata = genotypeData.highFiring;
+                standardDeviations{iGenotype} = [];
+                for iAnimal = 1:length(FRdata); 
+                    % Skip if empty
+                    if isempty(FRdata{iAnimal}) == 1; 
+                        continue
+                    else
+                        [~,n] = size(FRdata{iAnimal});
+                        for iCluster = 1:n; 
+                            % Skip if empty
+                            if isempty(FRdata{iAnimal}(iCluster).metaData) == 1; 
+                                display(['Cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal), ' is empty, skipping']);
+                                continue
+                            else
+                                directions = fieldnames(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes);
+                                for iDir = 1:length(directions);
+                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
+                                    
+                                    % Loop through fields
+                                    if strcmp(settings.phasePrecession.fieldsToAnalyze, 'all fields') == 1;
+                                        numField = length(FRdata{iAnimal}(iCluster).inField.inFieldSpkTimes.(directions{iDir})); 
+                                    elseif strcmp(settings.theta.fieldsToAnalyze, 'best field') == 1;
+                                        numField = 1; 
+                                    end
+                                    
+                                    for iField = 1:numField;
+                                        % If the median slope is NaN, skip
+                                        if isnan(FRdata{iAnimal}(iCluster).phasePrecession.medianSlope.(directions{iDir})); 
+                                            continue;
+                                        else
+                                            cellStandardDeviation = nanstd(FRdata{iAnimal}(iCluster).phasePrecession.allSlopes.(directions{iDir}){iField});
+                                            standardDeviations{iGenotype} = [standardDeviations{iGenotype}, cellStandardDeviation]; 
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            % Plot the distributions of the number of trials
+            figures.controlSTDev = figure(17); clf; hold on;
+            plt_WT = cdfplot(standardDeviations{1}); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(standardDeviations{2}); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Standard Deviation of Trials For Each Cell'); 
+            set(gca, 'FontSize', 14); 
+            
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(standardDeviations{1}, standardDeviations{2});
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(['p-value is: ', num2str(pValueDisplay)]);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+                'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+            display(['WT N = ', num2str(length(standardDeviations{1})), '; KO N = ', num2str(length(standardDeviations{2}))]);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_StandardDeviation';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.controlSTDev, figureSettings);        
+        end
+        
+        %% Step 13: Show results of bootstrapping the data
+        if ismember(13, listOfFigures) == 1; 
+            
+            % Plot the distributions of the difference between WT mean and
+            % KO mean
+            figures.bootstrappedDiff = figure(18); clf; hold on;
+            plt = histogram(data.populationData(1).phasePrecession.control.bootstrapping.Diff);
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('WT Mean Slope - KO Mean Slope'); 
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_BootstrappedDiff';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.bootstrappedDiff, figureSettings); 
+            
+            % Plot the distributions of the p-value between WT and KO
+            figures.bootstrappedPValue = figure(19); clf; hold on;
+            plt = histogram(data.populationData(1).phasePrecession.control.bootstrapping.pValue);
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('p-value of bootstrapped data'); 
+            set(gca, 'FontSize', 14); 
+            
+            % Save the figure
+            figureSettings.name = 'Control_BootstrappedPValue';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.bootstrappedPValue, figureSettings); 
+        end
+        
+        %% Step 14: Show the results of the linear regression
+        if ismember(14, listOfFigures) == 1; 
+            mdl = data.populationData(1).phasePrecession.control.linearRegression;
+            figures.linearRegression = figure(20);
+            t = uitable(figures.linearRegression, 'Data', mdl.Coefficients{:,:}, ...
+            'ColumnName', mdl.Coefficients.Properties.VariableNames, ...
+            'RowName', mdl.Coefficients.Properties.RowNames, ...
+            'Units', 'Normalized', ...
+            'Position', [0 0 1 1]);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_LinearRegression.tif';
+            [figureSettings.filePath{1}, figureSettings.name]
+            saveas(figures.linearRegression, [figureSettings.filePath{1}, figureSettings.name])
+        end
+        
+        %% Step 15: Get the CDFs for the shuffled datasets
+        if ismember(15, listOfFigures) == 1; 
+            
+            %%%%% Shuffled phases: Difference in means + p-values %%%%%
+            
+            % Get the difference in means and the p-values
+            [m,~] = size(data.populationData(1).phasePrecession.control.shuffles.shuffPhs);  
+            for iIteration = 1:m; 
+                WTdata = data.populationData(1).phasePrecession.control.shuffles.shuffPhs(iIteration,:); 
+                KOdata = data.populationData(2).phasePrecession.control.shuffles.shuffPhs(iIteration,:); 
+                average(iIteration) = nanmean(WTdata)-nanmean(KOdata); 
+                [~, pValue(iIteration)] = kstest2(WTdata, KOdata); 
+            end
+            
+            % Plot the distributions of the difference between WT mean and
+            % KO mean
+            figures.shuffPhsDiff = figure(21); clf; hold on;
+            edges = [-0.06:0.01:0.04]; 
+            plt = histogram(average, edges); 
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('WT Mean Slope - KO Mean Slope'); 
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_ShuffledPhs_Diff';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.shuffPhsDiff, figureSettings); 
+            
+            % Plot the distributions of the p-value between WT and KO
+            figures.shuffPhsPValue = figure(22); clf; hold on;
+            edges = [0:0.025:0.8]; 
+            plt = histogram(pValue, edges);
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('p-value of shuffled phase data'); 
+            set(gca, 'FontSize', 14); 
+            
+            % Save the figure
+            figureSettings.name = 'Control_ShuffledPhs_pValues';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.shuffPhsPValue, figureSettings); 
+            
+            %%%%% Shuffled positions: Difference in means + p-values %%%%%
+            
+            % Get the difference in means and the p-values
+            [m,~] = size(data.populationData(1).phasePrecession.control.shuffles.shuffPos);  
+            for iIteration = 1:m; 
+                WTdata = data.populationData(1).phasePrecession.control.shuffles.shuffPos(iIteration,:); 
+                KOdata = data.populationData(2).phasePrecession.control.shuffles.shuffPos(iIteration,:); 
+                average(iIteration) = nanmean(WTdata)-nanmean(KOdata); 
+                [~, pValue(iIteration)] = kstest2(WTdata, KOdata); 
+            end
+            
+            % Plot the distributions of the difference between WT mean and
+            % KO mean
+            figures.shuffPosDiff = figure(23); clf; hold on;
+            edges = [-0.06:0.01:0.04]; 
+            plt = histogram(average, edges); 
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('WT Mean Slope - KO Mean Slope'); 
+            set(gca, 'FontSize', 14); 
+
+            % Save the figure
+            figureSettings.name = 'Control_ShuffledPos_Diff';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.shuffPosDiff, figureSettings); 
+            
+            % Plot the distributions of the p-value between WT and KO
+            figures.shuffPosPValue = figure(24); clf; hold on;
+            edges = [0:0.025:0.8]; 
+            plt = histogram(pValue, edges);
+            set(plt, 'FaceColor', [0.5 0.5 0.5]); 
+            xlabel('p-value of shuffled positions'); 
+            set(gca, 'FontSize', 14); 
+            
+            % Save the figure
+            figureSettings.name = 'Control_ShuffledPos_pValues';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.shuffPosPValue, figureSettings); 
+        end
+        
+        %% Step 16: Plot the log of field size against slope 
+        if ismember(16, listOfFigures) == 1; 
+            % Format data
+            fieldSizes_wt = data.populationData(1).phasePrecession.MedianFieldSizes;
+            fieldSizes_ko = data.populationData(2).phasePrecession.MedianFieldSizes;
+            slopes_wt = data.populationData(1).phasePrecession.Slopes;
+            slopes_ko = data.populationData(2).phasePrecession.Slopes;
+            validIdx = ~isnan(fieldSizes_wt) & ~isnan(slopes_wt);
+            field_sizes_wt = log(fieldSizes_wt(validIdx));
+            slopes_wt = slopes_wt(validIdx);
+            validIdx = ~isnan(fieldSizes_ko) & ~isnan(slopes_ko);
+            field_sizes_ko = log(fieldSizes_ko(validIdx));
+            slopes_ko = slopes_ko(validIdx);
+            
+            % Get the correlation information
+            [rho, pval] = corrcoef([field_sizes_wt, field_sizes_ko], [slopes_wt, slopes_ko]);
+            corrDisplay = ['Rho = ', num2str(rho(2)), ' and p-value = ', num2str(pval(2))]
+            
+            % Plot the distributions of the p-value between WT and KO
+            figures.scatterSizeVsSlope = figure(25); clf; hold on;
+            scatter(field_sizes_wt, slopes_wt, 50, [0.5, 0.5, 0.5], 'filled');
+            scatter(field_sizes_ko, slopes_ko, 50, [0.0, 0.5, 0.0], 'filled');
+            xlabel('Slope (radians/cm)'); 
+            ylabel('Log(Field Size)'); 
+            set(gca, 'FontSize', 14); 
+            annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+                ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+                'EdgeColor', 'none');
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', corrDisplay, ...
+                'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+            
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_ScatterLogOfSizeVsSlope';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.scatterSizeVsSlope, figureSettings); 
+        end
+        
+        %% Step 17: Plot the theta modulation MVL against slope 
+        if ismember(17, listOfFigures) == 1; 
+            % Format data
+            theta_mvl_wt = data.populationData(1).MVL;
+            theta_mvl_ko = data.populationData(2).MVL;
+            slopes_wt = data.populationData(1).phasePrecession.Slopes;
+            slopes_ko = data.populationData(2).phasePrecession.Slopes;
+            validIdx = ~isnan(theta_mvl_wt) & ~isnan(slopes_wt);
+            mvl_wt = theta_mvl_wt(validIdx);
+            slopes_wt = slopes_wt(validIdx);
+            validIdx = ~isnan(theta_mvl_ko) & ~isnan(slopes_ko);
+            mvl_ko = theta_mvl_ko(validIdx);
+            slopes_ko = slopes_ko(validIdx);
+            
+            % Get the correlation information
+            [rho, pval] = corrcoef([mvl_wt, mvl_ko], [slopes_wt, slopes_ko]); 
+            corrDisplay = ['Rho = ', num2str(rho(2)), ' and p-value = ', num2str(pval(2))];
+            
+            % Plot the distributions of the p-value between WT and KO
+            figures.scatterMVLvsSlope = figure(25); clf; hold on;
+            scatter(mvl_wt, slopes_wt, 50, [0.5, 0.5, 0.5], 'filled');
+            scatter(mvl_ko, slopes_ko, 50, [0.0, 0.5, 0.0], 'filled');
+            xlabel('Slope (radians/cm)'); 
+            ylabel('MVL'); 
+            set(gca, 'FontSize', 14); 
+            annotation('textbox', [0.02, 0, 0.2, 0.03], 'String', ...
+                ['Data File: ', settings.dataSavePath], 'FitBoxToText', 'on', 'BackgroundColor', 'none', ...
+                'EdgeColor', 'none');
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', corrDisplay, ...
+                'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+            
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'Control_ScatterMVLvsSlope';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.scatterMVLvsSlope, figureSettings); 
+        end
+        
     end
 end   
          
@@ -656,9 +1011,16 @@ function selectedPlots = getFiguresToPlot()
         'CDF of median field size compared between WT and KO populations',...
         'CDF of the average field size compared between WT and KO populations',...
         'CDF of the trial-averaged field size compared between WT and KO populations', ...
-        'Control analysis: match the median size distributions between WT and KO', ...
-        'Control analysis: match the mean size distributions between WT and KO', ...
-        'Control analysis: visualize how many cells are excluded by criteria'}; 
+        'control analysis: match the median size distributions between WT and KO', ...
+        'control analysis: match the mean size distributions between WT and KO', ...
+        'control analysis: visualize how many cells are excluded by criteria', ...
+        'control analysis: report number of trials for each cell', ...
+        'control analysis: report standard deviation across trials', ...
+        'control analysis: bootstrap the data to determine if N is sufficient', ...
+        'control analysis: linear regression results', ...
+        'control analysis: shuffled position and phase', ...
+        'control analysis: scatter plot of field size against slope', ... 
+        'control analysis: scatter plot of theta MVL against slope'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...
