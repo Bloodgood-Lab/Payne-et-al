@@ -150,12 +150,14 @@ rateMaps = data; rateMapSettings = settings;
 % Settings: 
 rateMapSettings.firingRates.meanThresh = 0.1; 
 rateMapSettings.firingRates.maxThresh = 1; 
+rateMapSettings.firingRates.plot.display = 'no'; 
 
 % Outputs:
-dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); toc
+dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); 
+plotFiringRateMetrics_v1_20250521(dataByFiringRate, rateMapSettings)
 
 %% Step 9: Get spatial metrics and associated barcode (takes seconds)
-clear;clc;tic;
+%clear;clc;tic;
 
 % Inputs:
 fileNameBase = 'rateMapsByFiringRate';
@@ -167,7 +169,7 @@ load([filePath{1}, '\', loadFileName, '.mat']);
 rateMapByFRStructure = data; rateMapByFRSettings = settings; 
 
 % Settings: 
-rateMapByFRSettings.rateMaps.lowThresh = 0.1;  % fields will be counted as contiguous bins above 10% of max
+rateMapByFRSettings.rateMaps.lowThresh = 0.3; % fields will be counted as contiguous bins above 10% of max
 rateMapByFRSettings.rateMaps.highThresh = 0.5; % fields must include one bin that is above 50% of the max
 rateMapByFRSettings.rateMaps.biggerFieldModification = 2; % for use in phase precession control analysis: extend field by X bins
 rateMapByFRSettings.rateMaps.smallerFieldModification = -2; % for use in phase precession control analysis: reduce field by X bins

@@ -32,7 +32,6 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
                 genotypeData = inputData.(genotypes{iGenotype}); 
                 FRdata = genotypeData.highFiring;
                 
-                allSize = []; allInfo = []; allSparsity = []; 
                 for iAnimal = 1:length(FRdata); 
                     % Skip if empty
                     if isempty(FRdata{iAnimal}) == 1; 
@@ -47,84 +46,39 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
                                 continue
                             else
                                 
-                                directions = fieldnames(FRdata{iAnimal}(iCluster).rateMaps.rateMap);
                                 for iDir = 1:length(directions); 
-                                    display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
-
                                     % Concatenate data
-                                    allSize = [allSize, FRdata{iAnimal}(iCluster).spatialMetrics.PFsize.(directions{iDir})];    
-                                    allInfo = [allInfo, FRdata{iAnimal}(iCluster).spatialMetrics.info.(directions{iDir})];    
-                                    allSparsity = [allSparsity, FRdata{iAnimal}(iCluster).spatialMetrics.sparsity.(directions{iDir})];    
+                                    
                                 end
                             end
                         end
                     end
                 end
                 
-                size_bothGenotypes{iGenotype} = allSize;
-                info_bothGenotypes{iGenotype} = allInfo;
-                sparsity_bothGenotypes{iGenotype} = allSparsity;
+                meanSize_bothGenotypes{iGenotype} = meanSize;
+                meanNumber_bothGenotypes{iGenotype} = meanNumber;
+                meanInfo_bothGenotypes{iGenotype} = meanInfo;
+                meanSparsity_bothGenotypes{iGenotype} = meanSparsity;
             end
             
-            %%% Plot average PF size
-            figures.size = figure(1); clf; hold on;
-            plt_WT = cdfplot(size_bothGenotypes{1}); 
+            %%% Plot average field size
+            figures.populationMeanSize = figure(1); clf; hold on;
+            plt_WT = cdfplot(meanSize_bothGenotypes{1}); 
             set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
-            plt_KO = cdfplot(size_bothGenotypes{2}); 
+            plt_KO = cdfplot(meanSize_bothGenotypes{2}); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('Average PF Size (cm.)'); 
+            xlabel('Average Field Size'); 
             set(gca, 'FontSize', 14); 
 
             % Add the mean +/- SEM 
-            WTmean = nanmean(size_bothGenotypes{1}); 
-            KOmean = nanmean(size_bothGenotypes{2});
-            WT_SEM = nanstd(size_bothGenotypes{1})/sqrt(length(size_bothGenotypes{1})); 
-            KO_SEM = nanstd(size_bothGenotypes{2})/sqrt(length(size_bothGenotypes{2})); 
-            [f, x] = ecdf(size_bothGenotypes{1});
+            WTmean = nanmean(meanSize_bothGenotypes{1}); 
+            KOmean = nanmean(meanSize_bothGenotypes{2});
+            WT_SEM = nanstd(meanSize_bothGenotypes{1})/sqrt(length(meanSize_bothGenotypes{1})); 
+            KO_SEM = nanstd(meanSize_bothGenotypes{2})/sqrt(length(meanSize_bothGenotypes{2})); 
+            [f, x] = ecdf(meanSize_bothGenotypes{1});
             [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
-            [f, x] = ecdf(size_bothGenotypes{2});
-            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
-            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
-            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
-            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
-            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
-
-            % Display statistical significance
-            % If data is not normal, perform kstest
-            p = ranksum(size_bothGenotypes{1}, size_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
-            display(pValueDisplay);
-            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
-            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
-
-            % Save the figure
-            figureSettings.filePath = figureFileInfo.filePath.population;
-            figureSettings.name = 'AverageSize';
-            figureSettings.appendedFolder.binary = 'no'; 
-            figureSettings.appendedFolder.name = figureFileInfo.fileNameBase.population;
-            figureSettings.fileTypes = {'fig', 'tiff'};
-            saveFigure_v1_20240902(figures.size, figureSettings);
-            
-            %%%%% Plot info %%%%%
-            
-            figures.info = figure(2); clf; hold on;
-            plt_WT = cdfplot(info_bothGenotypes{1}); 
-            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
-            plt_KO = cdfplot(info_bothGenotypes{2}); 
-            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
-            grid off; 
-            xlabel('Information (bits/spike)'); 
-            set(gca, 'FontSize', 14); 
-
-            % Add the mean +/- SEM 
-            WTmean = nanmean(info_bothGenotypes{1}); 
-            KOmean = nanmean(info_bothGenotypes{2});
-            WT_SEM = nanstd(info_bothGenotypes{1})/sqrt(length(info_bothGenotypes{1})); 
-            KO_SEM = nanstd(info_bothGenotypes{2})/sqrt(length(info_bothGenotypes{2})); 
-            [f, x] = ecdf(info_bothGenotypes{1});
-            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
-            [f, x] = ecdf(info_bothGenotypes{2});
+            [f, x] = ecdf(meanSize_bothGenotypes{2});
             [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
             plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
             plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
@@ -133,13 +87,13 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
 
             % Display statistical significance
             % First, check for normality 
-            [h, pUnif_WT] = adtest(info_bothGenotypes{1})
-            [h, pUnif_KO] = adtest(info_bothGenotypes{2})
+            [h, pUnif_WT] = adtest(meanSize_bothGenotypes{1})
+            [h, pUnif_KO] = adtest(meanSize_bothGenotypes{2})
             if pUnif_WT < 0.05 && pUnif_KO < 0.05
                 display('Data is not normal'); 
             end
             % If data is not normal, perform kstest
-            [~, p] = kstest2(info_bothGenotypes{1}, info_bothGenotypes{2});
+            [~, p] = kstest2(meanSize_bothGenotypes{1}, meanSize_bothGenotypes{2});
             pValueDisplay = ['P = ', num2str(p), ' using kstest'];
             display(pValueDisplay);
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
@@ -147,62 +101,15 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
 
             % Save the figure
             figureSettings.filePath = figureFileInfo.filePath.population;
-            figureSettings.name = 'Information';
+            figureSettings.name = 'TrialByTrial_averageSize';
             figureSettings.appendedFolder.binary = 'no'; 
             figureSettings.appendedFolder.name = figureFileInfo.fileNameBase.population;
             figureSettings.fileTypes = {'fig', 'tiff'};
-            saveFigure_v1_20240902(figures.info, figureSettings);
+            saveFigure_v1_20240902(figures.populationMeanSize, figureSettings);
             
-            %%%%% Plot sparsity %%%%%
-            
-            figures.sparsity = figure(3); clf; hold on;
-            plt_WT = cdfplot(sparsity_bothGenotypes{1}); 
-            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
-            plt_KO = cdfplot(sparsity_bothGenotypes{2}); 
-            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
-            grid off; 
-            xlabel('Sparsity'); 
-            set(gca, 'FontSize', 14); 
-
-            % Add the mean +/- SEM 
-            WTmean = nanmean(sparsity_bothGenotypes{1}); 
-            KOmean = nanmean(sparsity_bothGenotypes{2});
-            WT_SEM = nanstd(sparsity_bothGenotypes{1})/sqrt(length(sparsity_bothGenotypes{1})); 
-            KO_SEM = nanstd(sparsity_bothGenotypes{2})/sqrt(length(sparsity_bothGenotypes{2})); 
-            [f, x] = ecdf(sparsity_bothGenotypes{1});
-            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
-            [f, x] = ecdf(sparsity_bothGenotypes{2});
-            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
-            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
-            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
-            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
-            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
-
-            % Display statistical significance
-            % First, check for normality 
-            [h, pUnif_WT] = adtest(sparsity_bothGenotypes{1})
-            [h, pUnif_KO] = adtest(sparsity_bothGenotypes{2})
-            if pUnif_WT < 0.05 && pUnif_KO < 0.05
-                display('Data is not normal'); 
-            end
-            % If data is not normal, perform kstest
-            [~, p] = kstest2(sparsity_bothGenotypes{1}, sparsity_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
-            display(pValueDisplay);
-            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
-            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
-
-            % Save the figure
-            figureSettings.filePath = figureFileInfo.filePath.population;
-            figureSettings.name = 'Sparsity';
-            figureSettings.appendedFolder.binary = 'no'; 
-            figureSettings.appendedFolder.name = figureFileInfo.fileNameBase.population;
-            figureSettings.fileTypes = {'fig', 'tiff'};
-            saveFigure_v1_20240902(figures.sparsity, figureSettings);
-        end
-            
+        
         %% Step 2: Trial-by-trial plots
-        if ismember(2, listOfFigures) == 1; 
+        if ismember(1, listOfFigures) == 1; 
             % Get list of genotypes to plot over
             if strcmp(settings.rateMaps.plot.genotypes, 'all') == 1; 
                 genotypeList = 1:length(fieldnames(inputData));
@@ -469,8 +376,7 @@ end
 
 function selectedPlots = getFiguresToPlot()
    % Define the list of available plots
-    plotOptions = {'Plot spatial metrics', ...
-        'Trial-by-trial spatial metrics',...
+    plotOptions = {'Trial-by-trial spatial metrics',...
         }; 
     
     % Display a dialog box to select the plots

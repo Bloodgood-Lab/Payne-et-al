@@ -53,6 +53,8 @@ function data = calculateRateMap_v1_20240718(data, settings, processedDataPath)
                         % spikes per second
                         map = map * settings.velocity.samplingRate; 
                         map = circshift(map, 1, 2); 
+                        timeMap = timeMap / settings.velocity.samplingRate; 
+                        timeMap = circshift(timeMap, 1, 2); 
                         
                         % Append to data structure
                         if iDir == 1; 

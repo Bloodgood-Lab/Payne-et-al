@@ -70,7 +70,6 @@ function outputData = controlSpatialMetrics_v1_20250425(inputData, settings)
                                 outputData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).spatialMetrics.controls.byTrial.PFnumber.cw = PFnumber;
                                 outputData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).spatialMetrics.controls.byTrial.info.cw = info;
                                 outputData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).spatialMetrics.controls.byTrial.sparsity.cw = spars;
-                                fieldnames(outputData.(genotypes{iGenotype}).highFiring{iAnimal}(iCluster).spatialMetrics)
                             end
                             % Save the output
                             if strcmp(directions(iDir), 'ccw') == 1; 

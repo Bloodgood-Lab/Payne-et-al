@@ -31,9 +31,6 @@ function data = getSpikeTimingData_v1_20241124(data, settings, processedDataPath
                     for iDir = 1:length(directions);
                         outputData = assignVariableByDirection_v1_20240905(genotypeData{iAnimal}(iCluster), directions(iDir), 'spikeTiming');
                         spkTimes = outputData.spkTimes;
-
-                        
-                        
                         
                         singles = cell(1, length(spkTimes)); bursts = cell(1, length(spkTimes)); 
                         for iTrial = 1:length(spkTimes); 
@@ -67,9 +64,11 @@ function data = getSpikeTimingData_v1_20241124(data, settings, processedDataPath
                             end
                         end
                         if strcmp(directions(iDir), 'cw') == 1;
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.meanFRoverSession.cw = meanFR; 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.bursts.cw = bursts;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.singles.cw = singles;
                         elseif strcmp(directions(iDir), 'ccw') == 1; 
+                            data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.meanFRoverSession.ccw = meanFR; 
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.bursts.ccw = bursts;
                             data.(genotypes{iGenotype}){iAnimal}(iCluster).spikeTiming.singles.ccw = singles;
                         end

@@ -49,7 +49,7 @@ function data = getSpatialMetrics_v1_20240724(data, settings, processedDataPath)
                                 outputData = assignVariableByDirection_v1_20240905(FRdata{iAnimal}(iCluster), directions(iDir), 'spatialMetrics');
                                 map = outputData.map; timeMap = outputData.timeMap; 
                                 trialAveragedMap = nanmean(map, 1); 
-                                trialAveragedTimeMap = nanmean(timeMap, 1); 
+                                trialAveragedTimeMap = (nanmean(map, 1)); 
                                                                 
                                 [barcode, PFsize, PFnumber] = getPlaceFields_v1_20250425(map, thresholds);
                                 % Get the position PDF
