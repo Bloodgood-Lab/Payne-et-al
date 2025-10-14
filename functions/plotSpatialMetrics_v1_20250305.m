@@ -51,10 +51,15 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
                                 for iDir = 1:length(directions); 
                                     display(['Calculating for cluster ', num2str(iCluster) ' of animal ', num2str(iAnimal)]);
 
-                                    % Concatenate data
-                                    allSize = [allSize, FRdata{iAnimal}(iCluster).spatialMetrics.PFsize.(directions{iDir})];    
-                                    allInfo = [allInfo, FRdata{iAnimal}(iCluster).spatialMetrics.info.(directions{iDir})];    
-                                    allSparsity = [allSparsity, FRdata{iAnimal}(iCluster).spatialMetrics.sparsity.(directions{iDir})];    
+                                    % Note from AP: outliers were excluded at the suggestion of BB after first
+                                    % confirming it did not change statistical outcome
+                                    if FRdata{iAnimal}(iCluster).spatialMetrics.PFsize.(directions{iDir}) < 128; 
+                                        % Concatenate data
+                                        allSize = [allSize, FRdata{iAnimal}(iCluster).spatialMetrics.PFsize.(directions{iDir})];    
+                                    end
+                                        allInfo = [allInfo, FRdata{iAnimal}(iCluster).spatialMetrics.info.(directions{iDir})];    
+                                        allSparsity = [allSparsity, FRdata{iAnimal}(iCluster).spatialMetrics.sparsity.(directions{iDir})]; 
+                                    
                                 end
                             end
                         end
@@ -77,10 +82,10 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             set(gca, 'FontSize', 14); 
 
             % Add the mean +/- SEM 
-            WTmean = nanmean(size_bothGenotypes{1}); 
-            KOmean = nanmean(size_bothGenotypes{2});
-            WT_SEM = nanstd(size_bothGenotypes{1})/sqrt(length(size_bothGenotypes{1})); 
-            KO_SEM = nanstd(size_bothGenotypes{2})/sqrt(length(size_bothGenotypes{2})); 
+            WTmean = nanmean(size_bothGenotypes{1})
+            KOmean = nanmean(size_bothGenotypes{2})
+            WT_SEM = nanstd(size_bothGenotypes{1})/sqrt(length(size_bothGenotypes{1}))
+            KO_SEM = nanstd(size_bothGenotypes{2})/sqrt(length(size_bothGenotypes{2}))
             [f, x] = ecdf(size_bothGenotypes{1});
             [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
             [f, x] = ecdf(size_bothGenotypes{2});
@@ -93,10 +98,11 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             % Display statistical significance
             % If data is not normal, perform kstest
             p = ranksum(size_bothGenotypes{1}, size_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
-            display(pValueDisplay);
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(size_bothGenotypes{1})), ' and KO N = ', num2str(length(size_bothGenotypes{2}))];
+            display(pValueDisplay); 
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
-            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+                'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
 
             % Save the figure
             figureSettings.filePath = figureFileInfo.filePath.population;
@@ -140,8 +146,9 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             end
             % If data is not normal, perform kstest
             [~, p] = kstest2(info_bothGenotypes{1}, info_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
-            display(pValueDisplay);
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(info_bothGenotypes{1})), ' and KO N = ', num2str(length(info_bothGenotypes{2}))];
+            display(pValueDisplay);          
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
 
@@ -187,7 +194,8 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             end
             % If data is not normal, perform kstest
             [~, p] = kstest2(sparsity_bothGenotypes{1}, sparsity_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(sparsity_bothGenotypes{1})), ' and KO N = ', num2str(length(sparsity_bothGenotypes{2}))];
             display(pValueDisplay);
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
@@ -306,7 +314,8 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             end
             % If data is not normal, perform kstest
             [~, p] = kstest2(meanSize_bothGenotypes{1}, meanSize_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(meanSize_bothGenotypes{1})), ' and KO N = ', num2str(length(meanSize_bothGenotypes{2}))];            
             display(pValueDisplay);
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);

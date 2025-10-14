@@ -48,7 +48,7 @@ clear;clc;
 
 % Inputs: 
 fileNameBase = 'mainDataStructure'; 
-filePath = getMostRecentFilePath_v1_20240723(fileNameBase);
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, '');
 loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
 load([filePath{1}, '\', loadFileName]);
 [processedDataFolder, ~, ~] = fileparts(filePath{1});
@@ -150,14 +150,14 @@ rateMaps = data; rateMapSettings = settings;
 % Settings: 
 rateMapSettings.firingRates.meanThresh = 0.1; 
 rateMapSettings.firingRates.maxThresh = 1; 
-rateMapSettings.firingRates.plot.display = 'no'; 
+rateMapSettings.firingRates.plot.display = 'yes'; 
 
 % Outputs:
 dataByFiringRate = splitLowAndHighFR_v01_20240802(rateMaps, rateMapSettings, processedDataFolder); 
 plotFiringRateMetrics_v1_20250521(dataByFiringRate, rateMapSettings)
 
 %% Step 9: Get spatial metrics and associated barcode (takes seconds)
-%clear;clc;tic;
+clear;clc;tic;
 
 % Inputs:
 fileNameBase = 'rateMapsByFiringRate';
@@ -181,7 +181,8 @@ rateMapByFRSettings.rateMaps.plot.direction = 'all'; % Could be 1, 2, or 'all'
 
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
-spatialMetrics = controlSpatialMetrics_v1_20250425(spatialMetrics, rateMapByFRSettings); 
+spatialMetrics = controlSpatialMetrics_v1_20250425(spatialMetrics, rateMapByFRSettings);
+%%
 plotSpatialMetrics_v1_20250305(spatialMetrics, rateMapByFRSettings); 
     
 %% Step 10: Get the in-field spikes for each field (takes seconds)
@@ -204,6 +205,25 @@ inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings
 %% Step 11: Additional rate map analysis
 
 %% Step 12: Stability analysis
+clear;clc;tic;
+
+% Inputs: 
+fileNameBase = 'inFieldSpkTimes';
+folderMessage = 'Select directory with data to analyze'; 
+filePath = getMostRecentFilePath_v1_20240723(fileNameBase, folderMessage);
+loadFileName = [fileNameBase, '_v', filePath{2}, filePath{3}];
+load([filePath{1}, '\', loadFileName]);
+[processedDataFolder, ~, ~] = fileparts(filePath{1});
+inFieldSpkData = data; inFieldSpkSettings = settings;
+
+% Settings: 
+
+% Outputs:
+stabilityData = getStability_v1_20250608(inFieldSpkData, inFieldSpkSettings, processedDataFolder); toc; 
+
+%inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings, processedDataFolder); toc
+
+
 
 %% Step 13: Get the theta modulation (takes ~1.5 hours)
 clear;clc;tic;
@@ -249,7 +269,7 @@ thetaData = data; phasePrecessionSettings = settings;
 phasePrecessionSettings.phasePrecession.spatialBinThreshold = 0; % minimum number of spatial bins needed
 phasePrecessionSettings.phasePrecession.spikeThreshold = 5; % minimum number of spikes needed
 phasePrecessionSettings.phasePrecession.slopeRange = [-4:0.125:4]; % range of slopes to try to fit 
-phasePrecessionSettings.phasePrecession.significanceThreshold = 0.05; % maximum acceptable significance level of line fit
+phasePrecessionSettings.phasePrecession.significanceThreshold = 1; % maximum acceptable significance level of line fit
 phasePrecessionSettings.phasePrecession.trialThreshold = 3; % minimum number of trials
 phasePrecessionSettings.phasePrecession.ISIthreshold = 1000; % max time between spikes in msec
 phasePrecessionSettings.phasePrecession.fieldsToAnalyze = 'best field'; % Could also be 'best field'
@@ -267,9 +287,9 @@ phasePrecessionSettings.phasePrecession.plot.direction = 'all'; % If plotting, f
 
 % Outputs: 
 phasePrecessionData = getPhasePrecession_v1_20240806(thetaData, phasePrecessionSettings, processedDataFolder); toc 
-
 %%
-clc; close all; %phasePrecessionData = data;
+
+%clc; close all; phasePrecessionData = data; phasePrecessionSettings = settings; 
 phasePrecessionData = controlPhasePrecession_v1_20250228(phasePrecessionData, phasePrecessionSettings); 
 %%
 clc;
@@ -280,10 +300,14 @@ plotPhasePrecession_v2_20250305(phasePrecessionData, phasePrecessionSettings);
 % Spearman's Correlation
 %fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.averageFieldSizes;
 %fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.averageFieldSizes;
-fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.MedianFieldSizes;
-fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.MedianFieldSizes;
-slopes_wt = phasePrecessionData.populationData(1).phasePrecession.Slopes;
-slopes_ko = phasePrecessionData.populationData(2).phasePrecession.Slopes;
+%fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.MedianFieldSizes;
+%fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.MedianFieldSizes;
+fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.MeanFieldSizes;
+fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.MeanFieldSizes;
+slopes_wt = phasePrecessionData.populationData(1).phasePrecession.MeanSlopes;
+slopes_ko = phasePrecessionData.populationData(2).phasePrecession.MeanSlopes;
+%slopes_wt = phasePrecessionData.populationData(1).phasePrecession.Slopes;
+%slopes_ko = phasePrecessionData.populationData(2).phasePrecession.Slopes;
 validIdx = ~isnan(fieldSizes_wt) & ~isnan(slopes_wt);
 field_sizes_wt = fieldSizes_wt(validIdx);
 phase_slopes_wt = slopes_wt(validIdx);
@@ -313,38 +337,59 @@ phase_slopes = [phase_slopes_wt, phase_slopes_ko];
 tbl = table(phase_slopes', log_FieldSize', Genotype', 'VariableNames', {'Slope', 'LogFieldSize', 'Genotype'});
 mdl = fitlm(tbl, 'Slope ~ LogFieldSize + Genotype');
 disp(mdl)
+
+
 % The logFieldSize p-value is highly significant suggesting that field size
 % plays an important role in the slope
 % The genotype is not significant suggesting that genotype does not play an
 % important role in the slope
 
-%%
+
 % Same log-transformed regression but looking for an interaction between
 % gentoype and size
 mdl = fitlm(tbl, 'Slope ~ LogFieldSize * Genotype');
 disp(mdl)
 % This model only explains 22% of the variance which is lower than the
 % prevous model so we should stick with the previous model
-
+%%
 % Now trying to tie in theta modulation
 % Is theta modulation related to phase precession? 
-theta_wt = phasePrecessionData.populationData(1).MVL; 
-theta_ko = phasePrecessionData.populationData(2).MVL; 
-figure; scatter(theta_wt, slopes_wt); hold on; scatter(theta_ko, slopes_ko); 
-xlabel('theta'); ylabel('slopes');
+theta_wt = phasePrecessionData.populationData(1).phasePrecession.MVL; 
+theta_ko = phasePrecessionData.populationData(2).phasePrecession.MVL; 
+%figure; scatter(theta_wt, slopes_wt); hold on; scatter(theta_ko, slopes_ko); 
+%xlabel('theta'); ylabel('slopes');
 % It doesn't look like there's a relationship
 
 % Is field size related to theta
-figure; scatter(theta_wt, fieldSizes_wt); hold on; scatter(theta_ko, fieldSizes_ko); 
+
+%theta_wt(isnan(theta_wt)) = []; theta_ko(isnan(theta_ko)) = []; 
+
+%theta_wt(59) = NaN; fieldSizes_wt(59) = NaN; 
+%theta_wt(117) = NaN; fieldSizes_wt(117) = NaN; 
 
 % Include it in the regression
-validIdx = ~isnan(fieldSizes_wt) & ~isnan(slopes_wt);
+validIdx = ~isnan(fieldSizes_wt) & ~isnan(theta_wt);
 theta_wt_noNaN = theta_wt(validIdx);
-validIdx = ~isnan(fieldSizes_ko) & ~isnan(slopes_ko);
+fieldSizes_wt_noNaN = fieldSizes_wt(validIdx); 
+validIdx = ~isnan(fieldSizes_ko) & ~isnan(theta_ko);
 theta_ko_noNaN = theta_ko(validIdx);
+fieldSizes_ko_noNaN = fieldSizes_ko(validIdx); 
 theta = [theta_wt_noNaN, theta_ko_noNaN]; 
 
-[rho, pval] = corr(theta', [(field_sizes_wt)';(field_sizes_ko)'], 'Type', 'Spearman')
+figure; scatter(theta_wt_noNaN, fieldSizes_wt_noNaN, 'ok'); hold on; scatter(theta_ko_noNaN, fieldSizes_ko_noNaN, 'og');
+xlabel('theta'); ylabel('fieldsizes'); 
+[rho, pval] = corr(theta', [(fieldSizes_wt_noNaN)';(fieldSizes_ko_noNaN)'], 'Type', 'Spearman')
+%[R, p] = corrcoef(theta, [(field_sizes_wt)';(field_sizes_ko)'])
+[R, p_sizeAndMVL_WT] = corrcoef(theta_wt_noNaN, [(fieldSizes_wt_noNaN)'])
+[R, p_sizeAndMVL_KO] = corrcoef(theta_ko_noNaN, [(fieldSizes_ko_noNaN)'])
+p = polyfit(theta_wt_noNaN, fieldSizes_wt_noNaN, 1);  
+xfit = linspace(min(theta_wt_noNaN), max(theta_wt_noNaN), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'k-', 'LineWidth', 1)
+p = polyfit(theta_ko_noNaN, field_sizes_ko, 1);  
+xfit = linspace(min(theta_ko_noNaN), max(theta_ko_noNaN), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'g-', 'LineWidth', 1)
 
 %tbl = table(phase_slopes', log_FieldSize', theta', Genotype', ...
 %    'VariableNames', {'Slope', 'LogFieldSize', 'ThetaModulation', 'Genotype'});
@@ -407,10 +452,10 @@ validIdx = ~isnan(fieldSizes_ko) & ~isnan(slopes_ko);
 bursting_ko_noNaN = burstIndex_ko(validIdx);
 bursting = [bursting_wt_noNaN, bursting_ko_noNaN];
 
-[rho, pval] = corr(bursting', phase_slopes', 'Type', 'Spearman');
-[rho, pval] = corr(theta', phase_slopes', 'Type', 'Spearman')
-[rho, pval] = corr(theta', bursting', 'Type', 'Spearman');
-[h, p] = corrcoef(theta, phase_slopes)
+[rho, pval_burstSlope] = corr(bursting', phase_slopes', 'Type', 'Spearman')
+[rho, pval] = corr(theta', phase_slopes', 'Type', 'Spearman');
+[rho, pval_burstTheta] = corr(theta', bursting', 'Type', 'Spearman')
+[h, p] = corrcoef(theta, phase_slopes);
 
 
 %{
@@ -425,9 +470,9 @@ tbl = table(phase_slopes', theta', log_FieldSize', bursting', Genotype', ...
 mdl = fitlm(tbl, 'Slope ~ Theta + FieldSize + Bursting + Genotype');
 disp(mdl)
 %}
-tbl = table(phase_slopes', theta', log_FieldSize', Genotype', ...
-    'VariableNames', {'Slope', 'Theta', 'FieldSize', 'Genotype'});
-mdl = fitlm(tbl, 'Slope ~ Theta + FieldSize + Genotype');
+tbl = table(phase_slopes', theta', bursting', Genotype', ...
+    'VariableNames', {'Slope', 'Theta', 'Bursting', 'Genotype'});
+mdl = fitlm(tbl, 'Slope ~ Theta + Bursting + Genotype');
 disp(mdl)
 R2 = mdl.Rsquared.Ordinary;
 vif_fieldSize = 1 / (1 - R2)
@@ -549,5 +594,193 @@ tbl = table(phase_slopes', Genotype', log_FieldSize', theta', ...
     'VariableNames', {'Slope', 'Genotype', 'FieldSize', 'ThetaMod'});
 
 mdl = fitlm(tbl, 'Slope ~ Genotype * FieldSize + Genotype * ThetaMod');
+disp(mdl)
+
+%% Putting it together in one, clean place
+close all; clc;
+% 1: Define variables
+fieldSizes_nonTransformed_wt = phasePrecessionData.populationData(1).phasePrecession.MeanFieldSizes;
+fieldSizes_nonTransformed_ko = phasePrecessionData.populationData(2).phasePrecession.MeanFieldSizes;
+fieldSizes_wt = log(phasePrecessionData.populationData(1).phasePrecession.MeanFieldSizes);
+fieldSizes_ko = log(phasePrecessionData.populationData(2).phasePrecession.MeanFieldSizes);
+slopes_wt_nonTransformed = (phasePrecessionData.populationData(1).phasePrecession.MeanSlopes);
+slopes_ko_nonTransformed = (phasePrecessionData.populationData(2).phasePrecession.MeanSlopes);
+slopes_wt = log(abs(phasePrecessionData.populationData(1).phasePrecession.MeanSlopes));
+slopes_wt = sign(phasePrecessionData.populationData(1).phasePrecession.MeanSlopes) .* slopes_wt;
+slopes_ko = log(abs(phasePrecessionData.populationData(2).phasePrecession.MeanSlopes));
+slopes_ko = sign(phasePrecessionData.populationData(2).phasePrecession.MeanSlopes) .* slopes_ko;
+theta_wt = phasePrecessionData.populationData(1).phasePrecession.MVL; 
+theta_ko = phasePrecessionData.populationData(2).phasePrecession.MVL; 
+wt_genotype = ones(1,length(slopes_wt)); 
+ko_genotype = 2.*ones(1,length(slopes_ko));
+
+% 2: Select for neurons that are included in all variables
+validIdx = ~isnan(fieldSizes_wt) & ~isnan(slopes_wt) & ~isnan(theta_wt);
+fieldSizes_WT = fieldSizes_wt(validIdx);
+nontransformedSizes_WT = fieldSizes_nonTransformed_wt(validIdx);
+slopes_WT = slopes_wt(validIdx);
+nontransformedSlopes_WT = slopes_wt_nonTransformed(validIdx);
+theta_WT = theta_wt(validIdx); 
+genotype_WT = wt_genotype(validIdx); 
+validIdx = ~isnan(fieldSizes_ko) & ~isnan(slopes_ko) & ~isnan(theta_ko);
+fieldSizes_KO = fieldSizes_ko(validIdx);
+nontransformedSizes_KO = fieldSizes_nonTransformed_ko(validIdx);
+slopes_KO = slopes_ko(validIdx);
+nontransformedSlopes_KO = slopes_ko_nonTransformed(validIdx);
+theta_KO = theta_ko(validIdx); 
+genotype_KO = ko_genotype(validIdx); 
+
+% 3: Test linearity by looking at residuals
+%tbl = table(phase_slopes', log_FieldSize', Genotype', 'VariableNames', {'Slope', 'LogFieldSize', 'Genotype'});
+mdl = fitlm([fieldSizes_WT, fieldSizes_KO], [slopes_WT, slopes_KO]);
+figure(1); plotResiduals(mdl, 'fitted');
+
+% 4: Check for correlations
+%%%%% Between field size and slope
+figure(2); scatter(slopes_WT, fieldSizes_WT, 'ok'); hold on; scatter(slopes_KO, fieldSizes_KO, 'og');
+xlabel('slope'); ylabel('log of field size'); 
+[R_WT_slopeVsSize_linear, p_WT_slopeVsSize_linear] = corrcoef(slopes_WT, fieldSizes_WT);
+[R_WT_slopeVsSize, p_WT_slopeVsSize] = corr(nontransformedSlopes_WT', nontransformedSizes_WT', 'Type', 'Spearman');
+display(['For WT slope vs size, Pearsons R = ', num2str(R_WT_slopeVsSize_linear(2)), ' and p = ', num2str(p_WT_slopeVsSize_linear(2))]); 
+display(['For WT slope vs size, Spearmans R = ', num2str(R_WT_slopeVsSize), ' and p = ', num2str(p_WT_slopeVsSize)]); 
+[R_KO_slopeVsSize_linear, p_KO_slopeVsSize_linear] = corrcoef(slopes_KO, fieldSizes_KO);
+[R_KO_slopeVsSize, p_KO_slopeVsSize] = corr(nontransformedSlopes_KO', nontransformedSizes_KO', 'Type', 'Spearman');
+display(['For KO slope vs size, Pearsons R = ', num2str(R_KO_slopeVsSize_linear(2)), ' and p = ', num2str(p_KO_slopeVsSize_linear(2))]); 
+display(['For KO slope vs size, Spearmans R = ', num2str(R_KO_slopeVsSize), ' and p = ', num2str(p_KO_slopeVsSize)]); 
+p = polyfit(slopes_WT, fieldSizes_WT, 1);  
+xfit = linspace(min(slopes_WT), max(slopes_WT), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'k-', 'LineWidth', 1)
+p = polyfit(slopes_KO, fieldSizes_KO, 1);  
+xfit = linspace(min(slopes_KO), max(slopes_KO), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'g-', 'LineWidth', 1)
+%%%%% Between field size and theta
+figure(3); scatter(fieldSizes_WT, theta_WT, 'ok'); hold on; scatter(fieldSizes_KO, theta_KO, 'og');
+xlabel('log of field size'); ylabel('theta MVL'); 
+[R_WT_thetaVsSize, p_WT_thetaVsSize] = corrcoef(theta_WT, fieldSizes_WT);
+display(['For WT theta vs size, R = ', num2str(R_WT_thetaVsSize(2)), ' and p = ', num2str(p_WT_thetaVsSize(2))]); 
+[R_KO_thetaVsSize, p_KO_thetaVsSize] = corrcoef(theta_KO, fieldSizes_KO);
+display(['For KO theta vs size, R = ', num2str(R_KO_thetaVsSize(2)), ' and p = ', num2str(p_KO_thetaVsSize(2))]); 
+p = polyfit(fieldSizes_WT, theta_WT, 1);  
+xfit = linspace(min(fieldSizes_WT), max(fieldSizes_WT), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'k-', 'LineWidth', 1)
+p = polyfit(fieldSizes_KO, theta_KO, 1);  
+xfit = linspace(min(fieldSizes_KO), max(fieldSizes_KO), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'g-', 'LineWidth', 1)
+%%%%% Between field size and theta
+figure(4); scatter(slopes_WT, theta_WT, 'ok'); hold on; scatter(slopes_KO, theta_KO, 'og');
+xlabel('slope'); ylabel('theta MVL'); 
+[R_WT_thetaVsSlope, p_WT_thetaVsSlope] = corrcoef(theta_WT, slopes_WT);
+display(['For WT theta vs slope, R = ', num2str(R_WT_thetaVsSlope(2)), ' and p = ', num2str(p_WT_thetaVsSlope(2))]); 
+[R_KO_thetaVsSlope, p_KO_thetaVsSlope] = corrcoef(theta_KO, slopes_KO);
+display(['For KO theta vs slope, R = ', num2str(R_KO_thetaVsSlope(2)), ' and p = ', num2str(p_KO_thetaVsSlope(2))]); 
+p = polyfit(slopes_WT, theta_WT, 1);  
+xfit = linspace(min(slopes_WT), max(slopes_WT), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'k-', 'LineWidth', 1)
+p = polyfit(slopes_KO, theta_KO, 1);  
+xfit = linspace(min(slopes_KO), max(slopes_KO), 100);
+yfit = polyval(p, xfit);
+plot(xfit, yfit, 'g-', 'LineWidth', 1)
+
+% 4: Combine between genotypes
+fieldSizes = [fieldSizes_WT, fieldSizes_KO]; 
+slopes = [slopes_WT, slopes_KO]; 
+theta = [theta_WT, theta_KO]; 
+genotype = [genotype_WT, genotype_KO]; 
+
+% 5: Build the models
+%%%%% Just genotype explaining slope
+tbl = table(slopes', genotype', ...
+    'VariableNames', {'Slope', 'Genotype'});
+tbl.Genotype = categorical(tbl.Genotype);
+mdl = fitlm(tbl, 'Slope ~ Genotype');
+coefTbl = mdl.Coefficients;
+coefTbl2 = [coefTbl; table(NaN, NaN, NaN, NaN, ...
+    'VariableNames', coefTbl.Properties.VariableNames, ...
+    'RowNames', {'AdjustedR2'})];
+coefTbl2.Estimate(end) = mdl.Rsquared.Adjusted;
+f = figure('Name','Genotype Only Model','NumberTitle','off');
+uitable(f, 'Data', table2cell(coefTbl2), ...
+           'ColumnName', coefTbl2.Properties.VariableNames, ...
+           'RowName', coefTbl2.Properties.RowNames, ...
+           'Units','normalized', ...
+           'Position',[0 0 1 1]);
+       
+%%%%% Just field size explaining slope
+tbl = table(slopes', fieldSizes', ...
+    'VariableNames', {'Slope', 'FieldSizes'});
+mdl = fitlm(tbl, 'Slope ~ FieldSizes');
+coefTbl = mdl.Coefficients;
+coefTbl2 = [coefTbl; table(NaN, NaN, NaN, NaN, ...
+    'VariableNames', coefTbl.Properties.VariableNames, ...
+    'RowNames', {'AdjustedR2'})];
+coefTbl2.Estimate(end) = mdl.Rsquared.Adjusted;
+f = figure('Name','Field Size Only Model','NumberTitle','off');
+uitable(f, 'Data', table2cell(coefTbl2), ...
+           'ColumnName', coefTbl2.Properties.VariableNames, ...
+           'RowName', coefTbl2.Properties.RowNames, ...
+           'Units','normalized', ...
+           'Position',[0 0 1 1]);
+
+%%%%% Just theta MVL explaining slope
+tbl = table(slopes', theta', ...
+    'VariableNames', {'Slope', 'Theta'});
+mdl = fitlm(tbl, 'Slope ~ Theta');
+coefTbl = mdl.Coefficients;
+coefTbl2 = [coefTbl; table(NaN, NaN, NaN, NaN, ...
+    'VariableNames', coefTbl.Properties.VariableNames, ...
+    'RowNames', {'AdjustedR2'})];
+coefTbl2.Estimate(end) = mdl.Rsquared.Adjusted;
+f = figure('Name','Theta Only Model','NumberTitle','off');
+uitable(f, 'Data', table2cell(coefTbl2), ...
+           'ColumnName', coefTbl2.Properties.VariableNames, ...
+           'RowName', coefTbl2.Properties.RowNames, ...
+           'Units','normalized', ...
+           'Position',[0 0 1 1]);
+
+%%%%% All three in combined model
+tbl = table(slopes', genotype', fieldSizes', theta', ...
+    'VariableNames', {'Slope', 'Genotype', 'FieldSize', 'ThetaMod'});
+tbl.Genotype = categorical(tbl.Genotype);
+mdl = fitlm(tbl, 'Slope ~ Genotype + FieldSize + ThetaMod');
+coefTbl = mdl.Coefficients;
+coefTbl2 = [coefTbl; table(NaN, NaN, NaN, NaN, ...
+    'VariableNames', coefTbl.Properties.VariableNames, ...
+    'RowNames', {'AdjustedR2'})];
+coefTbl2.Estimate(end) = mdl.Rsquared.Adjusted;
+f = figure('Name','Combined Model','NumberTitle','off');
+uitable(f, 'Data', table2cell(coefTbl2), ...
+           'ColumnName', coefTbl2.Properties.VariableNames, ...
+           'RowName', coefTbl2.Properties.RowNames, ...
+           'Units','normalized', ...
+           'Position',[0 0 1 1]);
+%%%%% All three in combined model with interactions
+tbl = table(slopes', genotype', fieldSizes', theta', ...
+    'VariableNames', {'Slope', 'Genotype', 'FieldSize', 'ThetaMod'});
+tbl.Genotype = categorical(tbl.Genotype);
+mdl = fitlm(tbl, 'Slope ~ Genotype * FieldSize + Genotype * ThetaMod');
+coefTbl = mdl.Coefficients;
+coefTbl2 = [coefTbl; table(NaN, NaN, NaN, NaN, ...
+    'VariableNames', coefTbl.Properties.VariableNames, ...
+    'RowNames', {'AdjustedR2'})];
+coefTbl2.Estimate(end) = mdl.Rsquared.Adjusted;
+f = figure('Name','Combined Model with Interactions','NumberTitle','off');
+uitable(f, 'Data', table2cell(coefTbl2), ...
+           'ColumnName', coefTbl2.Properties.VariableNames, ...
+           'RowName', coefTbl2.Properties.RowNames, ...
+           'Units','normalized', ...
+           'Position',[0 0 1 1]);
+
+
+
+%% Trying to understand where theta and bursting fit in
+tbl = table(theta', genotype', fieldSizes',  ...
+    'VariableNames', {'ThetaMod', 'Genotype', 'FieldSize'});
+tbl.Genotype = categorical(tbl.Genotype);
+mdl = fitlm(tbl, 'ThetaMod ~ Genotype * FieldSize');
 disp(mdl)
 

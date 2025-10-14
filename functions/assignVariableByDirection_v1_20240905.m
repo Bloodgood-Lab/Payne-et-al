@@ -28,6 +28,10 @@ function outputData = assignVariableByDirection_v1_20240905(inputData, dir, anal
             outputData.bursts = inputData.spikeTiming.bursts.cw; 
             outputData.singles = inputData.spikeTiming.singles.cw; 
         end
+        if strcmp(analysisType, 'stability') == 1;
+            outputData.binnedPos = inputData.inField.inFieldBinnedSpkPos.cw{1};  
+            
+        end
         if strcmp(analysisType, 'theta') == 1;
             outputData.spikesByDirection = inputData.inField.inFieldSpkTimes.cw; 
             outputData.inFieldBursts = inputData.inField.inFieldBursts.cw; 

@@ -219,7 +219,8 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             end
             % If data is not normal, perform kstest
             [~, p] = kstest2(burstIndices_highFiring_bothGenotypes{1}, burstIndices_highFiring_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(burstIndices_highFiring_bothGenotypes{1})), ' and KO N = ', num2str(length(burstIndices_highFiring_bothGenotypes{2}))];            
             display(pValueDisplay);
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
@@ -265,7 +266,8 @@ function plotFiringRateMetrics_v1_20250521(inputData, settings)
             end
             % If data is not normal, perform kstest
             [~, p] = kstest2(burstIndices_lowFiring_bothGenotypes{1}, burstIndices_lowFiring_bothGenotypes{2});
-            pValueDisplay = ['P = ', num2str(p), ' using kstest'];
+            pValueDisplay = ['P = ', num2str(p), ' using kstest with WT N = ', ...
+                num2str(length(burstIndices_lowFiring_bothGenotypes{1})), ' and KO N = ', num2str(length(burstIndices_lowFiring_bothGenotypes{2}))]; 
             display(pValueDisplay);
             annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
             'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);

@@ -19,16 +19,22 @@ function filePaths = splitWTandKO_v1_20240722(mainDataStructure, settings, proce
     
     %% Step 1: Split into WT and KO based off of their opto response 
     filePaths = {}; 
+    ambiguousCount = 0
+    WTcount2 = 0
+    KOcount2 = 0
     for iAnimal = 1:length(mainDataStructure); 
         WTcount = 1; KOcount = 1; 
         for iCell = 1:length(mainDataStructure{iAnimal});
             if strcmp(mainDataStructure{iAnimal}(iCell).opto, 'No') == 1; 
                 filePaths.WT{iAnimal}(WTcount) = mainDataStructure{iAnimal}(iCell); 
                 WTcount = WTcount + 1;
-            end
-            if strcmp(mainDataStructure{iAnimal}(iCell).opto, 'Yes') == 1; 
+                WTcount2 = WTcount2 + 1
+            elseif strcmp(mainDataStructure{iAnimal}(iCell).opto, 'Yes') == 1; 
                 filePaths.KO{iAnimal}(KOcount) = mainDataStructure{iAnimal}(iCell); 
                 KOcount = KOcount + 1;
+                KOcount2 = KOcount2 + 1
+            else
+                ambiguousCount = ambiguousCount + 1
             end
         end
     end

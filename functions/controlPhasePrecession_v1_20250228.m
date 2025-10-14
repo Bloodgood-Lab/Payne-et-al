@@ -79,7 +79,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
     end
 
     % Initialize variables
-    numIterations = 1000;
+    numIterations = 1;
     maxN = length(sizeHistogramValues);
     edgeValues = [0:4:max(sortedSizes{1})];
 
@@ -89,6 +89,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
 
     % Loop through random iterations
     for iRandomIteration = 1:numIterations
+        iRandomIteration
         DSsize_WT = []; DSsize_KO = []; 
         DSslope_WT = []; DSslope_KO = []; 
 
@@ -151,7 +152,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
     rng('shuffle');
 
     % Initialize variables
-    numIterations = 1000;
+    numIterations = 10;
     maxN = length(sizeHistogramValues);
     edgeValues = [0:4:max(sortedSizes{1})];
 
@@ -161,6 +162,7 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
 
     % Loop through random iterations
     for iRandomIteration = 1:numIterations
+        iRandomIteration
         DSsize_WT = []; DSsize_KO = []; 
         DSslope_WT = []; DSslope_KO = []; 
 
@@ -259,17 +261,17 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
     data.populationData(1).phasePrecession.control.linearRegression.MVLonly = mdl;
     
     %% Step 7: Linear Regression Model 4 - Full Model
-    slopes_wt = phasePrecessionData.populationData(1).phasePrecession.Slopes;
-    slopes_ko = phasePrecessionData.populationData(2).phasePrecession.Slopes;
+    slopes_wt = data.populationData(1).phasePrecession.Slopes;
+    slopes_ko = data.populationData(2).phasePrecession.Slopes;
     phase_slopes = [slopes_wt, slopes_ko]; 
     wt_genotype = ones(1,length(slopes_wt)); 
     ko_genotype = 2*ones(1,length(slopes_ko)); 
     Genotype = [wt_genotype, ko_genotype]; 
-    fieldSizes_wt = phasePrecessionData.populationData(1).phasePrecession.MedianFieldSizes;
-    fieldSizes_ko = phasePrecessionData.populationData(2).phasePrecession.MedianFieldSizes;
+    fieldSizes_wt = data.populationData(1).phasePrecession.MedianFieldSizes;
+    fieldSizes_ko = data.populationData(2).phasePrecession.MedianFieldSizes;
     fieldSizes = [fieldSizes_wt,fieldSizes_ko]; 
-    theta_wt = phasePrecessionData.populationData(1).MVL; 
-    theta_ko = phasePrecessionData.populationData(2).MVL;
+    theta_wt = data.populationData(1).MVL; 
+    theta_ko = data.populationData(2).MVL;
     theta = [theta_wt, theta_ko]; 
 
     validIdx = ~isnan(phase_slopes) & ~isnan(Genotype) & ~isnan(fieldSizes) & ~isnan(theta);
@@ -351,7 +353,9 @@ function data = controlPhasePrecession_v1_20250228(data, settings)
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
         shPos_allIterations = []; shPhs_allIterations = [];
-        for iIteration = 1:100; 
+        numIterations = 1;
+        for iIteration = 1:numIterations; 
+            display(['On iteration ', num2str(iIteration), ' out of ', num2str(numIterations)]); 
             shPhs_populationSlopes = []; shPos_populationSlopes = []; 
             for iAnimal = 1:length(FRdata); 
                 % Skip if empty

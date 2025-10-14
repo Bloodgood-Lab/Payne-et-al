@@ -225,8 +225,8 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 3: Plot the CDF of the median slopes
         if ismember(3, listOfFigures) == 1; 
-            medianSlopes_WT = data.populationData(1).phasePrecessionSlopes; 
-            medianSlopes_KO = data.populationData(2).phasePrecessionSlopes; 
+            medianSlopes_WT = rad2deg(data.populationData(1).phasePrecession.Slopes); 
+            medianSlopes_KO = rad2deg(data.populationData(2).phasePrecession.Slopes); 
 
             % Plot
             figures.populationMedianSlopeCDF = figure(3); clf; hold on;
@@ -235,7 +235,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             plt_KO = cdfplot(medianSlopes_KO); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('MVL'); 
+            xlabel('Median Slope (radians/cm)'); 
             set(gca, 'FontSize', 14); 
 
             % Add the mean +/- SEM 
@@ -308,8 +308,8 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 5: Compare the median field size
         if ismember(5, listOfFigures) == 1; 
-            medianSizes_WT = data.populationData(1).phasePrecessionMedianFieldSizes; 
-            medianSizes_KO = data.populationData(2).phasePrecessionMedianFieldSizes; 
+            medianSizes_WT = data.populationData(1).phasePrecession.MedianFieldSizes; 
+            medianSizes_KO = data.populationData(2).phasePrecession.MedianFieldSizes; 
 
             % Plot
             figures.populationMedianFieldSizeeCDF = figure(6); clf; hold on;
@@ -318,7 +318,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             plt_KO = cdfplot(medianSizes_KO); 
             set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
             grid off; 
-            xlabel('MVL'); 
+            xlabel('Median Field Size (cm)'); 
             set(gca, 'FontSize', 14); 
 
             % Add the mean +/- SEM 
@@ -424,8 +424,6 @@ function plotPhasePrecession_v2_20250305(data, settings)
                 averageSizes_WT(isnan(slopes_WT)) = [];
                 averageSizes_KO(isnan(slopes_KO)) = [];
             end
-            length(averageSizes_WT)
-            length(averageSizes_KO)
             
             % Plot
             figures.populationAverageFieldSizeeCDF = figure(8); clf; hold on;
@@ -533,10 +531,10 @@ function plotPhasePrecession_v2_20250305(data, settings)
         
         %% Step 9: Match the distributions of field size and compare slopes
         if ismember(9, listOfFigures) == 1; 
-            %WTsizeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMean.dsSizes; 
-            %KOsizeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMean.dsSizes; 
-            WTsizeDistribution = data.populationData(1).phasePrecessionMedianFieldSizes; 
-            KOsizeDistribution = data.populationData(2).phasePrecessionMedianFieldSizes;
+            WTsizeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMean.dsSizes; 
+            KOsizeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMean.dsSizes; 
+            %WTsizeDistribution = data.populationData(1).phasePrecession.MedianFieldSizes; 
+            %KOsizeDistribution = data.populationData(2).phasePrecession.MedianFieldSizes;
             WTslopeDistribution = data.populationData(1).phasePrecession.control.matchDistribution.byMean.dsSlopes; 
             KOslopeDistribution = data.populationData(2).phasePrecession.control.matchDistribution.byMean.dsSlopes; 
             slopePvalues = data.populationData(1).phasePrecession.control.matchDistribution.byMean.slopePvalues;
@@ -557,7 +555,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             figureSettings.fileTypes = {'fig', 'tiff'};
             saveFigure_v1_20240902(figures.controlMeanSizeDistribution, figureSettings);
             
-            % Plot the distributions of the sizes
+            % Plot the distributions of the slopes
             figures.controlMeanSizeSlopeDistribution = figure(13); clf; hold on;
             plt_WT = cdfplot(WTslopeDistribution); 
             set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
@@ -566,6 +564,7 @@ function plotPhasePrecession_v2_20250305(data, settings)
             grid off; 
             xlabel('Downsampled Slopes (degrees/cm)'); 
             set(gca, 'FontSize', 14); 
+            [h,p] = kstest2(WTslopeDistribution, KOslopeDistribution)
             
             % Save the figure
             figureSettings.name = 'Control_SlopeDistribution';
@@ -994,6 +993,112 @@ function plotPhasePrecession_v2_20250305(data, settings)
             saveFigure_v1_20240902(figures.scatterMVLvsSlope, figureSettings); 
         end
         
+        %% Step 18: Plot the CDF of the mean slopes
+        if ismember(18, listOfFigures) == 1; 
+            meanSlopes_WT = rad2deg(data.populationData(1).phasePrecession.MeanSlopes); 
+            meanSlopes_KO = rad2deg(data.populationData(2).phasePrecession.MeanSlopes); 
+
+            % Plot
+            figures.populationMeanSlopeCDF = figure(26); clf; hold on;
+            plt_WT = cdfplot(meanSlopes_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(meanSlopes_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Mean Slope (radians/cm)'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            WTmean = nanmean(meanSlopes_WT); 
+            KOmean = nanmean(meanSlopes_KO);
+            WT_SEM = nanstd(meanSlopes_WT)/sqrt(length(meanSlopes_WT)); 
+            KO_SEM = nanstd(meanSlopes_KO)/sqrt(length(meanSlopes_KO)); 
+            [f, x] = ecdf(meanSlopes_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(meanSlopes_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(meanSlopes_WT)
+            [h, pUnif_KO] = adtest(meanSlopes_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(meanSlopes_WT, meanSlopes_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'MeanSlopes_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMeanSlopeCDF, figureSettings);
+        end
+        
+        %% Step 19: Plot the CDF of the mean field sizes
+        if ismember(19, listOfFigures) == 1; 
+            meanFieldSize_WT = data.populationData(1).phasePrecession.MeanFieldSizes; 
+            meanFieldSize_KO = data.populationData(2).phasePrecession.MeanFieldSizes; 
+
+            % Plot
+            figures.populationMeanFieldSizeCDF = figure(27); clf; hold on;
+            plt_WT = cdfplot(meanFieldSize_WT); 
+            set(plt_WT, 'Color', [0.5 0.5 0.5], 'LineWidth', 1.5); 
+            plt_KO = cdfplot(meanFieldSize_KO); 
+            set(plt_KO, 'Color', [0.0 0.5 0.0], 'LineWidth', 1.5); 
+            grid off; 
+            xlabel('Mean Field Size (cm)'); 
+            set(gca, 'FontSize', 14); 
+
+            % Add the mean +/- SEM 
+            display(['WT N = ', num2str(sum(~isnan(meanFieldSize_WT)))]); 
+            display(['KO N = ', num2str(sum(~isnan(meanFieldSize_KO)))]); 
+            WTmean = nanmean(meanFieldSize_WT); 
+            KOmean = nanmean(meanFieldSize_KO);
+            WT_SEM = nanstd(meanFieldSize_WT)/sqrt(length(meanFieldSize_WT)); 
+            KO_SEM = nanstd(meanFieldSize_KO)/sqrt(length(meanFieldSize_KO)); 
+            [f, x] = ecdf(meanFieldSize_WT);
+            [~, idx] = min(abs(x-WTmean)); WT_y = f(idx); 
+            [f, x] = ecdf(meanFieldSize_KO);
+            [~, idx] = min(abs(x-KOmean)); KO_y = f(idx);
+            plot([WTmean - WT_SEM, WTmean + WT_SEM], [WT_y, WT_y], 'Color', [0.2, 0.2, 0.2], 'LineWidth', 2); 
+            plot(WTmean, WT_y, 'o', 'MarkerFaceColor', [0.2, 0.2, 0.2], 'MarkerSize', 6);
+            plot([KOmean - KO_SEM, KOmean + KO_SEM], [KO_y, KO_y], 'Color', [0.0, 0.2, 0.0], 'LineWidth', 2); 
+            plot(KOmean, KO_y, 'o', 'MarkerFaceColor', [0.0, 0.2, 0.0], 'MarkerSize', 6);
+
+            % Display statistical significance
+            % First, check for normality 
+            [h, pUnif_WT] = adtest(meanFieldSize_WT)
+            [h, pUnif_KO] = adtest(meanFieldSize_KO)
+            if pUnif_WT < 0.05 && pUnif_KO < 0.05
+                display('Data is not normal'); 
+            end
+            % If data is not normal, perform kstest
+            [~, p] = kstest2(meanFieldSize_WT, meanFieldSize_KO);
+            pValueDisplay = ['P-value is ', num2str(p), ' using kstest'];
+            display(pValueDisplay);
+            annotation('textbox', [0.55, 0.01, 0.5, 0.05], 'String', pValueDisplay, ...
+            'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 8);
+
+            % Save the figure
+            figureSettings.filePath = figureSettings.filePath.population;
+            figureSettings.name = 'MeanFieldSizes_CDF_WTandKO';
+            figureSettings.appendedFolder.binary = 'no'; 
+            figureSettings.appendedFolder.name = figureSettings.fileNameBase.population;
+            figureSettings.fileTypes = {'fig', 'tiff'};
+            saveFigure_v1_20240902(figures.populationMeanFieldSizeCDF, figureSettings);
+        end
+        
     end
 end   
          
@@ -1020,7 +1125,9 @@ function selectedPlots = getFiguresToPlot()
         'control analysis: linear regression results', ...
         'control analysis: shuffled position and phase', ...
         'control analysis: scatter plot of field size against slope', ... 
-        'control analysis: scatter plot of theta MVL against slope'}; 
+        'control analysis: scatter plot of theta MVL against slope', ...
+        'control analysis: CDF of the MEAN phase precession slope', ...
+        'control analysis: CDF of the MEAN field sizes'}; 
     
     % Display a dialog box to select the plots
     selectedPlots = listdlg('ListString', plotOptions, ...

@@ -31,7 +31,8 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         population_thresh_ISI = []; population_thresh_timeRange = []; 
         population_thresh_p = []; population_thresh_trialNum = []; 
         rSquaredPopulation = [];
-        populationAllTrialSlopes = []; populationAllTrialOffsets = []; 
+        populationAllTrialSlopes = []; populationAllTrialOffsets = [];
+        populationMeanSlopes = []; populationMVL = [];
         
         % Run analysis for high-firing cells only
         FRdata = genotypeData.highFiring;
@@ -62,6 +63,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             slopeMedian = []; sizeMedian = []; rSquared = []; rSquaredAllTrials = {}; 
                             slope = {}; spkPhsInput = {}; spkPosInput = {}; fieldSize = {}; 
                             trialSlope = {}; trialOffset = {}; trialR2 = {}; trialPvalue = {}; 
+                            slopeMean = []; MVL = []; 
                             for iField = 1:numFieldsToAnalyze;
                                 % Loop through all the trials
                                 allTrialsPosition = []; allTrialsPhases = []; fieldSize{iField} = []; 
@@ -113,6 +115,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                             trialOffset{iField}(iTrial) = outputData.trialOffset; 
                                             trialR2{iField}(iTrial) = outputData.r2; 
                                             trialPvalue{iField}(iTrial) = outputData.p; 
+                                            allTrialsPhases = [allTrialsPhases, outputData.spkPhs]; 
                                             
                                             % If the slope is below the significance threshold, save the data
                                             if trialPvalue{iField}(iTrial) > settings.phasePrecession.significanceThreshold; 
@@ -149,18 +152,22 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                                 % If there are enough trials with slopes calculated, get the median of all slopes
                                 if sum(~isnan(trialSlope{iField})) >= settings.phasePrecession.trialThreshold; 
                                     slopeMedian(iField) = nanmedian(trialSlope{iField});
+                                    slopeMean(iField) = nanmean(trialSlope{iField}); 
                                     [~, idx] = nanmin(abs(trialSlope{iField} - slopeMedian(iField)));
-                                    sizeMedian(iField) = nanmedian(fieldSize{iField})
+                                    sizeMedian(iField) = nanmedian(fieldSize{iField});
                                     sizeMean(iField) = nanmean(fieldSize{iField});
                                     rSquared(iField) = nanmean(trialR2{iField});
+                                    MVL(iField) = circ_r(allTrialsPhases'); 
                                     
                                     % Keep track of thresholds passed
                                     thresh_trialNum = 1; 
                                 else 
                                     slopeMedian(iField) = NaN; 
+                                    slopeMean(iField) = NaN; 
                                     rSquared(iField) = NaN;
                                     sizeMedian(iField) = NaN; 
                                     sizeMean(iField) = NaN; 
+                                    MVL(iField) = NaN; 
                                     
                                     % Keep track of thresholds passed
                                     thresh_trialNum = 0; 
@@ -196,6 +203,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             
                             % Organize the population data and analysis
                             populationSlopes = [populationSlopes, slopeMedian];
+                            populationMeanSlopes = [populationMeanSlopes, slopeMean]; 
                             rSquaredPopulation = [rSquaredPopulation, rSquared]; 
                             populationAllTrialSlopes = [populationAllTrialSlopes, allTrialsSlopes]; 
                             populationAllTrialOffsets = [populationAllTrialOffsets, allTrialsOffsets]; 
@@ -207,12 +215,14 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
                             population_thresh_timeRange = [population_thresh_timeRange, thresh_timeRange]; 
                             population_thresh_p = [population_thresh_p, thresh_p];
                             population_thresh_trialNum = [population_thresh_trialNum, thresh_trialNum]; 
+                            populationMVL = [populationMVL, MVL]; 
                         end
                     end
                 end
             end
         end
         data.populationData(iGenotype).phasePrecession.Slopes = populationSlopes;
+        data.populationData(iGenotype).phasePrecession.MeanSlopes = populationMeanSlopes;
         data.populationData(iGenotype).phasePrecession.RSquared = rSquaredPopulation;
         data.populationData(iGenotype).phasePrecession.AllTrialSlopes = populationAllTrialSlopes;
         data.populationData(iGenotype).phasePrecession.AllTrialOffsets = populationAllTrialOffsets;
@@ -223,6 +233,7 @@ function [data, settings] = getPhasePrecession_v1_20240806(data, settings, proce
         data.populationData(iGenotype).phasePrecession.thresholds.timeRange = population_thresh_timeRange;
         data.populationData(iGenotype).phasePrecession.thresholds.pValue = population_thresh_p;
         data.populationData(iGenotype).phasePrecession.thresholds.trialNum = population_thresh_trialNum;
+        data.populationData(iGenotype).phasePrecession.MVL = populationMVL;
         
     end
     
