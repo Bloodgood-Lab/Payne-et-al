@@ -1,11 +1,11 @@
 % Master workflow to reproduce all analysis and plots included in Anja
 % Payne's in vivo paper
 % Written by Anja Payne
-% Last modified: 08/15/2024
+% Last modified: 10/10/2025
 
 % Steps:
 %   1) Define pathway
-%   2) Read in excel files and create the main data structure 
+%   2) Read in excel files and create the main data structure
 %   3) Split the data into WT and KO
 %   4) Save the spike times in msec aligned to 0 
 %   5) Exclude spikes that occur during low velocity and format so that the
@@ -24,14 +24,14 @@
 % Notes about this code:
 %   - When you choose to save processed data (as prompted by the pop-up
 %     window(s), the .mat file will always be saved with increasing 
-%     versions and with the data appended.
+%     versions and with the date appended.
 %   - Each step will give you the option of saving the output. The next 
 %     step will look for that saved file so it's a good idea to save as you
-%     go. The code will save two files, one with the data and one with the
+%     go. The code will save two variables, one with the data and one with the
 %     settings. 
 
 %% Step 1: Define pathways
-addpath(genpath('Z:\Anja\Paper\Matlab Code')); 
+addpath(genpath('/Volumes/Bldgood/Paper/Matlab Code')); 
 
 %% Step 2: Read in excel files and create the main data structure
 clear;clc;
@@ -182,7 +182,6 @@ rateMapByFRSettings.rateMaps.plot.direction = 'all'; % Could be 1, 2, or 'all'
 % Outputs:
 spatialMetrics = getSpatialMetrics_v1_20240724(rateMapByFRStructure, rateMapByFRSettings, processedDataFolder); toc
 spatialMetrics = controlSpatialMetrics_v1_20250425(spatialMetrics, rateMapByFRSettings);
-%%
 plotSpatialMetrics_v1_20250305(spatialMetrics, rateMapByFRSettings); 
     
 %% Step 10: Get the in-field spikes for each field (takes seconds)
@@ -221,10 +220,6 @@ inFieldSpkData = data; inFieldSpkSettings = settings;
 % Outputs:
 stabilityData = getStability_v1_20250608(inFieldSpkData, inFieldSpkSettings, processedDataFolder); toc; 
 
-%inFieldSpkTimes = getInFieldSpikes_v1_20240805(binnedSpikes, binnedSpikeSettings, processedDataFolder); toc
-
-
-
 %% Step 13: Get the theta modulation (takes ~1.5 hours)
 clear;clc;tic;
 display(['Estimated time to finish is ', datestr(datetime('now')+hours(1.5), 'HH:MM:SS')]); 
@@ -250,7 +245,7 @@ thetaSettings.theta.plot.direction = 1; % If plotting, for what direction? Could
 
 % Outputs: 
 thetaData = getThetaModulation_v1_20240806(inFieldSpkTimes, thetaSettings, processedDataFolder); toc
-%controlsForTheta_v1_20250228(thetaData, thetaSettings); % Nothing in here
+controlsForTheta_v1_20250228(thetaData, thetaSettings); % Nothing in here
 plotThetaModulation_v1_20241216(thetaData, thetaSettings); 
 
 %% Step 14: Get the phase precession (takes ~8 min)
